@@ -24,13 +24,13 @@ module.exports.loop = function () {
   // If we have less than x harvesters, add more
   if (skaven.length < numSkaven && energyAvailable >= 300) {
     statusUpdate += ' ~ Spawning new skaven'
-    roleSkaven.summonRat('skaven', energyAvailable);
+    roleSkaven.summonRat('skaven', energyAvailable, { roomBound: gameRoomID });
   }
 
   // If we have less than 1 upgrader, add one
   else if (upgraders.length < numUpgraders && energyAvailable >= 300) {
     statusUpdate += ' ~ Spawning new upgrader'
-    roleSkaven.summonRat('upgrader', energyAvailable);
+    roleSkaven.summonRat('upgrader', energyAvailable, { roomBound: gameRoomID });
   }
 
   console.log(statusUpdate);

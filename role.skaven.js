@@ -51,24 +51,20 @@ let roleSkaven = {
   },
 
   // Spawn us a rat!
-  summonRat: (role, size) => {
+  summonRat: (role, energySize, memory) => {
     let ratRole = ['skaven', 'upgrader'].includes(role) ? role : 'skaven';
     let ratName = ratRole + Game.time;
     let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
+    let ratBrain = { memory: { role: ratRole, ...memory } };
 
-    if (size >= 350 && size < 400) {
-      ratParts.push(CARRY);
-    } else if (size >= 400 && size < 450) {
-      ratParts.push(WORK);
-    } else if (size >= 450 && size < 500) {
-      ratParts.push(WORK);
-      ratParts.push(CARRY);
-    } else if (size >= 500) {
-      ratParts.push(WORK);
-      ratParts.push(CARRY);
-      ratParts.push(MOVE);
+    // @TODO Change this to summon differently based on ratRole
+    if (energySize >= 350 && energySize < 400) { ratParts.push(CARRY);
+    } else if (energySize >= 400 && energySize < 450) { ratParts.push(WORK);
+    } else if (energySize >= 450 && energySize < 500) { ratParts.push(...[WORK, CARRY]);
+    } else if (energySize >= 500 && energySize < 550) { ratParts.push(...[WORK, CARRY, MOVE]);
+    } else if (energySize >= 550 && energySize < 600) { ratParts.push(...[WORK, CARRY, CARRY, MOVE]);
     }
-    Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, { memory: { role: ratRole } });
+    Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
 
   // Get a dynamic number of body parts based on the power available
@@ -76,10 +72,11 @@ let roleSkaven = {
     return [WORK, CARRY, MOVE, MOVE, MOVE];
   },
 
-
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   harvest: rat => {
-    var sources = rat.room.find(FIND_SOURCES);
+    // let roomBounds = Game.rooms[creep.room.name].getBounds();
+    let sources = rat.room.find(FIND_SOURCES);
+
     // var ruins = creep.room.find(FIND_RUINS, {
     //     filter: (ruin) => ruin.store.getUsedCapacity(RESOURCE_ENERGY) > 0
     // });
