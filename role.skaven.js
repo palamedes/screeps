@@ -18,6 +18,7 @@ let roleSkaven = {
         }
       });
       // If there are sites to be built, do that.
+      // @TODO If we don't have enough rats, dont build.. just harvest and store
       if(construction_targets.length > 0) {
         rat.memory.activity = 'build';
         rat.say('🚧Build');
@@ -60,96 +61,6 @@ let roleSkaven = {
     }
     Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
-
-  // Get a dynamic number of body parts based on the power available
-  getSkavenBodyParts: size => {
-    return [WORK, CARRY, MOVE, MOVE, MOVE];
-  },
-
-  // Harvest energy from sources, ruins, tombstones, and dropped resources
-  harvest: rat => {
-    // let roomBounds = Game.rooms[creep.room.name].getBounds();
-    let harvestTargets = rat.room.find(FIND_SOURCES);
-
-    // var ruins = creep.room.find(FIND_RUINS, {
-    //     filter: (ruin) => ruin.store.getUsedCapacity(RESOURCE_ENERGY) > 0
-    // });
-    // var tombstones = rat.room.find(FIND_TOMBSTONES, {
-    //     filter: (tombstone) => tombstone.store.getUsedCapacity(RESOURCE_ENERGY) > 0
-    // });
-    // var droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
-    //     filter: (dropped) => dropped.resourceType == RESOURCE_ENERGY
-    // });
-
-    // If the creep doesn't know where to go..
-    if(!rat.memory.myTargetId) {
-      var closestTarget = rat.pos.findClosestByRange(harvestTargets);
-      if(closestTarget) {
-        rat.memory.myTargetId = closestTarget.id;
-      }
-    }
-    var target = Game.getObjectById(rat.memory.myTargetId);
-    if(target) {
-      if(rat.harvest(target) === ERR_NOT_IN_RANGE) {
-        rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'} });
-      }
-    }
-  },
-
-  // Go store the energy
-  store: rat => {
-    var targets = rat.room.find(FIND_STRUCTURES, {
-      filter: (structure) => {
-        return (structure.structureType === STRUCTURE_EXTENSION ||
-                structure.structureType === STRUCTURE_SPAWN ||
-                structure.structureType === STRUCTURE_TOWER) &&
-                structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
-      }
-    });
-    if(targets.length > 0) {
-      var target = rat.pos.findClosestByRange(targets);
-      if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        rat.moveTo(target, {visualizePathStyle: {stroke: '#aaffff'}});
-      }
-    } else {
-      roleSkaven.reset(rat, 'build');
-    }
-  },
-
-  // Go find something to build and go build it, if there is nothing or we have finished building something, reset.
-  build: rat => {
-    var targets = rat.room.find(FIND_CONSTRUCTION_SITES);
-    if(targets.length > 0) {
-      if(rat.build(targets[0]) === ERR_NOT_IN_RANGE) {
-        rat.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
-      }
-    } else {
-      roleSkaven.reset(rat, 'store');
-    }
-
-  },
-
-  // Go find something to repair
-  repair: rat => {
-    let repairTargets = rat.room.find(FIND_STRUCTURES, {
-      filter: (structure) => {
-        return (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) && structure.hits < structure.hitsMax;
-      }
-    });
-    if (repair_targets.length > 0) {
-      let closestTarget = rat.pos.findClosestByRange(repairTargets);
-      if(closestTarget) {
-        rat.memory.myTargetId = closestTarget.id;
-      }
-
-      var target = Game.getObjectById(rat.memory.myTargetId);
-      if(target) {
-        if(rat.repair(target) === ERR_NOT_IN_RANGE) {
-          rat.moveTo(target, { visualizePathStyle: {stroke: '#ff0000'} });
-        }
-      }
-    }
-  }
 
 }
 module.exports = roleSkaven;
