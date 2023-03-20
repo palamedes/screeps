@@ -1,3 +1,4 @@
+const skavenActions = require('skaven.actions');
 /** Skaven! These are your harvester and builders */
 let roleSkaven = {
 
@@ -10,37 +11,30 @@ let roleSkaven = {
     }
     // If we have energy, go use it.
     if (rat.store.getFreeCapacity() === 0 && rat.memory.activity === 'harvest') {
-
       let construction_targets = rat.room.find(FIND_CONSTRUCTION_SITES);
       let repair_targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => {
           return (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) && structure.hits < structure.hitsMax;
         }
       });
-
       // If there are sites to be built, do that.
       if(construction_targets.length > 0) {
         rat.memory.activity = 'build';
-        rat.say('🚧 Build');
+        rat.say('🚧Build');
       }
-
-        // @TODO add upgrading so we know how to go upgrade something
-
-
-        // else if (repair_targets.length > 0) {
-        //     rat.memory.activity = 'repair';
-        //     rat.say('🔧Repair');
+      // else if (repair_targets.length > 0) {
+      //     rat.memory.activity = 'repair';
+      //     rat.say('🔧Repair');
       // }
       else {
         rat.memory.activity = 'store';
         rat.say('⚡Store');
       }
     }
-
-    if(rat.memory.activity === 'harvest')    { roleSkaven.harvest(rat); }
-    if(rat.memory.activity === 'build')      { roleSkaven.build(rat); }
+    if(rat.memory.activity === 'harvest')    { skavenActions.harvest.using(rat); }
+    if(rat.memory.activity === 'build')      { skavenActions.build.using(rat); }
     // if(rat.memory.activity == 'repair')     { roleSkaven.repair(rat); }
-    if(rat.memory.activity === 'store')      { roleSkaven.store(rat); }
+    if(rat.memory.activity === 'store')      { skavenActions.store.using(rat); }
   },
 
   // If skaven get's in a weird state, reset it.. (wipe it's memory and let it figure it out)
@@ -57,7 +51,6 @@ let roleSkaven = {
     let ratName = ratRole + Game.time;
     let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
     let ratBrain = { memory: { role: ratRole, slept: 0, attempted: 0, ...memory } };
-
     // @TODO Change this to summon differently based on ratRole
     if (energySize >= 350 && energySize < 400) { ratParts.push(CARRY);
     } else if (energySize >= 400 && energySize < 450) { ratParts.push(WORK);
@@ -95,7 +88,6 @@ let roleSkaven = {
         rat.memory.myTargetId = closestTarget.id;
       }
     }
-
     var target = Game.getObjectById(rat.memory.myTargetId);
     if(target) {
       if(rat.harvest(target) === ERR_NOT_IN_RANGE) {

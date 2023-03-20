@@ -1,5 +1,7 @@
-let roleUpgrader = require('role.upgrader');
-let roleSkaven = require('role.skaven');
+// const skavenActions = require('skaven.actions');
+const roleSkaven = require('role.skaven');
+const roleUpgrader = require('role.upgrader');
+
 let utility = require('utility');
 module.exports.loop = function () {
 
