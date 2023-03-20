@@ -12,8 +12,8 @@ module.exports.loop = function () {
   let room = Game.rooms[gameRoomID];
   let energyAvailable = Game.rooms[gameRoomID].energyAvailable;
   let energyAvailableComment = 'Room "'+gameRoomID+'" has ' + room.energyAvailable + ' energy';
-  let skaven = _.filter(Game.creeps, (rat) => rat.memory.role == 'skaven');
-  let upgraders = _.filter(Game.creeps, (rat) => rat.memory.role == 'upgrader');
+  let skaven = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven');
+  let upgraders = _.filter(Game.creeps, (rat) => rat.memory.role === 'upgrader');
 
   // Log Output
   let statusUpdate = energyAvailableComment + ' ~ Skaven: ' + skaven.length + ' ~ Upgraders: ' + upgraders.length;
@@ -33,15 +33,11 @@ module.exports.loop = function () {
     roleSkaven.summonRat('upgrader', energyAvailable, { roomBound: gameRoomID });
   }
 
-  console.log(statusUpdate);
-
   // Work the creeps
   for(let name in Game.creeps) { var rat = Game.creeps[name];
-    if(rat.memory.role == 'skaven')       { roleSkaven.skitter(rat); }
-    if(rat.memory.role == 'upgrader')     { roleUpgrader.run(rat); }
+    if(rat.memory.role === 'skaven')       { roleSkaven.skitter(rat); }
+    if(rat.memory.role === 'upgrader')     { roleUpgrader.run(rat); }
   }
 
-
-//    utility.getMaxEnergyCapacity(room);
-
+  console.log(statusUpdate);
 }
