@@ -6,6 +6,7 @@ var roleSkaven = {
   skitter: rat => {
     let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
+    let upgradeTarget = rat.room.controller;
 
     // If we have no energy by a different activity, or if we have some energy but not task.. go get some energy
     if ((rat.store[RESOURCE_ENERGY] === 0 && rat.memory.activity !== 'harvest') ||
@@ -24,6 +25,10 @@ var roleSkaven = {
       else if (repairTargets.length > 0) {
         rat.memory.activity = 'repair';
         rat.say('🔧Repair');
+      }
+      else if (upgradeTarget) {
+        rat.memory.activity = 'upgrade';
+        rat.say('🔧Upgrade');
       }
       else {
         rat.memory.activity = 'store';
