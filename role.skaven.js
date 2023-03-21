@@ -23,11 +23,11 @@ var roleSkaven = {
         rat.memory.activity = 'build';
         rat.say('🚧Build');
       }
-      else if (repairTargets.length > 0 && skaven.length >= 5) {
+      else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('repair') <= 2) {
         rat.memory.activity = 'repair';
         rat.say('🔧Repair');
       }
-      else if (upgradeTarget && skaven.length >= 8) {
+      else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActively('upgrade') <= 4) {
         rat.memory.activity = 'upgrade';
         rat.say('🔧Upgrade');
       }
