@@ -7,7 +7,10 @@ let sBuild = {
         rat.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
       }
     } else {
-      roleSkaven.reset(rat, 'store');
+      rat.say('💤');
+      rat.memory.myTargetId = null;
+      rat.memory.activity = '';
+      rat.memory.slept++;
     }
   }
 }

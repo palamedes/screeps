@@ -6,7 +6,7 @@ let sStore = {
         return (structure.structureType === STRUCTURE_EXTENSION ||
             structure.structureType === STRUCTURE_SPAWN ||
             structure.structureType === STRUCTURE_TOWER) &&
-            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+          structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
       }
     });
     if(targets.length > 0) {
@@ -15,7 +15,10 @@ let sStore = {
         rat.moveTo(target, {visualizePathStyle: {stroke: '#aaffff'}});
       }
     } else {
-      roleSkaven.reset(rat, 'build');
+      rat.say('💤');
+      rat.memory.myTargetId = null;
+      rat.memory.activity = '';
+      rat.memory.slept++;
     }
   },
 }

@@ -1,6 +1,7 @@
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
+
     // let roomBounds = Game.rooms[creep.room.name].getBounds();
     let harvestTargets = rat.room.find(FIND_SOURCES);
 
