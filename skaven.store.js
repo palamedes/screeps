@@ -9,7 +9,7 @@ let sStore = {
           structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
       }
     });
-    if(targets.length > 0 && rat.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+    if(targets.length > 0) {
       var target = rat.pos.findClosestByRange(targets);
       if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, {visualizePathStyle: {stroke: '#aaffff'}});
