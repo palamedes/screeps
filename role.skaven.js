@@ -54,7 +54,10 @@ var roleSkaven = {
     for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
     for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
     for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
-    Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
+
+    console.log(ratParts);
+
+    // Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
 }
 module.exports = roleSkaven;
