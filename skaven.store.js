@@ -9,6 +9,10 @@ let sStore = {
           structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
       }
     });
+    if (rat.store.getUsedCapacity() === 0) {
+      rat.memory.myTargetId = null;
+      rat.memory.task = null;
+    }
     if(targets.length > 0) {
       var target = rat.pos.findClosestByRange(targets);
       if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {

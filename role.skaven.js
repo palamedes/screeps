@@ -9,7 +9,7 @@ var roleSkaven = {
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
     // Determine what we should be doing...
-    if (rat.memory.task === null) {
+    if (!rat.memory.task) {
       if (rat.store.getFreeCapacity() === 0) {
         if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 5) {
           rat.memory.task = 'build';
