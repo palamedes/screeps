@@ -11,6 +11,7 @@ let skavenActions = {
   repair:   sRepair,
   upgrade:  sUpgrade,
 
+  // What ever we have decided to do.. go do that.
   skitter: rat => {
     if (rat.memory.activity === 'harvest')  { skavenActions.harvest.using(rat); }
     if (rat.memory.activity === 'build')    { skavenActions.build.using(rat); }
@@ -18,8 +19,8 @@ let skavenActions = {
     if (rat.memory.activity === 'upgrade')  { skavenActions.upgrade.using(rat); }
     if (rat.memory.activity === 'store')    { skavenActions.store.using(rat); }
   },
-
-  numActively: activity => {
+  // Number of rats actively doing a give activity
+  numActive: activity => {
     return _.filter(Game.creeps, rat => rat.memory.activity === activity).length;
   }
 
