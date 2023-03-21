@@ -9,49 +9,41 @@ var roleSkaven = {
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
 
-    // If we have energy, go use it...
-    if (rat.store.getFreeCapacity() === 0) {
-      // @TODO If we don't have enough rats, dont build.. just harvest and store
-      if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 5) {
-        if (rat.memory.activity !== 'build') {
-          rat.memory.activity = 'build';
+    // Determine what we should be doing...
+    if (rat.memory.task === null) {
+      if (rat.store.getFreeCapacity() === 0) {
+        if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 5) {
+          rat.memory.task = 'build';
           rat.say('🚧Build');
         }
-      }
-      else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('repair') <= 2) {
-        if (rat.memory.activity !== 'repair') {
+        else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('repair') <= 2) {
           rat.say('🔧Repair');
-          rat.memory.activity = 'repair';
+          rat.memory.task = 'repair';
         }
-      }
-      else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActive('upgrade') <= 4) {
-        if (rat.memory.activity !== 'upgrade') {
-          rat.memory.activity = 'upgrade';
+        else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActive('upgrade') <= 4) {
+          rat.memory.task = 'upgrade';
           rat.say('🔧Upgrade');
         }
-      }
-      else {
-        if (rat.memory.activity !== 'store') {
-          rat.memory.activity = 'store';
+        else {
+          rat.memory.task = 'store';
           rat.say('⚡Store');
         }
-      }
-    } else {
-      if (rat.memory.activity !== 'harvest') {
-        rat.memory.activity = 'harvest';
+      } else {
+        rat.memory.task = 'harvest';
         rat.memory.myTargetId = null;
         rat.say('⛏️Harvest');
       }
     }
+
     // Okay rat... Do something..
     skavenActions.skitter(rat);
   },
 
   // If skaven get's in a weird state, reset it.. (wipe it's memory and let it figure it out)
-  reset: (rat, activity) => {
+  reset: (rat, task) => {
     rat.say('💤');
     rat.memory.myTargetId = null;
-    rat.memory.activity = activity;
+    rat.memory.task = task;
     rat.memory.slept++;
   },
 

@@ -17,7 +17,7 @@ let sRepair = {
     } else {
       rat.say('💤');
       rat.memory.myTargetId = null;
-      rat.memory.activity = '';
+      rat.memory.task = null;
       rat.memory.slept++;
     }
   },
