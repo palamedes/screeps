@@ -1,6 +1,6 @@
 let sStore = {
   // Go store the energy
-  store: rat => {
+  using: rat => {
     var targets = rat.room.find(FIND_STRUCTURES, {
       filter: (structure) => {
         return (structure.structureType === STRUCTURE_EXTENSION ||
@@ -19,4 +19,4 @@ let sStore = {
     }
   },
 }
-module.export = sStore;
+module.exports = sStore;
