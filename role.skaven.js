@@ -47,12 +47,11 @@ var roleSkaven = {
     rat.memory.slept++;
   },
 
-  // Spawn us a rat!
-  summonRat: (role, energySize, memory) => {
-    let ratRole = ['skaven', 'upgrader'].includes(role) ? role : 'skaven';
+  // Spawn us a rat ~ Standard Skaven worker rat
+  summonRat: (energySize, memory) => {
     let ratName = ratRole + Game.time;
     let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
-    let ratBrain = { memory: { role: ratRole, slept: 0, attempted: 0, ...memory } };
+    let ratBrain = { memory: { role: 'skaven', slept: 0, attempted: 0, ...memory } };
     // @TODO Change this to summon differently based on ratRole
     if (energySize >= 350 && energySize < 400) { ratParts.push(CARRY);
     } else if (energySize >= 400 && energySize < 450) { ratParts.push(WORK);
