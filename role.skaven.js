@@ -17,9 +17,9 @@ var roleSkaven = {
       rat.say('⛏️Harvest');
     }
     // If we have energy, go use it...
-    if (rat.store.getFreeCapacity() === 0 && skaven.length >= 5) {
+    if (rat.store.getFreeCapacity() === 0 ) {
       // @TODO If we don't have enough rats, dont build.. just harvest and store
-      if (constructionTargets.length > 0) {
+      if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('build') <= 5) {
         rat.memory.activity = 'build';
         rat.say('🚧Build');
       }
