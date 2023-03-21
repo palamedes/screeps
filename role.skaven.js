@@ -9,23 +9,22 @@ var roleSkaven = {
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
 
-
     // If we have energy, go use it...
     if (rat.store.getFreeCapacity() === 0) {
       // @TODO If we don't have enough rats, dont build.. just harvest and store
-      if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('build') <= 5) {
+      if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 5) {
         if (rat.memory.activity !== 'build') {
           rat.memory.activity = 'build';
           rat.say('🚧Build');
         }
       }
-      else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('repair') <= 2) {
+      else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('repair') <= 2) {
         if (rat.memory.activity !== 'repair') {
           rat.say('🔧Repair');
           rat.memory.activity = 'repair';
         }
       }
-      else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActively('upgrade') <= 4) {
+      else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActive('upgrade') <= 4) {
         if (rat.memory.activity !== 'upgrade') {
           rat.memory.activity = 'upgrade';
           rat.say('🔧Upgrade');
@@ -38,9 +37,11 @@ var roleSkaven = {
         }
       }
     } else {
-      rat.memory.activity = 'harvest';
-      rat.memory.myTargetId = null;
-      rat.say('⛏️Harvest');
+      if (rat.memory.activity !== 'harvest') {
+        rat.memory.activity = 'harvest';
+        rat.memory.myTargetId = null;
+        rat.say('⛏️Harvest');
+      }
     }
     // Okay rat... Do something..
     skavenActions.skitter(rat);
