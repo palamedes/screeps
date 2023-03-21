@@ -17,7 +17,12 @@ let skavenActions = {
     if (rat.memory.activity === 'repair')   { skavenActions.repair.using(rat); }
     if (rat.memory.activity === 'upgrade')  { skavenActions.upgrade.using(rat); }
     if (rat.memory.activity === 'store')    { skavenActions.store.using(rat); }
+  },
+
+  numActively: activity => {
+    _.filter(Game.creeps, rat => rat.memory.activity === activity).length;
   }
+
 };
 
 module.exports = skavenActions;
