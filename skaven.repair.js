@@ -2,7 +2,7 @@ let sRepair = {
   // Go find something to repair
   using: (rat) => {
     repairTargets = sRepair.getRepairTargets(rat);
-    if (repairTargets.length > 0) {
+    if (repairTargets.length > 0 && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
       let closestTarget = rat.pos.findClosestByRange(repairTargets);
       if(closestTarget) {
         rat.memory.myTargetId = closestTarget.id;

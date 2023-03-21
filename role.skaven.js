@@ -1,6 +1,6 @@
 const skavenActions = require('skaven.actions');
 const utility = require('utility');
-/** Skaven! These are your harvester and builders */
+/** Skaven! */
 var roleSkaven = {
 
   skitter: rat => {
@@ -8,7 +8,6 @@ var roleSkaven = {
     let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
-
     // Determine what we should be doing...
     if (rat.memory.task === null) {
       if (rat.store.getFreeCapacity() === 0) {
@@ -34,17 +33,8 @@ var roleSkaven = {
         rat.say('⛏️Harvest');
       }
     }
-
     // Okay rat... Do something..
     skavenActions.skitter(rat);
-  },
-
-  // If skaven get's in a weird state, reset it.. (wipe it's memory and let it figure it out)
-  reset: (rat, task) => {
-    rat.say('💤');
-    rat.memory.myTargetId = null;
-    rat.memory.task = task;
-    rat.memory.slept++;
   },
 
   // Spawn us a rat ~ Standard Skaven worker rat
