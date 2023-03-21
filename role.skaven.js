@@ -9,15 +9,16 @@ var roleSkaven = {
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
 
+    rat.memory.myTargetId = null;
+    rat.memory.activity = 'harvest';
+
     // If we have no energy by a different activity, or if we have some energy but not task.. go get some energy
-    if ((rat.store[RESOURCE_ENERGY] === 0 && rat.memory.activity !== 'harvest') ||
-      (rat.store.getFreeCapacity() !== 0 && rat.memory.activity === '')) {
-      rat.memory.myTargetId = null;
-      rat.memory.activity = 'harvest';
-      rat.say('⛏️Harvest');
-    }
+    // if ((rat.store[RESOURCE_ENERGY] === 0 && rat.memory.activity !== 'harvest') ||
+    //   (rat.store.getFreeCapacity() !== 0 && rat.memory.activity === '')) {
+    //   rat.say('⛏️Harvest');
+    // }
     // If we have energy, go use it...
-    if (rat.store.getFreeCapacity() === 0 ) {
+    if (rat.store.getFreeCapacity() === 0) {
       // @TODO If we don't have enough rats, dont build.. just harvest and store
       if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('build') <= 5) {
         rat.memory.activity = 'build';
