@@ -9,33 +9,38 @@ var roleSkaven = {
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
 
-    rat.memory.myTargetId = null;
-    rat.memory.activity = 'harvest';
 
-    // If we have no energy by a different activity, or if we have some energy but not task.. go get some energy
-    // if ((rat.store[RESOURCE_ENERGY] === 0 && rat.memory.activity !== 'harvest') ||
-    //   (rat.store.getFreeCapacity() !== 0 && rat.memory.activity === '')) {
-    //   rat.say('⛏️Harvest');
-    // }
     // If we have energy, go use it...
     if (rat.store.getFreeCapacity() === 0) {
       // @TODO If we don't have enough rats, dont build.. just harvest and store
       if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('build') <= 5) {
-        rat.memory.activity = 'build';
-        rat.say('🚧Build');
+        if (rat.memory.activity !== 'build') {
+          rat.memory.activity = 'build';
+          rat.say('🚧Build');
+        }
       }
       else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActively('repair') <= 2) {
-        rat.memory.activity = 'repair';
-        rat.say('🔧Repair');
+        if (rat.memory.activity !== 'repair') {
+          rat.say('🔧Repair');
+          rat.memory.activity = 'repair';
+        }
       }
       else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActively('upgrade') <= 4) {
-        rat.memory.activity = 'upgrade';
-        rat.say('🔧Upgrade');
+        if (rat.memory.activity !== 'upgrade') {
+          rat.memory.activity = 'upgrade';
+          rat.say('🔧Upgrade');
+        }
       }
       else {
-        rat.memory.activity = 'store';
-        rat.say('⚡Store');
+        if (rat.memory.activity !== 'store') {
+          rat.memory.activity = 'store';
+          rat.say('⚡Store');
+        }
       }
+    } else {
+      rat.memory.activity = 'harvest';
+      rat.memory.myTargetId = null;
+      rat.say('⛏️Harvest');
     }
     // Okay rat... Do something..
     skavenActions.skitter(rat);
