@@ -44,17 +44,17 @@ var roleSkaven = {
   // Spawn us a rat ~ Standard Skaven worker rat
   summonRat: (energySize, memory) => {
     let ratName = 'Skaven-' + Game.time;
-    let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
     let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
-    // @TODO Change this to summon differently based on ratRole
-    if (energySize >= 350 && energySize < 400) { ratParts.push(CARRY);
-    } else if (energySize >= 400 && energySize < 450) { ratParts.push(WORK);
-    } else if (energySize >= 450 && energySize < 500) { ratParts.push(...[WORK, CARRY]);
-    } else if (energySize >= 500 && energySize < 550) { ratParts.push(...[WORK, CARRY, MOVE]);
-    } else if (energySize >= 550 && energySize < 600) { ratParts.push(...[WORK, CARRY, CARRY, MOVE]);
-    }
+    // Calculate the number of body parts based on energySize
+    let numWork = Math.floor(energySize * 0.5 / BODYPART_COST[WORK]);
+    let numCarry = Math.floor(energySize * 0.25 / BODYPART_COST[CARRY]);
+    let numMove = Math.floor(energySize * 0.25 / BODYPART_COST[MOVE]);
+    // Build the array of body parts based on the calculated numbers
+    let ratParts = [];
+    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
+    for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
+    for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
     Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
-
 }
 module.exports = roleSkaven;
