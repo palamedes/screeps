@@ -20,7 +20,7 @@ let skavenActions = {
   },
 
   numActively: activity => {
-    _.filter(Game.creeps, rat => rat.memory.activity === activity).length;
+    return _.filter(Game.creeps, rat => rat.memory.activity === activity).length;
   }
 
 };
