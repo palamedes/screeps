@@ -4,6 +4,7 @@ const utility = require('utility');
 var roleSkaven = {
 
   skitter: rat => {
+    let skaven = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven');
     let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
     let repairTargets = skavenActions.repair.getRepairTargets(rat);
     let upgradeTarget = rat.room.controller;
@@ -16,17 +17,17 @@ var roleSkaven = {
       rat.say('⛏️Harvest');
     }
     // If we have energy, go use it...
-    if (rat.store.getFreeCapacity() === 0) {
+    if (rat.store.getFreeCapacity() === 0 && skaven.length >= 5) {
       // @TODO If we don't have enough rats, dont build.. just harvest and store
       if (constructionTargets.length > 0) {
         rat.memory.activity = 'build';
         rat.say('🚧Build');
       }
-      else if (repairTargets.length > 0) {
+      else if (repairTargets.length > 0 && skaven.length >= 5) {
         rat.memory.activity = 'repair';
         rat.say('🔧Repair');
       }
-      else if (upgradeTarget) {
+      else if (upgradeTarget && skaven.length >= 8) {
         rat.memory.activity = 'upgrade';
         rat.say('🔧Upgrade');
       }
