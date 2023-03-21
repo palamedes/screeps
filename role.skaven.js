@@ -46,14 +46,18 @@ var roleSkaven = {
     let ratName = 'Skaven-' + Game.time;
     let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
-    let numWork = Math.floor(energySize * 0.5 / BODYPART_COST[WORK]);
+    let numWork  = Math.floor(energySize * 0.50 / BODYPART_COST[WORK]);
     let numCarry = Math.floor(energySize * 0.25 / BODYPART_COST[CARRY]);
-    let numMove = Math.floor(energySize * 0.25 / BODYPART_COST[MOVE]);
+    let numMove  = Math.floor(energySize * 0.25 / BODYPART_COST[MOVE]);
     // Build the array of body parts based on the calculated numbers
+    let costs = 0;
     let ratParts = [];
-    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
-    for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
-    for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
+    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK);  costs += BODYPART_COST[WORK]; }
+    for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); costs += BODYPART_COST[CARRY] }
+    for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE);  costs += BODYPART_COST[MOVE] }
+    // Any amount left over, add toughness
+    let numTough = Math.floor((energySize-costs) / BODYPART_COST[TOUGH]);
+    for (let i = 0; i < numTough; i++) { ratParts.push(TOUGH); }
 
     console.log(ratParts);
 
