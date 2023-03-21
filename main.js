@@ -19,8 +19,13 @@ module.exports.loop = function () {
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
 
   // If we have less than x harvesters, add more
-  if (skaven.length < numSkaven && energyAvailable >= 300) {
-    statusUpdate += ' ~ Spawning new skaven'
+  let extensions = Game.spawns[Object.keys(Game.spawns)[0]].room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
+  let extensionCapacity = _.sum(extensions, (extension) => extension.energyCapacity);
+  let spawnCapacity = Game.spawns[Object.keys(Game.spawns)[0]].energyCapacity;
+  let maxEnergyCapacity = extensionCapacity + spawnCapacity;
+
+  if (skaven.length < 2 || (skaven.length < numSkaven && energyAvailable >= maxEnergyCapacity)) {
+    statusUpdate += ' ~ Spawning new skaven ('+energyAvailable+')';
     roleSkaven.summonRat('skaven', energyAvailable, { roomBound: gameRoomID });
   }
 
