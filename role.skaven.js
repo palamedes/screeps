@@ -50,7 +50,7 @@ var roleSkaven = {
 
   // Spawn us a rat ~ Standard Skaven worker rat
   summonRat: (energySize, memory) => {
-    let ratName = ratRole + Game.time;
+    let ratName = 'Skaven-' + Game.time;
     let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
     let ratBrain = { memory: { role: 'skaven', slept: 0, attempted: 0, ...memory } };
     // @TODO Change this to summon differently based on ratRole
