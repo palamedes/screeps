@@ -24,15 +24,15 @@ let sHarvest = {
     }
 
     var target = Game.getObjectById(rat.memory.myTargetId);
-    if(target && rat.store.getFreeCapacity() === 0) {
+    if(target) {
       if(rat.harvest(target) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'} });
       }
-    } else {
-      rat.say('💤');
+    }
+
+    if (rat.store.getFreeCapacity() === 0) {
       rat.memory.myTargetId = null;
       rat.memory.task = null;
-      rat.memory.slept++;
     }
   },
 }
