@@ -10,15 +10,19 @@ var roleSkaven = {
     let upgradeTarget = rat.room.controller;
     // Determine what we should be doing...
     if (!rat.memory.task) {
+      // If they have no free capacity for energy, then go do some work.
       if (rat.store.getFreeCapacity() === 0) {
-        if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 5) {
+        // Construction comes first... If we have 5 or more rats, and we dont have more than 4 doing the work
+        if (constructionTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('build') <= 4) {
           rat.memory.task = 'build';
           rat.say('🚧Build');
         }
+        // Repair comes second... If we have 5 or more rats, and we have 2 or less doing the work.
         else if (repairTargets.length > 0 && skaven.length >= 5 && skavenActions.numActive('repair') <= 2) {
           rat.say('🔧Repair');
           rat.memory.task = 'repair';
         }
+        // Upgrade comes third... But only if we have 8 or more rats and only 4 at most are doing it.
         else if (upgradeTarget && skaven.length >= 8 && skavenActions.numActive('upgrade') <= 4) {
           rat.memory.task = 'upgrade';
           rat.say('🔧Upgrade');
@@ -41,7 +45,7 @@ var roleSkaven = {
   summonRat: (energySize, memory) => {
     let ratName = 'Skaven-' + Game.time;
     let ratParts = [WORK, CARRY, MOVE, MOVE, MOVE];
-    let ratBrain = { memory: { role: 'skaven', slept: 0, attempted: 0, ...memory } };
+    let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
     // @TODO Change this to summon differently based on ratRole
     if (energySize >= 350 && energySize < 400) { ratParts.push(CARRY);
     } else if (energySize >= 400 && energySize < 450) { ratParts.push(WORK);
