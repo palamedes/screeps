@@ -5,12 +5,10 @@ let sRenew = {
     let closestSpawn = rat.pos.findClosestByPath(FIND_MY_SPAWNS);
     if (closestSpawn) {
       if (rat.pos.isNearTo(closestSpawn)) {
-        console.log(rat.name + 'close to spawn')
         let result = closestSpawn.renewCreep(rat);
         doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
-        console.log(rat.name + 'done renewing' + doneRenewing);
+        console.log('Renewing: '+ rat.name + ' ~ results: ' + result);
       } else {
-        console.log(rat.name + 'moving to spawn')
         rat.moveTo(closestSpawn, {visualizePathStyle: {stroke: '#ffffff'}});
         doneRenewing = false
       }
