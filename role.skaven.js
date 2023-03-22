@@ -14,20 +14,21 @@ var roleSkaven = {
       if (!rat.memory.task) {
         // If they have no free capacity for energy, then go do some work.
         if (rat.store.getFreeCapacity() === 0) {
-          // Construction comes first... If we have 5 or more rats, and we dont have more than 4 doing the work
-          if (constructionTargets.length > 0 && skaven.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.4)) {
+          // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
+          if (constructionTargets.length > 0 && skaven.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.5)) {
             rat.memory.task = 'build';
             rat.memory.slept = 0;
             rat.say('🚧Build');
           }
-          // Repair comes second... If we have 5 or more rats, and we have 2 or less doing the work.
+          // Repair comes second... If we have 50% or more rats, and we have 20% or less repairing
           else if (repairTargets.length > 0 && skaven.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
             rat.memory.task = 'repair';
             rat.memory.slept = 0;
             rat.say('🔧Repair');
           }
-          // Upgrade comes third... But only if we have 80% of max skaven and then only 40% can do the work.. or if we have slept a while
-          else if (upgradeTarget && ((skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.4)) || rat.memory.slept > 8)) {
+          // Upgrade comes third... But only if we have 80% of max skaven and then only 20% can do the work..
+          // or if we have slept a while.. Meaning there is nothing else to do.. go upgrade.
+          else if (upgradeTarget && ((skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.2)) || rat.memory.slept > 8)) {
             rat.memory.task = 'upgrade';
             rat.memory.slept = 0;
             rat.say('🔧Upgrade');
