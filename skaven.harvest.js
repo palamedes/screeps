@@ -17,7 +17,7 @@ let sHarvest = {
         filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY
     });
 
-    if (droppedEnergy) {
+    if (droppedEnergy.length > 0) {
       console.log('dropped energy found!')
     }
 
