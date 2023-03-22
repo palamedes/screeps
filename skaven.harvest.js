@@ -24,13 +24,13 @@ let sHarvest = {
     }
     // Go to that target and harvest it, assuming it has power.
     var target = Game.getObjectById(rat.memory.myTargetId);
-    if (target) {
+    if (target && target.energy > 0) {
       if(rat.harvest(target) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'} });
       }
     }
     // If the rat is full, or the target is empty.. unass
-    if (rat.store.getFreeCapacity() === 0 || target.store[RESOURCE_ENERGY] === 0) {
+    if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
       rat.memory.myTargetId = null;
       rat.memory.task = null;
     }
