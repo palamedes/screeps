@@ -49,6 +49,9 @@ var roleSkaven = {
     let numWork  = Math.floor(energySize * 0.50 / 100);
     let numCarry = Math.floor(energySize * 0.25 / 50);
     let numMove  = Math.floor(energySize * 0.25 / 50);
+
+    console.log(numWork);
+
     // Build the array of body parts based on the calculated numbers
     let costs = 0;
     let ratParts = [];
