@@ -43,15 +43,12 @@ var roleSkaven = {
 
   // Spawn us a rat ~ Standard Skaven worker rat
   summonRat: (energySize, memory) => {
-    console.log(energySize);
     let ratName = 'Skaven-' + Game.time;
     let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
     let numWork  = Math.floor(energySize * 0.50 / 100);
     let numCarry = Math.floor(energySize * 0.25 / 50);
     let numMove  = Math.floor(energySize * 0.25 / 50);
-
-    console.log(numWork);
 
     // Build the array of body parts based on the calculated numbers
     let costs = 0;
@@ -63,6 +60,7 @@ var roleSkaven = {
     let numTough = Math.floor((energySize-costs) / 10);
     for (let i = 0; i < numTough; i++) { ratParts.push(TOUGH); }
 
+    console.log(ratParts);
     // Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
 }
