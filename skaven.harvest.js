@@ -3,7 +3,9 @@ let sHarvest = {
   using: rat => {
 
     // let roomBounds = Game.rooms[creep.room.name].getBounds();
-    let harvestTargets = rat.room.find(FIND_SOURCES);
+    let harvestTargets = rat.room.find(FIND_SOURCES, {
+      filter: (source) => source.energy > 0
+    });
 
     // var ruins = creep.room.find(FIND_RUINS, {
     //     filter: (ruin) => ruin.store.getUsedCapacity(RESOURCE_ENERGY) > 0
