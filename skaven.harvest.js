@@ -14,8 +14,12 @@ let sHarvest = {
     //     filter: (tombstone) => tombstone.store.getUsedCapacity(RESOURCE_ENERGY) > 0
     // });
     let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
-        filter: (dropped) => dropped.resourceType == RESOURCE_ENERGY
+        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY
     });
+
+    if (droppedEnergy) {
+      console.log('dropped energy found!')
+    }
 
     if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
       rat.memory.myTargetId = droppedEnergy.id
