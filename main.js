@@ -30,7 +30,7 @@ module.exports.loop = function () {
     roleSkaven.summonSkaven(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
   // Spawn a rat ogre
-  if (ogres < Memory.maxOgres && skaven.length === Memory.maxSkaven) {
+  if (ogres < Memory.maxOgres && skaven.length === Memory.maxSkaven && energyAvailable >= maxEnergyCapacity) {
     statusUpdate += ' ~ Spawning new Rat Ogre ('+energyAvailable+')';
     roleSkaven.summonRatOgre(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
