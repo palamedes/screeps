@@ -19,7 +19,8 @@ let sHarvest = {
 
     if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
       let firstDrop = droppedEnergy[0];
-      console.log('assigning dropped energy');
+      console.log('assigning dropped energy' + droppedEnergy.length);
+      console.log(firstDrop);
       let x = firstDrop.pos.x;
       let y = firstDrop.pos.y;
       let roomName = firstDrop.pos.roomName;
