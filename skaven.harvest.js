@@ -22,6 +22,7 @@ let sHarvest = {
     }
 
     if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
+      console.log('assigning dropped energy');
       rat.memory.myTargetId = droppedEnergy.id
     }
 
