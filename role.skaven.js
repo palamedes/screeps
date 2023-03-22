@@ -48,9 +48,9 @@ var roleSkaven = {
     // Calculate the number of body parts based on energySize
     let numWork  = Math.floor(energy * 0.50 / 100);
     energy = energy - numWork * 100;
-    let numCarry = Math.floor(energy * 0.25 / 50);
+    let numCarry = Math.floor(energy * 0.50 / 50);
     energy = energy - numCarry * 50;
-    let numMove  = Math.floor(energy * 0.25 / 50);
+    let numMove  = Math.floor(energy * 0.50 / 50);
     energy = energy - numMove * 50;
 
     // Build the array of body parts based on the calculated numbers
