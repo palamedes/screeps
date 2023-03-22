@@ -14,7 +14,10 @@ module.exports.loop = function () {
   let ogres = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
 
   // Log Output
-  let statusUpdate = energyAvailableComment + ' ~ Skaven: ' + skaven.length;
+  let statusUpdate = energyAvailableComment + ' ~ Slaves: ' + skaven.length;
+  if (ogres.length > 0) {
+    statusUpdate += ', Ogres: ' + orgres.length;
+  }
 
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
