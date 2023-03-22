@@ -44,12 +44,12 @@ var roleSkaven = {
 
   // Spawn us a rat ~ Standard Skaven worker rat
   summonSkaven: (energy, memory) => {
-    if (energy >= 300) { skavenActions.summonSkaven(energy, memory); }
+    if (energy >= 300) { skavenActions.summonSkaven(energy, memory); return ' ~ Spawning new Skaven ('+energy+')' } else { return ''; }
   },
 
   // Spawn us a rat ~ Standard Skaven worker rat
   summonRatOgre: (energy, memory) => {
-    if (energy >= 600) { skavenActions.summonRatOgre(energy, memory); }
+    if (energy >= 600) { skavenActions.summonRatOgre(energy, memory); return ' ~ Spawning new Rat Ogre ('+energy+')'; } else { return ''; }
   },
 
 
