@@ -24,7 +24,7 @@ let sHarvest = {
     }
     // Go to that target and harvest it, assuming it has power.
     var target = Game.getObjectById(rat.memory.myTargetId);
-    if (target && target.store[RESOURCE_ENERGY] > 0) {
+    if (target) {
       if(rat.harvest(target) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'} });
       }
