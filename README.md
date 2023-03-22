@@ -9,3 +9,24 @@ No one will stand-stand against us, for we are the Skaven! Our armies will swarm
 ### In all seriousness
 
 This is a place for me to learn how to play screeps and I thought it would be amusing to do so as my favorite Warhammer Fantasy race; The Skaven.  Know-fear us!
+
+
+#### TODO
+- Get dynamic creation of extensions working via createConstructionSite
+- Get renewCreep working
+- Put pathfinding in the rats head to lessen the demand on the cpu
+- Make Max Slaves dynamic based on max power and the possible body part size?
+- Remove name of spawn entirely from system
+- Rat should know where it spawned and always know how to get back to it
+- Figure out how to harvest from gravestones and dropped energy (it's not working for me for some reason)
+- Turn on RoomBinding for rats so they stay in the room they are assigned to
+- Make the system allow for multiple rooms and spawn points (right now it's one room only)
+- Create a better path finding system that considers roads
+- Change system to know "skaven" as "slaves".  role.skaven should just be skaven. 
+  - slaves = workers/builders/harvesters/repair
+  - rat ogres = beefcake physical damage, slow brutes hardy
+  - gutter runners = super fast ninja with some ranged
+  - jezzail = high dps ranged
+- Figure out how to be smart about ranging into other rooms
+- If a rat gets done with a task and has more than 50% power, go store it first.
+  - this means I need to refactor the sleep/think/reset code somewhere..
