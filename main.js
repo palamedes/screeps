@@ -15,7 +15,7 @@ module.exports.loop = function () {
 
   // Log Output
   let statusUpdate = energyAvailableComment + ' ~ Slaves: ' + skaven.length;
-  if (ogres.length > 0) { statusUpdate += ', Ogres: ' + orgres.length; }
+  if (ogres.length > 0) { statusUpdate += ', Ogres: ' + ogres.length; }
 
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
