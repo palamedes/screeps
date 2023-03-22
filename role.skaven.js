@@ -52,14 +52,12 @@ var roleSkaven = {
     // Build the array of body parts based on the calculated numbers
     let costs = 0;
     let ratParts = [];
-    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK);  costs += BODYPART_COST[WORK]; }
+    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK);  costs += BODYPART_COST[WORK]; console.log('WORK')}
     for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); costs += BODYPART_COST[CARRY] }
     for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE);  costs += BODYPART_COST[MOVE] }
     // Any amount left over, add toughness
     let numTough = Math.floor((energySize-costs) / BODYPART_COST[TOUGH]);
     for (let i = 0; i < numTough; i++) { ratParts.push(TOUGH); }
-
-    console.log(ratParts);
 
     // Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
   },
