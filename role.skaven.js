@@ -50,7 +50,7 @@ var roleSkaven = {
     energy = energy - numWork * 100;
     let numCarry = Math.floor(energy * 0.50 / 50);
     energy = energy - numCarry * 50;
-    let numMove  = Math.floor(energy * 0.50 / 50);
+    let numMove  = Math.floor(energy / 50);
     energy = energy - numMove * 50;
 
     // Build the array of body parts based on the calculated numbers
