@@ -10,11 +10,11 @@ module.exports.loop = function () {
   let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
   let energyAvailable = room.energyAvailable;
   let energyAvailableComment = 'Room "'+Game.spawns[Object.keys(Game.spawns)[0]].room.name+'" has ' + room.energyAvailable + ' energy';
-  let skaven = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven');
+  let slave  = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven' || rat.memory.role === 'slave');
   let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
 
   // Log Output
-  let statusUpdate = energyAvailableComment + ' ~ Slaves: ' + skaven.length;
+  let statusUpdate = energyAvailableComment + ' ~ Slaves: ' + slave.length;
   if (ogres.length > 0) { statusUpdate += ', Ogres: ' + ogres.length; }
 
   // Delete memory of old dead creeps
@@ -26,11 +26,11 @@ module.exports.loop = function () {
   let spawnCapacity = Game.spawns[Object.keys(Game.spawns)[0]].energyCapacity;
   let maxEnergyCapacity = extensionCapacity + spawnCapacity;
   // Spawn a skaven slave
-  if ((skaven.length < 2 || (skaven.length < Memory.maxSkaven && energyAvailable >= maxEnergyCapacity)) && energyAvailable >= 200) {
+  if ((slave.length < 2 || (slave.length < Memory.maxSkaven && energyAvailable >= maxEnergyCapacity)) && energyAvailable >= 200) {
     statusUpdate += roleSkaven.summonSkaven(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
   // Spawn a rat ogre
-  if (ogres < Memory.maxOgres && skaven.length === Memory.maxSkaven && energyAvailable >= maxEnergyCapacity) {
+  if (ogres < Memory.maxOgres && ogres.length === Memory.maxOgres && energyAvailable >= maxEnergyCapacity) {
     statusUpdate += roleSkaven.summonRatOgre(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
   // Work the rats
