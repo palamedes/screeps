@@ -46,5 +46,12 @@ var roleSkaven = {
   summonSkaven: (energy, memory) => {
     if (energy >= 300) { skavenActions.summonSkaven(energy, memory); }
   },
+
+  // Spawn us a rat ~ Standard Skaven worker rat
+  summonRatOgre: (energy, memory) => {
+    if (energy >= 600) { skavenActions.summonRatOgre(energy, memory); }
+  },
+
+
 }
 module.exports = roleSkaven;

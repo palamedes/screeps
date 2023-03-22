@@ -24,10 +24,9 @@ let skavenActions = {
     return _.filter(Game.creeps, rat => rat.memory.task === task).length;
   },
 
-  // Spawn us a rat ~ Standard Skaven worker rat
+  // Spawn us a skaven slave
   summonSkaven: (energy, memory) => {
-    if (energy < 200) { return false; }
-    let ratName = 'Skaven-' + Game.time;
+    let ratName = 'Slave-' + Game.time;
     let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
     let numWork  = Math.floor(energy * 0.50 / 100); // 50% of the energy to work
@@ -45,7 +44,27 @@ let skavenActions = {
     for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
 
-    Game.spawns["Toiletduck's Nest"].spawnCreep(ratParts, ratName, ratBrain);
+    Game.spawns[Object.keys(Game.spawns)[0]].spawnCreep(ratParts, ratName, ratBrain);
+  },
+
+  // Spawn us a rat ogre
+  summonOgre: (energy, memory) => {
+    let ratName = 'RatOgre-' + Game.time;
+    let ratBrain = { memory: { role: 'ogre', task: null, slept: 0, attempted: 0, ...memory } };
+    // Calculate the number of body parts based on energySize
+    let numAttack  = Math.floor(energy * 0.60 / 80); // 60% of the energy to attack
+    energy = energy - numAttack * 80;
+    let numMove  = Math.floor(energy * 0.70 / 50); // 70% remaining to move
+    energy = energy - numMove * 50;
+    let numTough = Math.floor(energy / 10); // Any amount left over, add toughness
+
+    // Build the array of body parts based on the calculated numbers
+    let ratParts = [];
+    for (let i = 0; i < numAttack; i++)   { ratParts.push(ATTACK); }
+    for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
+    for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
+
+    Game.spawns[Object.keys(Game.spawns)[0]].spawnCreep(ratParts, ratName, ratBrain);
   },
 
 };
