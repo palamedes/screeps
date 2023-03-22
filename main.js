@@ -6,6 +6,8 @@ module.exports.loop = function () {
   Memory.maxSkaven = 10;
   Memory.maxOgres = 0;
 
+  // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
+
   // Get our data
   let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
   let energyAvailable = room.energyAvailable;

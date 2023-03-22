@@ -10,10 +10,15 @@ var roleSkaven = {
       let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
       let repairTargets = skavenActions.repair.getRepairTargets(rat);
       let upgradeTarget = rat.room.controller;
-      // Determine what we should be doing...
+      // If our ticks to live is down to 200, stop what you're doing and go solve that.
+      if (rat.ticksToLive <= 200) {
+        rat.memory.task = 'renew';
+        rat.say('⌛');
+      }
+      // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
-        // If they have no free capacity for energy, then go do some work.
-        if (rat.store.getFreeCapacity() === 0) {
+        // If rat has less than 20% free capacity (80% full) then go do some work.
+        if (rat.store.getFreeCapacity() / rat.store.getCapacity() < 0.2) {
           // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
           if (constructionTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.5)) {
             rat.memory.task = 'build';
@@ -38,12 +43,12 @@ var roleSkaven = {
             // rat.memory.slept = 0; // NO.  This is a fail through task, don't reset sleep.
             rat.say('🔋');
           }
-          //🪫
+          //
         } else {
           rat.memory.task = 'harvest';
           rat.memory.myTargetId = null;
           rat.memory.slept = 0;
-          rat.say('⚡');
+          rat.say('🪫');
         }
       }
       // Okay rat... Do something..
