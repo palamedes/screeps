@@ -38,7 +38,6 @@ var roleSkaven = {
           }
           else {
             rat.memory.task = 'store';
-            rat.memory.slept = 0;
             rat.say('🔋');
             console.log('store');
           }
