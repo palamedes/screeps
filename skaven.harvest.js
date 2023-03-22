@@ -18,22 +18,7 @@ let sHarvest = {
     });
 
     if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
-      let firstDrop = droppedEnergy[0];
-      console.log('assigning dropped energy' + droppedEnergy.length);
-      console.log(firstDrop);
-      let x = firstDrop.pos.x;
-      let y = firstDrop.pos.y;
-      let roomName = firstDrop.pos.roomName;
-
-      new RoomVisual(roomName).circle(x, y, {
-        radius: 0.5,
-        fill: 'rgba(255, 255, 0, 0.3)',
-        stroke: 'yellow',
-        strokeWidth: 0.15
-      });
-
-      // THIS FIRES but it then just goes on to harvest, is a regular energy source considered a dropped energy source?
-      rat.memory.myTargetId = droppedEnergy.id
+      rat.memory.myTargetId = droppedEnergy[0].id;
     }
 
     // If the rat doesn't know where to go.. Find it.
