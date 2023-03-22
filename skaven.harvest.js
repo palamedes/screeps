@@ -13,9 +13,13 @@ let sHarvest = {
     // var tombstones = rat.room.find(FIND_TOMBSTONES, {
     //     filter: (tombstone) => tombstone.store.getUsedCapacity(RESOURCE_ENERGY) > 0
     // });
-    // var droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
-    //     filter: (dropped) => dropped.resourceType == RESOURCE_ENERGY
-    // });
+    let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
+        filter: (dropped) => dropped.resourceType == RESOURCE_ENERGY
+    });
+
+    if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
+      rat.memory.myTargetId = droppedEnergy.id
+    }
 
     // If the rat doesn't know where to go.. Find it.
     if(!rat.memory.myTargetId) {
