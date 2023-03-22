@@ -4,7 +4,7 @@ let utility = require('utility');
 module.exports.loop = function () {
 
   Memory.maxSkaven = 10;
-  Memory.maxOgres = 1;
+  Memory.maxOgres = 0;
 
   // Get our data
   let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
