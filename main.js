@@ -26,7 +26,7 @@ module.exports.loop = function () {
 
   if (skaven.length < 2 || (skaven.length < numSkaven && energyAvailable >= maxEnergyCapacity)) {
     statusUpdate += ' ~ Spawning new skaven ('+energyAvailable+')';
-    roleSkaven.summonRat('skaven', energyAvailable, { roomBound: gameRoomID });
+    roleSkaven.summonRat(energyAvailable, { roomBound: gameRoomID });
   }
 
   // Work the creeps
