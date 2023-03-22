@@ -3,13 +3,12 @@ const roleSkaven = require('role.skaven');
 let utility = require('utility');
 module.exports.loop = function () {
 
-  let gameRoomID = 'W24S37';
   Memory.maxSkaven = 10;
 
   // Get our data
-  let room = Game.rooms[gameRoomID];
-  let energyAvailable = Game.rooms[gameRoomID].energyAvailable;
-  let energyAvailableComment = 'Room "'+gameRoomID+'" has ' + room.energyAvailable + ' energy';
+  let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
+  let energyAvailable = room.energyAvailable;
+  let energyAvailableComment = 'Room "'+Game.spawns[Object.keys(Game.spawns)[0]].room.name+'" has ' + room.energyAvailable + ' energy';
   let skaven = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven');
 
   // Log Output
@@ -26,7 +25,7 @@ module.exports.loop = function () {
 
   if ((skaven.length < 2 || (skaven.length < Memory.maxSkaven && energyAvailable >= maxEnergyCapacity)) && energyAvailable >= 200) {
     statusUpdate += ' ~ Spawning new skaven ('+energyAvailable+')';
-    roleSkaven.summonRat(energyAvailable, { roomBound: gameRoomID });
+    roleSkaven.summonRat(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
 
   // Work the creeps
