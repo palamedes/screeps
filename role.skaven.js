@@ -19,12 +19,14 @@ var roleSkaven = {
             rat.memory.task = 'build';
             rat.memory.slept = 0;
             rat.say('🚧');
+            console.log('build');
           }
           // Repair comes second... If we have 50% or more rats, and we have 20% or less repairing
           else if (repairTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
             rat.memory.task = 'repair';
             rat.memory.slept = 0;
             rat.say('🛠️');
+            console.log('repair');
           }
           // Upgrade comes third... But only if we have 80% of max slaves and then only 20% can do the work..
           // or if we have slept a while.. Meaning there is nothing else to do.. go upgrade.
@@ -32,11 +34,13 @@ var roleSkaven = {
             rat.memory.task = 'upgrade';
             rat.memory.slept = 0;
             rat.say('🔧');
+            console.log('upgrade');
           }
           else {
             rat.memory.task = 'store';
             rat.memory.slept = 0;
             rat.say('🔋');
+            console.log('store');
           }
           //🪫
         } else {
