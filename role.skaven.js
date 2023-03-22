@@ -43,6 +43,7 @@ var roleSkaven = {
 
   // Spawn us a rat ~ Standard Skaven worker rat
   summonRat: (energy, memory) => {
+    if (energy < 200) { return false; }
     let ratName = 'Skaven-' + Game.time;
     let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
