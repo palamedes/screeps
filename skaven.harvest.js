@@ -18,7 +18,8 @@ let sHarvest = {
     });
 
     if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
-      rat.memory.myTargetId = droppedEnergy[0].id;
+      // This causes rat to freeze.. it's like doesn't know how to move to it..
+      // rat.memory.myTargetId = droppedEnergy[0].id;
     }
 
     // If the rat doesn't know where to go.. Find it.
