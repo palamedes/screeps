@@ -17,25 +17,30 @@ var roleSkaven = {
           // Construction comes first... If we have 5 or more rats, and we dont have more than 4 doing the work
           if (constructionTargets.length > 0 && skaven.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.4)) {
             rat.memory.task = 'build';
+            rat.memory.slept = 0;
             rat.say('🚧Build');
           }
           // Repair comes second... If we have 5 or more rats, and we have 2 or less doing the work.
           else if (repairTargets.length > 0 && skaven.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
             rat.memory.task = 'repair';
+            rat.memory.slept = 0;
             rat.say('🔧Repair');
           }
           // Upgrade comes third... But only if we have 80% of max skaven and then only 40% can do the work.. or if we have slept a while
-          else if (upgradeTarget && (skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.4)) || rat.memory.slept > 30) {
+          else if (upgradeTarget && (skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.4)) || rat.memory.slept > 8) {
             rat.memory.task = 'upgrade';
+            rat.memory.slept = 0;
             rat.say('🔧Upgrade');
           }
           else {
             rat.memory.task = 'store';
+            rat.memory.slept = 0;
             rat.say('⚡Store');
           }
         } else {
           rat.memory.task = 'harvest';
           rat.memory.myTargetId = null;
+          rat.memory.slept = 0;
           rat.say('⛏️Harvest');
         }
       }
