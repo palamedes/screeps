@@ -24,8 +24,8 @@ var roleSkaven = {
             rat.memory.task = 'repair';
             rat.say('🔧Repair');
           }
-          // Upgrade comes third... But only if we have 80% of max skaven and then only 40% can do the work
-          else if (upgradeTarget && skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.4)) {
+          // Upgrade comes third... But only if we have 80% of max skaven and then only 40% can do the work.. or if we have slept a while
+          else if (upgradeTarget && (skaven.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.4)) || rat.memory.slept > 30) {
             rat.memory.task = 'upgrade';
             rat.say('🔧Upgrade');
           }
