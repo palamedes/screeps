@@ -48,7 +48,7 @@ var roleSkaven = {
           rat.memory.task = 'harvest';
           rat.memory.myTargetId = null;
           rat.memory.slept = 0;
-          rat.say('🪫');
+          rat.say('⚡');
         }
       }
       // Okay rat... Do something..
