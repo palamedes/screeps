@@ -48,7 +48,7 @@ let skavenActions = {
   },
 
   // Spawn us a rat ogre
-  summonOgre: (energy, memory) => {
+  summonRatOgre: (energy, memory) => {
     let ratName = 'RatOgre-' + Game.time;
     let ratBrain = { memory: { role: 'ogre', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
