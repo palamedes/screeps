@@ -1,3 +1,7 @@
+/** Skaven Actions
+ * These are all the possible actions any Skaven can do so that we can access it from a single "brain" file.
+ */
+
 const sHarvest  = require('skaven.harvest');
 const sBuild    = require('skaven.build');
 const sStore    = require('skaven.store');
@@ -25,9 +29,9 @@ let skavenActions = {
   },
 
   // Spawn us a skaven slave
-  summonSkaven: (energy, memory) => {
+  summonSkavenSlave: (energy, memory) => {
     let ratName = 'Slave-' + Game.time;
-    let ratBrain = { memory: { role: 'skaven', task: null, slept: 0, attempted: 0, ...memory } };
+    let ratBrain = { memory: { role: 'slave', task: null, slept: 0, attempted: 0, ...memory } };
     // Calculate the number of body parts based on energySize
     let numWork  = Math.floor(energy * 0.50 / 100); // 50% of the energy to work
     energy = energy - numWork * 100;
