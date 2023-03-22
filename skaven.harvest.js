@@ -17,10 +17,10 @@ let sHarvest = {
       filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
     });
 
-    if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
+    // if (!rat.memory.myTargetId && droppedEnergy.length > 0) {
       // This causes rat to freeze.. it's like doesn't know how to move to it..
       // rat.memory.myTargetId = droppedEnergy[0].id;
-    }
+    // }
 
     // If the rat doesn't know where to go.. Find it.
     if(!rat.memory.myTargetId) {
