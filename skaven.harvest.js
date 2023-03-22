@@ -15,22 +15,22 @@ let sHarvest = {
     //     filter: (dropped) => dropped.resourceType == RESOURCE_ENERGY
     // });
 
-    // If the creep doesn't know where to go..
+    // If the rat doesn't know where to go.. Find it.
     if(!rat.memory.myTargetId) {
       var closestTarget = rat.pos.findClosestByRange(harvestTargets);
       if(closestTarget) {
         rat.memory.myTargetId = closestTarget.id;
       }
     }
-
+    // Go to that target and harvest it, assuming it has power.
     var target = Game.getObjectById(rat.memory.myTargetId);
-    if(target) {
+    if (target && target.store[RESOURCE_ENERGY] > 0) {
       if(rat.harvest(target) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'} });
       }
     }
-
-    if (rat.store.getFreeCapacity() === 0) {
+    // If the rat is full, or the target is empty.. unass
+    if (rat.store.getFreeCapacity() === 0 || target.store[RESOURCE_ENERGY] === 0) {
       rat.memory.myTargetId = null;
       rat.memory.task = null;
     }
