@@ -19,7 +19,7 @@ let sStore = {
         rat.moveTo(target, {visualizePathStyle: {stroke: '#aaffff'}});
       }
     } else {
-      rat.say('💤');
+      rat.say(rat.memory.slept > 2 ? '💤' : '💡');
       rat.memory.myTargetId = null;
       rat.memory.task = null;
       rat.memory.slept++;
