@@ -12,6 +12,22 @@ let sBuild = {
       rat.memory.task = null;
       rat.memory.slept++;
     }
-  }
+  },
+
+
+  // // Find us a construction target
+  // if (constructionTargets && constructionTargets.length === 0 && (Memory.tickCount % 50) === 0 && !Memory.mostVisitedTile) {
+  //   Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
+  //   let needsRoad = true;
+  //   let structures = rat.room.lookForAt(LOOK_STRUCTURES, parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y));
+  //   for (let i = 0; i < structures.length; i++) { if (structures[i].structureType === STRUCTURE_ROAD) { needsRoad = false; break; }}
+  //   if (needsRoad) {
+  //     rat.room.createConstructionSite(parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y), STRUCTURE_ROAD);
+  //   }
+  //   Memory.tileVisits[parseInt(Memory.mostVisitedTile.x)][parseInt(Memory.mostVisitedTile.y)] = 0;
+  //   Memory.mostVisitedTile = null;
+  // }
+
+
 }
 module.exports = sBuild;
