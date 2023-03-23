@@ -3,7 +3,8 @@ const roleSkaven = require('role.skaven');
 let utility = require('utility');
 module.exports.loop = function () {
 
-  Memory.tickCount = Memory.tickCount++ || 0;
+  if (!Memory.tickCount) { Memory.tickCount = 0; }
+  Memory.tickCount++;
   Memory.maxSkaven = 8;
   Memory.maxOgres = 0;
 
