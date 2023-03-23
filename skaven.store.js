@@ -1,6 +1,7 @@
 let sStore = {
   // Go store the energy
   using: rat => {
+    console.log(rat.name+' trying to store');
     var targets = rat.room.find(FIND_STRUCTURES, {
       filter: (structure) => {
         return (structure.structureType === STRUCTURE_EXTENSION ||
