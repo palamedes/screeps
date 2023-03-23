@@ -12,8 +12,16 @@ var roleSkaven = {
       let repairTargets = Memory.tickCount % 10 ? skavenActions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
 
+      // Find us a construction target
       if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 10 && !Memory.mostVisitedTile) {
         Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
+        let needsRoad = true;
+        let structures = rat.room.lookForAt(LOOK_STRUCTURES, Memory.mostVisitedTile.x, Memory.mostVisitedTile.y);
+        for (let i = 0; i < structures.length; i++) { if (structures[i].structureType === STRUCTURE_ROAD) { needsRoad = false; break; } }
+        if (needsRoad) {
+          console.log('create road!');
+          rat.room.createConstructionSite(Memory.mostVisitedTile.x, Memory.mostVisitedTile.y, STRUCTURE_ROAD);
+        }
       }
 
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
