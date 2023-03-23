@@ -12,18 +12,27 @@ let sHarvest = {
 
     // If the rat doesn't know where to go.. Find it.
     if (!rat.memory.myTargetId) {
-      // Get a list of all possible targets
-      let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
-        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
+      // if we have a high volume emergency pickup, lets go get it
+      let emergencyPickup = rat.room.find(FIND_DROPPED_RESOURCES, {
+        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 300
       });
-      let harvestEnergy = rat.room.find(FIND_SOURCES, {
-        filter: (source) => source.energy > 0
-      });
-      let possibleTargets = [...droppedEnergy, ...harvestEnergy]
-      // Find the closest one
-      let closestTarget = rat.pos.findClosestByRange(possibleTargets);
-      if (closestTarget) {
-        rat.memory.myTargetId = closestTarget.id;
+      if (emergencyPickup.length > 0) {
+        let closestEmergency = rat.pos.findClosestByRange(possibleTargets);
+        rat.memory.myTargetId = closestEmergency.id
+      } else {
+        // Get a list of all possible targets
+        let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
+          filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
+        });
+        let harvestEnergy = rat.room.find(FIND_SOURCES, {
+          filter: (source) => source.energy > 0
+        });
+        let possibleTargets = [...droppedEnergy, ...harvestEnergy]
+        // Find the closest one
+        let closestTarget = rat.pos.findClosestByRange(possibleTargets);
+        if (closestTarget) {
+          rat.memory.myTargetId = closestTarget.id;
+        }
       }
     }
     // Go to that target and harvest it, assuming it has power.
