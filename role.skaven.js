@@ -13,11 +13,11 @@ var roleSkaven = {
       let upgradeTarget = rat.room.controller;
 
       // Find us a construction target
-      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 3) {
+      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 5 && !Memory.mostVisitedTile) {
         Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
         console.log('testing for road at '+ Memory.mostVisitedTile.x +","+ Memory.mostVisitedTile.y);
         let needsRoad = true;
-        let structures = rat.room.lookForAt(LOOK_STRUCTURES, Memory.mostVisitedTile.x, Memory.mostVisitedTile.y);
+        let structures = rat.room.lookForAt(LOOK_STRUCTURES, parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y));
         console.log('structures length ' + structures.length);
         for (let i = 0; i < structures.length; i++) {
           if (structures[i].structureType === STRUCTURE_ROAD) { needsRoad = false; break; }
