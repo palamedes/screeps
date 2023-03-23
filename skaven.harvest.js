@@ -48,6 +48,9 @@ let sHarvest = {
         rat.memory.myTargetId = null;
         rat.memory.task = null;
       }
+    } else {
+      rat.memory.myTargetId = null;
+      rat.memory.task = null;
     }
   },
 }
