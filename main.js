@@ -5,7 +5,7 @@ module.exports.loop = function () {
 
   Memory.tickCount = Memory.tickCount || 0; Memory.tickCount++;
 
-  Memory.maxSkaven = 8;
+  Memory.maxSlaves = 8;
   Memory.maxOgres = 0;
 
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
@@ -30,7 +30,7 @@ module.exports.loop = function () {
   let spawnCapacity = Game.spawns[Object.keys(Game.spawns)[0]].energyCapacity;
   let maxEnergyCapacity = extensionCapacity + spawnCapacity;
   // Spawn a skaven slave
-  if ((slave.length < 2 || (slave.length < Memory.maxSkaven && energyAvailable >= maxEnergyCapacity)) && energyAvailable >= 200) {
+  if ((slave.length < 2 || (slave.length < Memory.maxSlaves && energyAvailable >= maxEnergyCapacity)) && energyAvailable >= 200) {
     statusUpdate += roleSkaven.summonSkaven(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
   // Spawn a rat ogre

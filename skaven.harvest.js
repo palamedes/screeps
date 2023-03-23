@@ -1,13 +1,6 @@
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    // var ruins = creep.room.find(FIND_RUINS, {
-    //     filter: (ruin) => ruin.store.getUsedCapacity(RESOURCE_ENERGY) > 0
-    // });
-    // var tombstones = rat.room.find(FIND_TOMBSTONES, {
-    //     filter: (tombstone) => tombstone.store.getUsedCapacity(RESOURCE_ENERGY) > 0
-    // });
-
     // let roomBounds = Game.rooms[creep.room.name].getBounds();
 
     // If the rat doesn't know where to go.. Find it.
@@ -21,6 +14,7 @@ let sHarvest = {
                  (target.structureType === STRUCTURE_RUIN && target.store[RESOURCE_ENERGY] > emergencyPickupAmount)
         }
       });
+      // If we have any "emergency pickup" stuff, let's go get that and just act as a hauler
       if (emergencyPickup.length > 0) {
         let closestEmergency = rat.pos.findClosestByRange(emergencyPickup);
         rat.memory.myTargetId = closestEmergency.id

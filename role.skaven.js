@@ -6,7 +6,7 @@ var roleSkaven = {
   skitter: rat => {
     if (rat.memory.role === 'slave') {
       skavenActions.trackTileVisits(rat);
-      let maxSkaven = Memory.maxSkaven;
+      let maxSlaves = Memory.maxSlaves;
       let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       let constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
       let repairTargets = Memory.tickCount % 10 ? skavenActions.repair.getRepairTargets(rat) : null;
@@ -35,20 +35,20 @@ var roleSkaven = {
         // If rat has less than 20% free capacity (80% full) then go do some work.
         if (rat.store.getFreeCapacity() / rat.store.getCapacity() < 0.2) {
           // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
-          if (constructionTargets && constructionTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.5)) {
+          if (constructionTargets && constructionTargets.length > 0 && slave.length >= (maxSlaves/2) && skavenActions.numActive('build') <= (maxSlaves*0.5)) {
             rat.memory.task = 'build';
             rat.memory.slept = 0;
             rat.say('🚧');
           }
           // Repair comes second... If we have 50% or more rats, and we have 20% or less repairing
-          else if (repairTargets && repairTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
+          else if (repairTargets && repairTargets.length > 0 && slave.length >= (maxSlaves/2) && skavenActions.numActive('repair') <= (maxSlaves*0.2)) {
             rat.memory.task = 'repair';
             rat.memory.slept = 0;
             rat.say('🔧');
           }
           // Upgrade comes third... But only if we have 80% of max slaves and then only 20% can do the work..
           // or if we have slept a while.. Meaning there is nothing else to do.. go upgrade.
-          else if (upgradeTarget && ((slave.length >= (maxSkaven*0.8) && skavenActions.numActive('upgrade') <= (maxSkaven*0.2)) || rat.memory.slept > 5)) {
+          else if (upgradeTarget && ((slave.length >= (maxSlaves*0.8) && skavenActions.numActive('upgrade') <= (maxSlaves*0.2)) || rat.memory.slept > 5)) {
             rat.memory.task = 'upgrade';
             rat.memory.slept = 0;
             rat.say('🛠️');

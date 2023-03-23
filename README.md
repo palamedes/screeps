@@ -12,9 +12,10 @@ This is a place for me to learn how to play screeps and I thought it would be am
 
 ### Features
 - Dynamic creep creation based on power levels
-- Creeps know how to Harvest, Store, Upgrade, Repair and Renew
+- Slaves are Creeps that know how to Harvest, Store, Upgrade, Repair and Renew
 
 #### TODO
+- Add ability to "specialize" skaven to only do certain things and build them as such
 - Get dynamic creation of extensions working via createConstructionSite
 - Put pathfinding in the rats head to lessen the demand on the cpu
 - Make Max Slaves dynamic based on max power and the possible body part size?
