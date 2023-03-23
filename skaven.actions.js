@@ -74,6 +74,21 @@ let skavenActions = {
     if (!Memory.tileVisits[rat.pos.x]) { Memory.tileVisits[rat.pos.x] = {}; }
     if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
     Memory.tileVisits[rat.pos.x][rat.pos.y]++;
+  },
+  // Get the most visited tile
+  getMostVisitedTile: () => {
+    let mostVisited = {x: null, y: null, count: 0};
+    for (let x in Memory.tileVisits) {
+      for (let y in Memory.tileVisits[x]) {
+        let count = Memory.tileVisits[x][y];
+        if (count > mostVisited.count) {
+          mostVisited.x = x;
+          mostVisited.y = y;
+          mostVisited.count = count;
+        }
+      }
+    }
+    return mostVisited;
   }
 };
 
