@@ -14,8 +14,6 @@ let sStore = {
       rat.memory.task = null;
     }
     if(targets.length > 0) {
-      console.log(rat.name+' trying to store!');
-
       var target = rat.pos.findClosestByRange(targets);
       if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         rat.moveTo(target, {visualizePathStyle: {stroke: '#aaffff'}});

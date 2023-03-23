@@ -3,7 +3,7 @@ const roleSkaven = require('role.skaven');
 let utility = require('utility');
 module.exports.loop = function () {
 
-  Memory.maxSkaven = 10;
+  Memory.maxSkaven = 8;
   Memory.maxOgres = 0;
 
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
