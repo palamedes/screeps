@@ -17,7 +17,7 @@ let sHarvest = {
         filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 300
       });
       if (emergencyPickup.length > 0) {
-        let closestEmergency = rat.pos.findClosestByRange(possibleTargets);
+        let closestEmergency = rat.pos.findClosestByRange(emergencyPickup);
         rat.memory.myTargetId = closestEmergency.id
       } else {
         // Get a list of all possible targets
