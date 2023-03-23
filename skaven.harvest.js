@@ -17,8 +17,8 @@ let sHarvest = {
       let emergencyPickup = rat.room.find([FIND_DROPPED_RESOURCES, FIND_RUINS, FIND_TOMBSTONES], {
         filter: (dropped) => {
           return (target.resourceType === RESOURCE_ENERGY && target.amount > emergencyPickupAmount) ||
-                 (target.structureType === STRUCTURE_TOMBSTONE && target.store.getUsedCapacity(RESOURCE_ENERGY) > emergencyPickupAmount) ||
-                 (target.structureType === STRUCTURE_RUIN && target.store.getUsedCapacity(RESOURCE_ENERGY) > emergencyPickupAmount)
+                 (target.structureType === STRUCTURE_TOMBSTONE && target.store[RESOURCE_ENERGY] > emergencyPickupAmount) ||
+                 (target.structureType === STRUCTURE_RUIN && target.store[RESOURCE_ENERGY] > emergencyPickupAmount)
         }
       });
       if (emergencyPickup.length > 0) {
