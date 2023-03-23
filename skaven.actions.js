@@ -73,7 +73,7 @@ let skavenActions = {
     if (!Memory.tileVisits) { Memory.tileVisits = {}; }
     if (!Memory.tileVisits[rat.pos.x]) { Memory.tileVisits[rat.pos.x] = {}; }
     if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
-    Memory.tileVisits[pos.x][pos.y]++;
+    Memory.tileVisits[rat.pos.x][rat.pos.y]++;
   }
 };
 
