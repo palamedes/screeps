@@ -12,9 +12,14 @@ let sHarvest = {
 
     // If the rat doesn't know where to go.. Find it.
     if (!rat.memory.myTargetId) {
+      const emergencyPickupAmount = 200;
       // if we have a high volume emergency pickup, lets go get it
       let emergencyPickup = rat.room.find([FIND_DROPPED_RESOURCES, FIND_RUINS, FIND_TOMBSTONES], {
-        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 200
+        filter: (dropped) => {
+          return (target.resourceType === RESOURCE_ENERGY && target.amount > emergencyPickupAmount) ||
+                 (target.structureType === STRUCTURE_TOMBSTONE && target.store.getUsedCapacity(RESOURCE_ENERGY) > emergencyPickupAmount) ||
+                 (target.structureType === STRUCTURE_RUIN && target.store.getUsedCapacity(RESOURCE_ENERGY) > emergencyPickupAmount)
+        }
       });
       if (emergencyPickup.length > 0) {
         let closestEmergency = rat.pos.findClosestByRange(emergencyPickup);
