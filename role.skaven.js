@@ -12,8 +12,8 @@ var roleSkaven = {
       let repairTargets = Memory.tickCount % 10 ? skavenActions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
 
-      if (constructionTargets && constructionTargets.length === 0) {
-        console.log(skavenActions.getMostVisitedTile());
+      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 10) {
+        Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
       }
 
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
