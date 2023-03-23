@@ -8,8 +8,8 @@ var roleSkaven = {
       skavenActions.trackTileVisits(rat);
       let maxSkaven = Memory.maxSkaven;
       let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
-      let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
-      let repairTargets = skavenActions.repair.getRepairTargets(rat);
+      let constructionTargets = Memory.tickCount % 10 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
+      let repairTargets = Memory.tickCount % 15 ? skavenActions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
       if (rat.ticksToLive <= 100 && rat.memory.task !== 'renew') {
@@ -21,13 +21,13 @@ var roleSkaven = {
         // If rat has less than 20% free capacity (80% full) then go do some work.
         if (rat.store.getFreeCapacity() / rat.store.getCapacity() < 0.2) {
           // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
-          if (constructionTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.5)) {
+          if (constructionTargets && constructionTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('build') <= (maxSkaven*0.5)) {
             rat.memory.task = 'build';
             rat.memory.slept = 0;
             rat.say('🚧');
           }
           // Repair comes second... If we have 50% or more rats, and we have 20% or less repairing
-          else if (repairTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
+          else if (repairTargets && repairTargets.length > 0 && slave.length >= (maxSkaven/2) && skavenActions.numActive('repair') <= (maxSkaven*0.2)) {
             rat.memory.task = 'repair';
             rat.memory.slept = 0;
             rat.say('🔧');
