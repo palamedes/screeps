@@ -13,7 +13,7 @@ var roleSkaven = {
       let upgradeTarget = rat.room.controller;
 
       // Find us a construction target
-      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 5 && !Memory.mostVisitedTile) {
+      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 10 && !Memory.mostVisitedTile) {
         Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
         console.log('testing for road at '+ Memory.mostVisitedTile.x +","+ Memory.mostVisitedTile.y);
         let needsRoad = true;
@@ -24,7 +24,7 @@ var roleSkaven = {
         }
         if (needsRoad) {
           console.log('create road!');
-          var results = rat.room.createConstructionSite(Memory.mostVisitedTile.x, Memory.mostVisitedTile.y, STRUCTURE_ROAD);
+          var results = rat.room.createConstructionSite(parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y), STRUCTURE_ROAD);
         }
         console.log('out: ' + results);
         Memory.mostVisitedTile = null;
