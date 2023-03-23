@@ -1,13 +1,13 @@
 const skavenActions = require('skaven.actions');
-const utility = require('utility');
+// const utility = require('utility');
 /** Skaven! */
 var roleSkaven = {
 
   skitter: rat => {
-    if (rat.memory.role === 'skaven' || rat.memory.role === 'slave') {
+    if (rat.memory.role === 'slave') {
       skavenActions.trackTileVisits(rat);
       let maxSkaven = Memory.maxSkaven;
-      let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven' || rat.memory.role === 'slave');
+      let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);
       let repairTargets = skavenActions.repair.getRepairTargets(rat);
       let upgradeTarget = rat.room.controller;
@@ -66,7 +66,6 @@ var roleSkaven = {
   summonRatOgre: (energy, memory) => {
     if (energy >= 600) { skavenActions.summonRatOgre(energy, memory); return ' ~ Spawning new Rat Ogre ('+energy+')'; } else { return ''; }
   },
-
 
 }
 module.exports = roleSkaven;
