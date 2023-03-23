@@ -14,7 +14,7 @@ module.exports.loop = function () {
   let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
   let energyAvailable = room.energyAvailable;
   let energyAvailableComment = 'Room "'+Game.spawns[Object.keys(Game.spawns)[0]].room.name+'" has ' + room.energyAvailable + ' energy';
-  let slave  = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven' || rat.memory.role === 'slave');
+  let slave  = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
   let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
 
   // Log Output
