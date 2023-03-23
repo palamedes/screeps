@@ -10,6 +10,8 @@ No one will stand-stand against us, for we are the Skaven! Our armies will swarm
 
 This is a place for me to learn how to play screeps and I thought it would be amusing to do so as my favorite Warhammer Fantasy race; The Skaven.  Know-fear us!  
 
+I am leaving this repo completely open and letting everyone see how I'm doing things.  I figure I don't know anything and someone might be able to point out stupid mistakes or ways to improve things.  You're welcome to take-steal any of the code you see here in but if you do make improvements please let me know so I can learn.  Thanks!
+
 ### Features
 - Dynamic creep creation based on power levels
 - Slaves are Creeps that know how to Harvest, Store, Upgrade, Repair and Renew
