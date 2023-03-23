@@ -8,8 +8,8 @@ var roleSkaven = {
       skavenActions.trackTileVisits(rat);
       let maxSkaven = Memory.maxSkaven;
       let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
-      let constructionTargets = Memory.tickCount % 10 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
-      let repairTargets = Memory.tickCount % 15 ? skavenActions.repair.getRepairTargets(rat) : null;
+      let constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
+      let repairTargets = Memory.tickCount % 10 ? skavenActions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
       if (rat.ticksToLive <= 100 && rat.memory.task !== 'renew') {
