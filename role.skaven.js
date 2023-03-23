@@ -5,6 +5,7 @@ var roleSkaven = {
 
   skitter: rat => {
     if (rat.memory.role === 'skaven' || rat.memory.role === 'slave') {
+      skavenActions.trackTileVisits(rat);
       let maxSkaven = Memory.maxSkaven;
       let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'skaven' || rat.memory.role === 'slave');
       let constructionTargets = rat.room.find(FIND_CONSTRUCTION_SITES);

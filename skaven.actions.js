@@ -68,7 +68,13 @@ let skavenActions = {
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
     Game.spawns[Object.keys(Game.spawns)[0]].spawnCreep(ratParts, ratName, ratBrain);
   },
-
+  // Track tile visits by rats, so we can determine how frequently they go there.
+  trackTileVisits: rat => {
+    if (!Memory.tileVisits) { Memory.tileVisits = {}; }
+    if (!Memory.tileVisits[rat.pos.x]) { Memory.tileVisits[rat.pos.x] = {}; }
+    if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
+    Memory.tileVisits[pos.x][pos.y]++;
+  }
 };
 
 module.exports = skavenActions;

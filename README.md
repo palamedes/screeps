@@ -8,12 +8,14 @@ No one will stand-stand against us, for we are the Skaven! Our armies will swarm
 
 ### In all seriousness
 
-This is a place for me to learn how to play screeps and I thought it would be amusing to do so as my favorite Warhammer Fantasy race; The Skaven.  Know-fear us!
+This is a place for me to learn how to play screeps and I thought it would be amusing to do so as my favorite Warhammer Fantasy race; The Skaven.  Know-fear us!  
 
+### Features
+- Dynamic creep creation based on power levels
+- Creeps know how to Harvest, Store, Upgrade, Repair and Renew
 
 #### TODO
 - Get dynamic creation of extensions working via createConstructionSite
-- Get renewCreep working
 - Put pathfinding in the rats head to lessen the demand on the cpu
 - Make Max Slaves dynamic based on max power and the possible body part size?
 - Remove name of spawn entirely from system
