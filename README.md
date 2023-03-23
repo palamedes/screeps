@@ -15,23 +15,26 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 ### Features
 - Dynamic creep creation based on power levels
 - Slaves are Creeps that know how to Harvest, Store, Upgrade, Repair and Renew
+- Rat Ogres are Creeps with high physical damage & Toughness @TODO
+- Gutter Runners are Creeps with high toughness, fast, with some ranged and physical attack @TODO
+- Jezzails are Creeps with high ranged attack attack @TODO
 
 #### TODO
 - Add ability to "specialize" skaven to only do certain things and build them as such
+  - If we have just 2 rats running around, they are slaves that do all the things
+  - The 3rd rat becomes a hauler only.  And one of the first 2 needs to just harvest and drop energy
+  - Eventually body parts can be dynamically altered through new rats to do specific jobs. etc.. 
 - Get dynamic creation of extensions working via createConstructionSite
 - Put pathfinding in the rats head to lessen the demand on the cpu
+  - Make rats use roads if there is a road path available
 - Make Max Slaves dynamic based on max power and the possible body part size?
-- Remove name of spawn entirely from system
-- Rat should know where it spawned and always know how to get back to it
-- Figure out how to harvest from gravestones and dropped energy (it's not working for me for some reason)
 - Turn on RoomBinding for rats so they stay in the room they are assigned to
 - Make the system allow for multiple rooms and spawn points (right now it's one room only)
-- Create a better path finding system that considers roads
-- Change system to know "skaven" as "slaves".  role.skaven should just be skaven. 
-  - slaves = workers/builders/harvesters/repair
-  - rat ogres = beefcake physical damage, slow brutes hardy
-  - gutter runners = super fast ninja with some ranged
-  - jezzail = high dps ranged
 - Figure out how to be smart about ranging into other rooms
 - If a rat gets done with a task and has more than 50% power, go store it first.
   - this means I need to refactor the sleep/think/reset code somewhere..
+- Create "base buildling" code that plans out a base and slowly builds it over time.
+
+#### Known Bugs
+- Right now if not careful rats will stack up at a power source and clog the area.  This is why I think I need to go to a harvest and drop model so no one is trapped.
+- The road creation methodology is a little zealous.. so much so I have commented it out.. cause dang.. 
