@@ -12,7 +12,7 @@ var roleSkaven = {
       let repairTargets = Memory.tickCount % 10 ? skavenActions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
 
-      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 10) {
+      if (constructionTargets && constructionTargets.length === 0 && Memory.tickCount % 10 && !Memory.mostVisitedTile) {
         Memory.mostVisitedTile = skavenActions.getMostVisitedTile();
       }
 
