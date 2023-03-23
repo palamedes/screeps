@@ -24,9 +24,9 @@ var roleSkaven = {
         }
         if (needsRoad) {
           console.log('create road!');
-          let res = rat.room.createConstructionSite(Memory.mostVisitedTile.x, Memory.mostVisitedTile.y, STRUCTURE_ROAD);
+          var results = rat.room.createConstructionSite(Memory.mostVisitedTile.x, Memory.mostVisitedTile.y, STRUCTURE_ROAD);
         }
-        console.log('out: ' + res);
+        console.log('out: ' + results);
         Memory.mostVisitedTile = null;
       }
 
