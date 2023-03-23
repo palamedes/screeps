@@ -13,7 +13,7 @@ var roleSkaven = {
       let upgradeTarget = rat.room.controller;
 
       if (constructionTargets && constructionTargets.length === 0) {
-        console.log(skavenActions.getMostVisitedTile)
+        console.log(skavenActions.getMostVisitedTile());
       }
 
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
