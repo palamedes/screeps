@@ -50,9 +50,11 @@ module.exports.loop = function () {
   structureTower.run();
 
   // Report what's up..
-  let mcpu = Game.cpu.getUsed();
+  let startCPU = Game.cpu.getUsed();
   console.log(statusUpdate);
-  console.log(Game.cpu.getUsed()-mcpu);
+  let endCPU = Game.cpu.getused();
+  let resCPU = Math.round(((startCPU-endCPU) * 1000) *1000)/10000
+  console.log(resCPU);
 
 
 }
