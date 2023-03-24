@@ -120,7 +120,7 @@ let structures = {
       return plan;
     };
     let spiral = spiralStamp(basePlan,6, 8);
-
+console.log(spiral);
     const drawSpiral = (stamp, startX, startY, rV) => {
       const directions = [
         { x: 1, y: 0 }, // right
