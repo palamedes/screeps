@@ -155,7 +155,7 @@ console.log(spiral);
 
     const drawSpiral2 = (start, str, rv) => {
       const x = start.x, y = start.y;
-      let dx = 0, dy = 0, len = 1, posX = x, posY = y, index = 0;
+      let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
         for (let i = 0; i < len; i++) {
           if (index < str.length) {
