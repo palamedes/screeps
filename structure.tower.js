@@ -1,9 +1,11 @@
 var structureTower = {
 
   run: () => {
-    structureTower.attack();
-    structureTower.heal();
-    structureTower.repair();
+    let onAlert = structureTower.attack();
+    if (!onAlert) {
+      structureTower.heal();
+      structureTower.repair();
+    }
   },
 
   // Heal any damaged rats near by
@@ -23,6 +25,7 @@ var structureTower = {
 
   // Repair those things that need repairing
   repair: () => {
+    console.log('repair');
     for (let towerId in Game.towers) {
       let tower = Game.towers[towerId];
       if (tower.towerType === STRUCTURE_TOWER) {
@@ -30,6 +33,7 @@ var structureTower = {
           filter: (structure) => structure.hits < structure.hitsMax
         });
         if (damagedStructures.length > 0) {
+          console.log("foundsome");
           damagedStructures.sort((a, b) => a.hits - b.hits);
           tower.repair(damagedStructures[0]);
         }
@@ -51,6 +55,9 @@ var structureTower = {
           }
         }
       }
+      return true;
+    } else {
+      return false;
     }
   }
 
