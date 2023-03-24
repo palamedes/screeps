@@ -79,7 +79,6 @@ let structures = {
     basePlan[12]= "#·#····@····#·#";
     basePlan[13]= "##···········##";
     basePlan[14]= "###############";
-    basePlan[15]= "###############";
 
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
@@ -114,7 +113,7 @@ let structures = {
           stepCount = 0;
         }
         // Check if we've reached the edge of the array
-        if (x < 0 || y < 0 || y >= basePlan.length || x >= basePlan[y].length) {
+        if (x <= 0 || y <= 0 || y >= basePlan.length || x >= basePlan[y].length) {
           isDone = true;
         }
       }
