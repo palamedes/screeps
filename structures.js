@@ -72,7 +72,7 @@ let structures = {
     basePlan[5] = "#····#e#e#····#";
     basePlan[6] = "#···#ee#ee#···#";
     basePlan[7] = "#ee#eeT*Tee#ee#";
-    basePlan[8] = "#···#e#T·e#···#";
+    basePlan[8] = "#···#e#·#e#···#";
     basePlan[9] = "#····#eee#····#";
     basePlan[10]= "#···#·#e#·#···#";
     basePlan[11]= "#··#···#···#··#";
@@ -119,41 +119,7 @@ let structures = {
       }
       return plan;
     };
-    let spiral = spiralStamp(basePlan,7, 7);
-console.log(spiral);
-    const drawSpiral = (stamp, startX, startY, rV) => {
-      const directions = [
-        { x: 1, y: 0 }, // right
-        { x: 0, y: 1 }, // down
-        { x: -1, y: 0 }, // left
-        { x: 0, y: -1 } // up
-      ];
-      let direction = 0;
-      let stepsInDirection = 1;
-      let stepsTakenInDirection = 0;
-      let currentX = startX;
-      let currentY = startY;
-      let i = 0;
-      while (i < stamp.length) {
-        const currentChar = stamp.charAt(i);
-        if (currentChar !== ' ') {
-          rV.text(currentChar, currentX, currentY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
-        }
-        i++;
-        stepsTakenInDirection++;
-        if (stepsTakenInDirection >= stepsInDirection) {
-          direction = (direction + 1) % 4;
-          stepsTakenInDirection = 0;
-          if (direction % 2 === 0) {
-            stepsInDirection++;
-          }
-        }
-        currentX += directions[direction].x;
-        currentY += directions[direction].y;
-      }
-    }
-
-    const drawSpiral2 = (start, str, rv) => {
+    const drawSpiral = (start, str, rv) => {
       const x = start.x, y = start.y;
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
@@ -161,7 +127,10 @@ console.log(spiral);
           if (index < str.length) {
             const c = str.charAt(index);
             if (c !== " ") {
-              rV.text(c, posX, posY, {opacity: 0.8, font: 0.5});
+              const terrain = Game.map.getRoomTerrain(placeX, placeY, roomName);
+              if (terrain !== "wall") {
+                rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
+              }
             }
             index++;
           }
@@ -177,8 +146,8 @@ console.log(spiral);
 
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const rV = new RoomVisual(spawn.room.name);
-    // drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
-    drawSpiral2(spawn.pos, spiral, rV)
+    let spiral = spiralStamp(basePlan,7, 7);
+    drawSpiral(spawn.pos, spiral, rV)
   }
 
 }
