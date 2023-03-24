@@ -36,7 +36,6 @@ let structures = {
         // console.log(Math.parseInt(spawn.pos.x) + " " + startSpawn.x + " "+ x + '::' + (spawn.pos.x + startSpawn.x + x));
         let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + parseInt(x);
         let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + parseInt(y);
-        console.log(placeX);
         rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
       }
     }
@@ -52,18 +51,18 @@ let structures = {
     basePlan[0]  = "# # # # # # # # # # # # # # #";
     basePlan[1]  = "# # · · · · · · · · · · · # #"
     basePlan[2]  = "# · # · · · · @ · · · · # · #"
-    // basePlan[3]  = "# · · # · · · # · · · # · · #"
-    // basePlan[4]  = "# · · · # · # # # · # · · · #"
-    // basePlan[5]  = "# · · · · # e # e # · · · · #"
-    // basePlan[6]  = "# · · · # e e # e e # · · · #"
-    // basePlan[7]  = "# e e # e e T # T e e # e e #"
-    // basePlan[8]  = "# · · · # e @ T · e # · · · #"
-    // basePlan[9]  = "# · · · · # e e e # · · · · #"
-    // basePlan[10] = "# · · · # · # e # · # · · · #"
-    // basePlan[11] = "# · · # · · · # · · · # · · #"
-    // basePlan[12] = "# · # · · · · @ · · · · # · #"
-    // basePlan[13] = "# # · · · · · · · · · · · # #"
-    // basePlan[14] = "# # # # # # # # # # # # # # #"
+    basePlan[3]  = "# · · # · · · # · · · # · · #"
+    basePlan[4]  = "# · · · # · # # # · # · · · #"
+    basePlan[5]  = "# · · · · # e # e # · · · · #"
+    basePlan[6]  = "# · · · # e e # e e # · · · #"
+    basePlan[7]  = "# e e # e e T # T e e # e e #"
+    basePlan[8]  = "# · · · # e @ T · e # · · · #"
+    basePlan[9]  = "# · · · · # e e e # · · · · #"
+    basePlan[10] = "# · · · # · # e # · # · · · #"
+    basePlan[11] = "# · · # · · · # · · · # · · #"
+    basePlan[12] = "# · # · · · · @ · · · · # · #"
+    basePlan[13] = "# # · · · · · · · · · · · # #"
+    basePlan[14] = "# # # # # # # # # # # # # # #"
     return basePlan;
   }
 
