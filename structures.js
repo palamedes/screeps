@@ -131,7 +131,8 @@ console.log(roomName);
           if (index < str.length) {
             const c = str.charAt(index);
             if (c !== " ") {
-              const terrain = Game.map.getRoomTerrain(posX, posY, roomName);
+              console.log(roomName);
+              // let terrain = Game.map.getRoomTerrain(posX, posY, roomName);
               if (terrain !== "wall") {
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
               }
@@ -149,7 +150,7 @@ console.log(roomName);
     }
 
     let spiral = spiralStamp(basePlan,7, 7);
-    // drawSpiral(spawn.pos, spiral, rV)
+    drawSpiral(spawn.pos, spiral, rV)
   }
 
 }
