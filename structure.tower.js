@@ -50,12 +50,10 @@ var structureTower = {
       console.log('enemy!')
       for (let tower in towers) {
         // let tower = Game.towers[towerId];
-        if (tower.towerType === STRUCTURE_TOWER) {
-          console.log('find him');
-          let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-          if (closestHostile) {
-            tower.attack(closestHostile);
-          }
+        console.log('find him');
+        let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+        if (closestHostile) {
+          tower.attack(closestHostile);
         }
       }
       return true;
