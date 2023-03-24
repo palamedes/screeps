@@ -1,4 +1,4 @@
-const skavenActions = require('skaven.actions');
+const skavenActions = require('skaven.move');
 
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
