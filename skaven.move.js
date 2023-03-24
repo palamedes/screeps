@@ -5,7 +5,6 @@ let sMove = {
     let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
-    console.log(rat.name + ' ' +res);
     if (res === ERR_NOT_FOUND || res === ERR_INVALID_ARGS) {
       rat.memory.path = null;
     }
