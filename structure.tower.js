@@ -1,5 +1,11 @@
 var structureTower = {
 
+  run: () => {
+    structureTower.attack();
+    structureTower.heal();
+    structureTower.repair();
+  },
+
   // Heal any damaged rats near by
   heal: () => {
     for (let towerId in Game.towers) {
@@ -10,6 +16,22 @@ var structureTower = {
         });
         if(damagedRat) {
           tower.heal(damagedRat);
+        }
+      }
+    }
+  },
+
+  // Repair those things that need repairing
+  repair: () => {
+    for (let towerId in Game.towers) {
+      let tower = Game.towers[towerId];
+      if (tower.towerType === STRUCTURE_TOWER) {
+        let damagedStructures = tower.room.find(FIND_STRUCTURES, {
+          filter: (structure) => structure.hits < structure.hitsMax
+        });
+        if (damagedStructures.length > 0) {
+          damagedStructures.sort((a, b) => a.hits - b.hits);
+          tower.repair(damagedStructures[0]);
         }
       }
     }

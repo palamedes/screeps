@@ -42,7 +42,7 @@ module.exports.loop = function () {
   for(let name in Game.creeps) { var rat = Game.creeps[name]; roleSkaven.skitter(rat); }
 
   // Work Towers
-  structureTower.heal();
+  structureTower.run();
 
   // Report what's up..
   console.log(statusUpdate);
