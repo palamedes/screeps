@@ -1,9 +1,10 @@
 let sMove = {
 
   // have our rat move to a location
-  moveTo: (rat, target, options) => {
+  moveTo: (rat, target, stroke) => {
+    let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
-    rat.moveByPath(path);
+    rat.moveByPath(path, options);
   },
 
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
