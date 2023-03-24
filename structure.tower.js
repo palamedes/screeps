@@ -31,7 +31,16 @@ let structureTower = {
   repair: towers => {
     for (let id in towers) {
       let damagedStructures = towers[id].room.find(FIND_STRUCTURES, {
-        filter: (structure) => structure.hits < structure.hitsMax
+        filter: (structure) => {
+          if (structure.structureType === STRUCTURE_ROAD) {
+            return structure.hits < structure.hitsMax * 0.8; // repair roads at 80% of maximum hits
+          } else if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
+            return structure.hits < structure.hitsMax * 0.0001;
+          } else {
+            return (structure.structureType !== STRUCTURE_CONTROLLER) &&
+              structure.hits < structure.hitsMax;
+          }
+        }
       });
       if (damagedStructures.length > 0) {
         damagedStructures.sort((a, b) => a.hits - b.hits);
