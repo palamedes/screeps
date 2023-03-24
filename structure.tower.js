@@ -12,7 +12,7 @@ var structureTower = {
 
   // Heal any damaged rats near by
   heal: towers => {
-    for (let tower in towers) {
+    for (let id in towers) {
       let damagedRat = towers[id].pos.findClosestByRange(FIND_MY_CREEPS, {
         filter: (rat) => rat.hits < rat.hitsMax
       });
