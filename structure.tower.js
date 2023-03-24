@@ -2,17 +2,18 @@ var structureTower = {
 
   // Run the tower code
   run: () => {
-    let onAlert = structureTower.attack();
+    let towers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER);
+    let onAlert = structureTower.attack(towers);
     if (!onAlert) {
-      structureTower.heal();
-      structureTower.repair();
+      structureTower.heal(towers);
+      structureTower.repair(towers);
     }
   },
 
   // Heal any damaged rats near by
-  heal: () => {
-    for (let towerId in Game.towers) {
-      let tower = Game.towers[towerId];
+  heal: towers => {
+    for (let tower in towers) {
+      // let tower = Game.towers[towerId];
       if (tower.towerType === STRUCTURE_TOWER) {
         var damagedRat = tower.pos.findClosestByRange(FIND_MY_CREEPS, {
           filter: (rat) => rat.hits < rat.hitsMax
@@ -25,9 +26,9 @@ var structureTower = {
   },
 
   // Repair those things that need repairing
-  repair: () => {
-    for (let towerId in Game.towers) {
-      let tower = Game.towers[towerId];
+  repair: towers => {
+    for (let tower in towers) {
+      // let tower = Game.towers[towerId];
       if (tower.towerType === STRUCTURE_TOWER) {
         let damagedStructures = tower.room.find(FIND_STRUCTURES, {
           filter: (structure) => structure.hits < structure.hitsMax
@@ -41,14 +42,14 @@ var structureTower = {
   },
 
   // Attack any hostile creeps
-  attack: () => {
+  attack: towers => {
     console.log('testin attack')
     // Are there any hostile creeps?
     const hostileCreeps = Game.spawns[Object.keys(Game.spawns)[0]].room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length > 0) {
       console.log('enemy!')
-      for (let towerId in Game.towers) {
-        let tower = Game.towers[towerId];
+      for (let tower in towers) {
+        // let tower = Game.towers[towerId];
         if (tower.towerType === STRUCTURE_TOWER) {
           console.log('find him');
           let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
