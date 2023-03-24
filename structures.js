@@ -145,7 +145,8 @@ let structures = {
     }
 
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    const rV = new RoomVisual(spawn.room.name);
+    const roomName = spawn.room.name;
+    const rV = new RoomVisual(roomName);
     let spiral = spiralStamp(basePlan,7, 7);
     drawSpiral(spawn.pos, spiral, rV)
   }
