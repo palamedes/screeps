@@ -6,6 +6,7 @@ let structures = {
 
   findHabitrail: () => {
     if (!Memory.testVisual) {
+      console.log('draw test');
       const roomVisual = new RoomVisual('W24S37');
       roomVisual.line(10, 10, 40, 40, { color: 'blue' });
       Memory.testVisual = roomVisual;

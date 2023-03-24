@@ -18,6 +18,7 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - Rat Ogres are Creeps with high physical damage & Toughness @TODO
 - Gutter Runners are Creeps with high toughness, fast, with some ranged and physical attack @TODO
 - Jezzails are Creeps with high ranged attack attack @TODO
+- Towers know how to Attack, Heal and Repair
 
 #### TODO
 - Add ability to "specialize" skaven to only do certain things and build them as such
