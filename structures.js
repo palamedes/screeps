@@ -127,10 +127,10 @@ let structures = {
       }
       return plan;
     };
-
+console.log(basePlan);
 // starting at (7, 8) and using basePlan
-    const plan = spiralStamp(basePlan,7, 8);
-    console.log(plan);
+//     const plan = spiralStamp(basePlan,7, 8);
+//     console.log(plan);
 
   }
 
