@@ -84,42 +84,49 @@ let structures = {
     basePlan[13] = "# # · · · · · · · · · · · # #"
     basePlan[14] = "# # # # # # # # # # # # # # #"
 
-    let spiralStamp = (startX, startY, stamp) => {
-      const dx = [1, 0, -1, 0];
-      const dy = [0, 1, 0, -1];
-      let direction = 0;
-      let stepsInCurrentDirection = 1;
-      let currentStepsTakenInDirection = 0;
-      let x = startX;
-      let y = startY;
-      let output = '';
+    const spiralStamp = (basePlan, startX, startY) => {
+      const dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
+      let x = startX, y = startY;
+      let dirIndex = 0;
+      let plan = '';
+      let steps = 1;
+      let stepCount = 0;
+      let isDone = false;
+      while (!isDone) {
+        // Get the current character
+        let currChar = basePlan[y][x];
 
-      while (true) {
-        // add current cell to output
-        output += stamp[y].charAt(x);
+        // Add it to the plan
+        plan += currChar;
 
-        // update position and steps taken
-        x += dx[direction];
-        y += dy[direction];
-        currentStepsTakenInDirection++;
+        // Move to the next position
+        x += dirs[dirIndex][0];
+        y += dirs[dirIndex][1];
 
-        // if we've completed our spiral, return the output string
-        if (x < 0 || y < 0 || x >= stamp[0].length || y >= stamp.length) {
-          return output;
+        // Increment the step count
+        stepCount++;
+
+        // Check if we need to change direction
+        if (stepCount === steps) {
+          // Change direction
+          dirIndex = (dirIndex + 1) % 4;
+
+          // Increment steps every two turns
+          if (dirIndex % 2 === 0) {
+            steps++;
+          }
+
+          // Reset step count
+          stepCount = 0;
         }
 
-        // if we've taken all the steps in this direction, change direction
-        if (currentStepsTakenInDirection === stepsInCurrentDirection) {
-          direction = (direction + 1) % 4;
-          currentStepsTakenInDirection = 0;
-
-          // every second direction change, we increase stepsInCurrentDirection
-          if (direction % 2 === 0) {
-            stepsInCurrentDirection++;
-          }
+        // Check if we've reached the edge of the array
+        if (x < 0 || y < 0 || y >= basePlan.length || x >= basePlan[y].length) {
+          isDone = true;
         }
       }
-    }
+      return plan;
+    };
 
 // starting at (7, 8) and using basePlan
     const plan = spiralStamp(7, 8, basePlan);
