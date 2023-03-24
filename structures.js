@@ -61,7 +61,7 @@ let structures = {
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const roomName = spawn.room.name;
     const rV = new RoomVisual(roomName);
-
+console.log(roomName);
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
@@ -149,7 +149,7 @@ let structures = {
     }
 
     let spiral = spiralStamp(basePlan,7, 7);
-    drawSpiral(spawn.pos, spiral, rV)
+    // drawSpiral(spawn.pos, spiral, rV)
   }
 
 }
