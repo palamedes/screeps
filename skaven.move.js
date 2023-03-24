@@ -7,6 +7,7 @@ let sMove = {
     let res = rat.moveByPath(path, options)
     if (res === ERR_NOT_FOUND || res === ERR_INVALID_ARGS || (rat.memory.attempted + 3) > rat.memory.path.length) {
       rat.memory.path = null;
+      rat.memory.attempted = 0;
     }
   },
 
