@@ -1,10 +1,11 @@
 const roleSkaven = require('role.skaven');
 const structureTower = require('structure.tower');
 
-// Benchmarking
-// let mcpu = Game.cpu.getUsed();
-// myFunction()
-// console.log(Game.cpu.getUsed()-mcpu);
+// let startCPU = Game.cpu.getUsed();
+//   CODE HERE
+// let endCPU = Game.cpu.getUsed();
+// let resCPU = Math.round(((endCPU-startCPU) * 1000) *1000)/10000
+// console.log(resCPU);
 
 let utility = require('utility');
 module.exports.loop = function () {
@@ -50,11 +51,5 @@ module.exports.loop = function () {
   structureTower.run();
 
   // Report what's up..
-  let startCPU = Game.cpu.getUsed();
   console.log(statusUpdate);
-  let endCPU = Game.cpu.getUsed();
-  let resCPU = Math.round(((endCPU-startCPU) * 1000) *1000)/10000
-  console.log(resCPU);
-
-
 }
