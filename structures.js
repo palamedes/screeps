@@ -28,6 +28,7 @@ let structures = {
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const roomName = spawn.room.name
     const rV = new RoomVisual(roomName);
+    rV.clear();
     const plan = structures.basePlan();
     const startSpawn = { x:-6, y:-8 };
     for(let y in plan) {
