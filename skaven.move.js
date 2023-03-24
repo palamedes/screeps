@@ -19,7 +19,7 @@ let sMove = {
         maxRooms: 1,
       });
     }
-    return rat.memory.path.path;
+    return rat.memory.path;
   },
 
 }
