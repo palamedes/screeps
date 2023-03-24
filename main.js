@@ -51,6 +51,8 @@ module.exports.loop = function () {
   structures.tower.run();
   // structures.findHabitrail();
 
+  structures.drawBaseplan();
+
   // Report what's up..
   console.log(statusUpdate);
 }
