@@ -25,7 +25,7 @@ let structures = {
 
   drawBaseplan: () => {
     // let visual = new RoomVisual('W24S37');
-    new RoomVisual('W24S37').text("💥", 3, 11, {color: 'red', font: 0.8});
+    new RoomVisual('W24S37').text("💥", 3, 11, { color: '#ff0000', font: 0.8, opacity: 0.5 });
     // visual.drawIcon(RESOURCE_ENERGY, 3, 11, {scale: 1.5, opacity: 0.8, color: '#ff0000'});
   }
   // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
