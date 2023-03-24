@@ -52,7 +52,7 @@ var structureTower = {
         // let tower = Game.towers[towerId];
         let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
         if (closestHostile) {
-          tower.attack(closestHostile);
+          tower[id].attack(closestHostile);
         }
       }
       return true;
