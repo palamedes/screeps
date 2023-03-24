@@ -36,7 +36,11 @@ let structures = {
         // console.log(Math.parseInt(spawn.pos.x) + " " + startSpawn.x + " "+ x + '::' + (spawn.pos.x + startSpawn.x + x));
         let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + parseInt(x);
         let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + parseInt(y);
-        rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
+        // if the terrain at this point is a wall we can't use it
+        const terrain = Game.map.getTerrainAt(10, 10, roomName);
+        if (terrain !== "wall") {
+          rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
+        }
       }
     }
     // rV.text("#", spawn.pos.x, spawn.pos.y, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
