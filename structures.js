@@ -154,7 +154,7 @@ let structures = {
     }
 
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    const rV = new RoomVisual(roomName);
+    const rV = new RoomVisual(spawn.room.name);
     drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
   }
 
