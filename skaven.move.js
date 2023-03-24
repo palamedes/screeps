@@ -3,7 +3,7 @@ let sMove = {
   // have our rat move to a location
   moveTo: (rat, target, options) => {
     let path = sMove.memorizePath(rat, target);
-    rat.moveByPath(path, options);
+    rat.moveByPath(path);
   },
 
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
@@ -18,7 +18,7 @@ let sMove = {
         path: path.map((step) => ({x: step.x, y: step.y})),
       };
     }
-    return rat.memory.path;
+    return rat.memory.path.path;
   },
 
 }
