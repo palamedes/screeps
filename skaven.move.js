@@ -2,7 +2,7 @@ let sMove = {
 
   // have our rat move to a location
   moveTo: (rat, target, stroke) => {
-    console.log(rat.name)
+    console.log(rat.memory.path.length)
     let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
