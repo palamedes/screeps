@@ -52,7 +52,7 @@ module.exports.loop = function () {
   // Report what's up..
   let startCPU = Game.cpu.getUsed();
   console.log(statusUpdate);
-  let endCPU = Game.cpu.getused();
+  let endCPU = Game.cpu.getUsed();
   let resCPU = Math.round(((startCPU-endCPU) * 1000) *1000)/10000
   console.log(resCPU);
 
