@@ -153,33 +153,33 @@ console.log(spiral);
       }
     }
 
-    // const drawSpiral = (start, str, rv) => {
-    //   const x = start.x;
-    //   const y = start.y;
-    //   let dx = 0, dy = -1, len = 1, posX = x, posY = y, index = 0;
-    //   while (index < str.length) {
-    //     for (let i = 0; i < len; i++) {
-    //       if (index < str.length) {
-    //         const c = str.charAt(index);
-    //         if (c !== " ") {
-    //           rV.text(c, posX, posY, {opacity: 0.5, font: 0.5});
-    //         }
-    //         index++;
-    //       }
-    //       posX += dx;
-    //       posY += dy;
-    //     }
-    //     [dx, dy] = [-dy, dx];
-    //     if (dy === 0) {
-    //       len++;
-    //     }
-    //   }
-    // }
+    const drawSpiral2 = (start, str, rv) => {
+      const x = start.x;
+      const y = start.y;
+      let dx = 0, dy = -1, len = 1, posX = x, posY = y, index = 0;
+      while (index < str.length) {
+        for (let i = 0; i < len; i++) {
+          if (index < str.length) {
+            const c = str.charAt(index);
+            if (c !== " ") {
+              rV.text(c, posX, posY, {opacity: 0.5, font: 0.5});
+            }
+            index++;
+          }
+          posX += dx;
+          posY += dy;
+        }
+        [dx, dy] = [-dy, dx];
+        if (dy === 0) {
+          len++;
+        }
+      }
+    }
 
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const rV = new RoomVisual(spawn.room.name);
-    drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
-    // drawSpiral(spawn.pos, spiral, rV)
+    // drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
+    drawSpiral2(spawn.pos, spiral, rV)
   }
 
 }
