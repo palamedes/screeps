@@ -28,7 +28,6 @@ let structures = {
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const roomName = spawn.room.name
     const rV = new RoomVisual(roomName);
-    rV.clear();
     const plan = structures.basePlan();
     const startSpawn = { x:-6, y:-8 };
     for(let y in plan) {
@@ -38,8 +37,7 @@ let structures = {
         let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + parseInt(x);
         let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + parseInt(y);
         // if the terrain at this point is a wall we can't use it
-        const terrain = Game.map.getTerrainAt(10, 10, roomName);
-        console.log(terrain);
+        const terrain = Game.map.getTerrainAt(placeX, placeY, roomName);
         if (terrain !== "wall") {
           rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
         }
