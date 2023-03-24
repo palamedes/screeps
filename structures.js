@@ -24,11 +24,25 @@ let structures = {
   },
 
 
+
   drawBaseplan: () => {
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const roomName = spawn.room.name
     const rV = new RoomVisual(roomName);
-    const plan = structures.basePlan();
+
+    structure.basePlan();
+  } ,
+
+
+
+
+
+
+  drawBaseplanStamp: () => {
+    const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
+    const roomName = spawn.room.name
+    const rV = new RoomVisual(roomName);
+    const plan = structures.basePlanStamp();
     const startSpawn = { x:-6, y:-8 };
     for(let y in plan) {
       let line = plan[y].replace(/ /g,'');
@@ -37,7 +51,7 @@ let structures = {
         let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + parseInt(x);
         let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + parseInt(y);
         // if the terrain at this point is a wall we can't use it
-        const terrain = Game.map.getTerrainAt(placeX, placeY, roomName);
+        const terrain = Game.map.getRoomTerrain(placeX, placeY, roomName);
         if (terrain !== "wall") {
           rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
         }
@@ -51,7 +65,9 @@ let structures = {
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
-    let basePlan = {}
+    // const plan = "@,#Tee#eeT,eT.e#e#.#.#e#ee#"
+
+    const basePlan = {};
     basePlan[0]  = "# # # # # # # # # # # # # # #";
     basePlan[1]  = "# # · · · · · · · · · · · # #"
     basePlan[2]  = "# · # · · · · @ · · · · # · #"
@@ -67,7 +83,48 @@ let structures = {
     basePlan[12] = "# · # · · · · @ · · · · # · #"
     basePlan[13] = "# # · · · · · · · · · · · # #"
     basePlan[14] = "# # # # # # # # # # # # # # #"
-    return basePlan;
+
+    let spiralStamp = (startX, startY, stamp) => {
+      const dx = [1, 0, -1, 0];
+      const dy = [0, 1, 0, -1];
+      let direction = 0;
+      let stepsInCurrentDirection = 1;
+      let currentStepsTakenInDirection = 0;
+      let x = startX;
+      let y = startY;
+      let output = '';
+
+      while (true) {
+        // add current cell to output
+        output += stamp[y].charAt(x);
+
+        // update position and steps taken
+        x += dx[direction];
+        y += dy[direction];
+        currentStepsTakenInDirection++;
+
+        // if we've completed our spiral, return the output string
+        if (x < 0 || y < 0 || x >= stamp[0].length || y >= stamp.length) {
+          return output;
+        }
+
+        // if we've taken all the steps in this direction, change direction
+        if (currentStepsTakenInDirection === stepsInCurrentDirection) {
+          direction = (direction + 1) % 4;
+          currentStepsTakenInDirection = 0;
+
+          // every second direction change, we increase stepsInCurrentDirection
+          if (direction % 2 === 0) {
+            stepsInCurrentDirection++;
+          }
+        }
+      }
+    }
+
+// starting at (7, 8) and using basePlan
+    const plan = spiralStamp(7, 8, basePlan);
+    console.log(plan);
+
   }
 
 
