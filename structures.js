@@ -113,7 +113,7 @@ let structures = {
           stepCount = 0;
         }
         // Check if we've reached the edge of the array
-        if (x < -1 || y < -1 || y >= basePlan.length || x >= basePlan[y].length) {
+        if (x < 0 || y < 0 || y >= basePlan.length+1 || x >= basePlan[y].length+1) {
           isDone = true;
         }
       }
