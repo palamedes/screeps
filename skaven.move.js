@@ -6,6 +6,7 @@ let sMove = {
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
     if (res === ERR_NOT_FOUND) {
+      console.log('still no')
       rat.memory.path = null;
     }
   },
