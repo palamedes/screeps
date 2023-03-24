@@ -64,21 +64,21 @@ let structures = {
     // const plan = "@,#Tee#eeT,eT.e#e#.#.#e#ee#"
 
     const basePlan = [];
-    basePlan[0] = "################";
-    basePlan[1] = "###···········##";
-    basePlan[2] = "##·#····@····#·#";
-    basePlan[3] = "##··#···#···#··#";
-    basePlan[4] = "##···#·###·#···#";
-    basePlan[5] = "##····#e#e#····#";
-    basePlan[6] = "##···#ee#ee#···#";
-    basePlan[7] = "##ee#eeT#Tee#ee#";
-    basePlan[8] = "##···#e*T·e#···#";
-    basePlan[9] = "##····#eee#····#";
-    basePlan[10]= "##···#·#e#·#···#";
-    basePlan[11]= "##··#···#···#··#";
-    basePlan[12]= "##·#····@····#·#";
-    basePlan[13]= "###···········##";
-    basePlan[14]= "################";
+    basePlan[0] = "###############";
+    basePlan[1] = "##···········##";
+    basePlan[2] = "#·#····@····#·#";
+    basePlan[3] = "#··#···#···#··#";
+    basePlan[4] = "#···#·###·#···#";
+    basePlan[5] = "#····#e#e#····#";
+    basePlan[6] = "#···#ee#ee#···#";
+    basePlan[7] = "#ee#eeT*Tee#ee#";
+    basePlan[8] = "#···#e#T·e#···#";
+    basePlan[9] = "#····#eee#····#";
+    basePlan[10]= "#···#·#e#·#···#";
+    basePlan[11]= "#··#···#···#··#";
+    basePlan[12]= "#·#····@····#·#";
+    basePlan[13]= "##···········##";
+    basePlan[14]= "###############";
 
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
@@ -119,7 +119,7 @@ let structures = {
       }
       return plan;
     };
-    let spiral = spiralStamp(basePlan,6, 8);
+    let spiral = spiralStamp(basePlan,7, 7);
 console.log(spiral);
     const drawSpiral = (stamp, startX, startY, rV) => {
       const directions = [
