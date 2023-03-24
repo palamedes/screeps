@@ -34,8 +34,8 @@ let structures = {
       let line = plan[y].replace(/ /g,'');
       for(let x in line) {
         // console.log(Math.parseInt(spawn.pos.x) + " " + startSpawn.x + " "+ x + '::' + (spawn.pos.x + startSpawn.x + x));
-        let placeX = Math.parseInt(spawn.pos.x) + Math.parseInt(startSpawn.x) + x;
-        let placeY = Math.parseInt(spawn.pos.y) + Math.parseInt(startSpawn.y) + y;
+        let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + x;
+        let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + y;
         console.log(placeX);
         rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
       }
