@@ -68,21 +68,21 @@ let structures = {
     // const plan = "@,#Tee#eeT,eT.e#e#.#.#e#ee#"
 
     const basePlan = {};
-    basePlan[0]  = "# # # # # # # # # # # # # # #";
-    basePlan[1]  = "# # · · · · · · · · · · · # #"
-    basePlan[2]  = "# · # · · · · @ · · · · # · #"
-    basePlan[3]  = "# · · # · · · # · · · # · · #"
-    basePlan[4]  = "# · · · # · # # # · # · · · #"
-    basePlan[5]  = "# · · · · # e # e # · · · · #"
-    basePlan[6]  = "# · · · # e e # e e # · · · #"
-    basePlan[7]  = "# e e # e e T # T e e # e e #"
-    basePlan[8]  = "# · · · # e @ T · e # · · · #"
-    basePlan[9]  = "# · · · · # e e e # · · · · #"
-    basePlan[10] = "# · · · # · # e # · # · · · #"
-    basePlan[11] = "# · · # · · · # · · · # · · #"
-    basePlan[12] = "# · # · · · · @ · · · · # · #"
-    basePlan[13] = "# # · · · · · · · · · · · # #"
-    basePlan[14] = "# # # # # # # # # # # # # # #"
+    basePlan[0] = "###############";
+    basePlan[1] = "##···········##";
+    basePlan[2] = "#·#····@····#·#";
+    basePlan[3] = "#··#···#···#··#";
+    basePlan[4] = "#···#·###·#···#";
+    basePlan[5] = "#····#e#e#····#";
+    basePlan[6] = "#···#ee#ee#···#";
+    basePlan[7] = "#ee#eeT#Tee#ee#";
+    basePlan[8] = "#···#e@T·e#···#";
+    basePlan[9] = "#····#eee#····#";
+    basePlan[10]= "#···#·#e#·#···#";
+    basePlan[11]= "#··#···#···#··#";
+    basePlan[12]= "#·#····@····#·#";
+    basePlan[13]= "##···········##";
+    basePlan[14]= "###############";
 
     const spiralStamp = (basePlan, startX, startY) => {
       const dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
@@ -127,7 +127,7 @@ let structures = {
       }
       return plan;
     };
-console.log(basePlan[7]);
+console.log(basePlan.length);
 // starting at (7, 8) and using basePlan
 //     const plan = spiralStamp(basePlan,7, 8);
 //     console.log(plan);
