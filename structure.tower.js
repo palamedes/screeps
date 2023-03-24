@@ -48,14 +48,12 @@ var structureTower = {
     const hostileCreeps = Game.spawns[Object.keys(Game.spawns)[0]].room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length > 0) {
       console.log('enemy!')
-      for (let tower in towers) {
+      for (let id in towers) {
         // let tower = Game.towers[towerId];
-        console.log('find him');
-        console.log(tower);
-        // let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-        // if (closestHostile) {
-        //   tower.attack(closestHostile);
-        // }
+        let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+        if (closestHostile) {
+          tower.attack(closestHostile);
+        }
       }
       return true;
     } else {
