@@ -1,5 +1,6 @@
 var structureTower = {
 
+  // Run the tower code
   run: () => {
     let onAlert = structureTower.attack();
     if (!onAlert) {
@@ -41,12 +42,15 @@ var structureTower = {
 
   // Attack any hostile creeps
   attack: () => {
+    console.log('testin attack')
     // Are there any hostile creeps?
     const hostileCreeps = Game.spawns[Object.keys(Game.spawns)[0]].room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length > 0) {
+      console.log('enemy!')
       for (let towerId in Game.towers) {
         let tower = Game.towers[towerId];
         if (tower.towerType === STRUCTURE_TOWER) {
+          console.log('find him');
           let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
           if (closestHostile) {
             tower.attack(closestHostile);
