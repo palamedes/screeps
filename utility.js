@@ -8,22 +8,6 @@ module.exports = {
     return extensionCapacity + spawnCapacity;
   },
 
-  // Get the repair targets by rat
-  getRepairTargets: rat => {
-    return rat.room.find(FIND_STRUCTURES, {
-      filter: (structure) => {
-        if (structure.structureType == STRUCTURE_ROAD) {
-          return structure.hits < structure.hitsMax * 0.8; // repair roads at 80% of maximum hits
-        } else if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
-          return structure.hits < structure.hitsMax * 0.0001;
-        } else {
-          return (structure.structureType != STRUCTURE_CONTROLLER) &&
-            structure.hits < structure.hitsMax;
-        }
-      }
-    });
-  },
-
   // Find all structures within one tile of the source
   getWallsAroundSource: (source) => {
     let structures = source.pos.findInRange(FIND_STRUCTURES, 1);
