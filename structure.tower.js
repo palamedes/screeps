@@ -51,10 +51,11 @@ var structureTower = {
       for (let tower in towers) {
         // let tower = Game.towers[towerId];
         console.log('find him');
-        let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-        if (closestHostile) {
-          tower.attack(closestHostile);
-        }
+        console.log(tower);
+        // let closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+        // if (closestHostile) {
+        //   tower.attack(closestHostile);
+        // }
       }
       return true;
     } else {
