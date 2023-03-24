@@ -18,7 +18,7 @@ let sMove = {
         path: path.map((step) => ({x: step.x, y: step.y})),
       };
     }
-    return rat.memory.path.path;
+    return rat.memory.path;
   },
 
 }
