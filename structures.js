@@ -154,15 +154,14 @@ console.log(spiral);
     }
 
     const drawSpiral2 = (start, str, rv) => {
-      const x = start.x;
-      const y = start.y;
-      let dx = 0, dy = -1, len = 1, posX = x, posY = y, index = 0;
+      const x = start.x, y = start.y;
+      let dx = 0, dy = -2, len = 1, posX = x, posY = y, index = 0;
       while (index < str.length) {
         for (let i = 0; i < len; i++) {
           if (index < str.length) {
             const c = str.charAt(index);
             if (c !== " ") {
-              rV.text(c, posX, posY, {opacity: 0.5, font: 0.5});
+              rV.text(c, posX, posY, {opacity: 0.8, font: 0.5});
             }
             index++;
           }
