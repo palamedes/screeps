@@ -25,11 +25,11 @@ let structures = {
 
 
   drawBaseplan: () => {
-    let spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    let roomName = spawn.room.name
-    let rV = new RoomVisual(roomName);
-    let plan = structures.basePlan();
-    let startSpawn = { x:-6, y:-8 };
+    const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
+    const roomName = spawn.room.name
+    const rV = new RoomVisual(roomName);
+    const plan = structures.basePlan();
+    const startSpawn = { x:-6, y:-8 };
     for(let y in plan) {
       let line = plan[y].replace(/ /g,'');
       for(let x in line) {
