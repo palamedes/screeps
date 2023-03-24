@@ -30,7 +30,7 @@ let structures = {
     const roomName = spawn.room.name
     const rV = new RoomVisual(roomName);
 
-    structure.basePlan();
+    structures.basePlan();
   } ,
 
 
