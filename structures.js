@@ -61,7 +61,7 @@ let structures = {
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const roomName = spawn.room.name;
     const rV = new RoomVisual(roomName);
-console.log(roomName);
+
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
@@ -131,11 +131,11 @@ console.log(roomName);
           if (index < str.length) {
             const c = str.charAt(index);
             if (c !== " ") {
-              console.log(roomName);
-              // let terrain = Game.map.getRoomTerrain(posX, posY, roomName);
-              // if (terrain !== "wall") {
+              let terrain = Game.map.getRoomTerrain(roomName);
+              let terrain.get(posX, posY);
+              if (terrain !== "wall") {
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
-              // }
+              }
             }
             index++;
           }
