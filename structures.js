@@ -1,5 +1,6 @@
 
 const sTower  = require('structure.tower');
+const roleSkaven = require("./role.skaven");
 
 let structures = {
   tower: sTower,
@@ -24,31 +25,46 @@ let structures = {
 
 
   drawBaseplan: () => {
-    // let visual = new RoomVisual('W24S37');
-    let rV = new RoomVisual('W24S37')
     let spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    rV.text("#", spawn.pos.x, spawn.pos.y, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
+    let roomName = spawn.room.name
+    let rV = new RoomVisual(roomName);
+    let plan = structures.basePlan();
+    let startSpawn = { x:-6, y:-8 };
+    for(let y in plan) {
+      let line = plan[y].replace(/ /g,'');
+      for(let x in line) {
+        let placeX = spawn.pos.x + startSpawn.x + x;
+        let placeY = spawn.pos.y + startSpawn.y + y;
+        rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
+      }
+    }
+    // rV.text("#", spawn.pos.x, spawn.pos.y, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
     // visual.drawIcon(RESOURCE_ENERGY, 3, 11, {scale: 1.5, opacity: 0.8, color: '#ff0000'});
+  },
+
+  basePlan: () => {
+    // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
+    // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
+    // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
+    let basePlan = {}
+    basePlan[0]  = "# # # # # # # # # # # # # # #";
+    basePlan[1]  = "# # · · · · · · · · · · · # #"
+    basePlan[2]  = "# · # · · · · @ · · · · # · #"
+    basePlan[3]  = "# · · # · · · # · · · # · · #"
+    basePlan[4]  = "# · · · # · # # # · # · · · #"
+    basePlan[5]  = "# · · · · # e # e # · · · · #"
+    basePlan[6]  = "# · · · # e e # e e # · · · #"
+    basePlan[7]  = "# e e # e e T # T e e # e e #"
+    basePlan[8]  = "# · · · # e @ T · e # · · · #"
+    basePlan[9]  = "# · · · · # e e e # · · · · #"
+    basePlan[10] = "# · · · # · # e # · # · · · #"
+    basePlan[11] = "# · · # · · · # · · · # · · #"
+    basePlan[12] = "# · # · · · · @ · · · · # · #"
+    basePlan[13] = "# # · · · · · · · · · · · # #"
+    basePlan[14] = "# # # # # # # # # # # # # # #"
+    return basePlan;
   }
-  // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
-  // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
-  /* Base Plan
-   # # # # # # # # # # # # # # #
-   # # · · · · · · · · · · · # #
-   # · # · · · · @ · · · · # · #
-   # · · # · · · # · · · # · · #
-   # · · · # · # # # · # · · · #
-   # · · · · # e # e # · · · · #
-   # · · · # e e # e e # · · · #
-   # · · # e e T # T e e # · · #
-   # · · · # e @ T · e # · · · #
-   # · · · · # e e e # · · · · #
-   # · · · # · # e # · # · · · #
-   # · · # · · · # · · · # · · #
-   # · # · · · · @ · · · · # · #
-   # # · · · · · · · · · · · # #
-   # # # # # # # # # # # # # # #
-   */
+
 
 
 
