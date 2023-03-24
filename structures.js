@@ -133,9 +133,9 @@ console.log(roomName);
             if (c !== " ") {
               console.log(roomName);
               // let terrain = Game.map.getRoomTerrain(posX, posY, roomName);
-              if (terrain !== "wall") {
+              // if (terrain !== "wall") {
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
-              }
+              // }
             }
             index++;
           }
