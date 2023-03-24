@@ -121,41 +121,71 @@ let structures = {
     };
     let spiral = spiralStamp(basePlan,6, 8);
 
-    const drawSpiral = (stamp, startX, startY, rV) => {
-      const directions = [
-        { x: 1, y: 0 }, // right
-        { x: 0, y: 1 }, // down
-        { x: -1, y: 0 }, // left
-        { x: 0, y: -1 } // up
-      ];
-      let direction = 0;
-      let stepsInDirection = 1;
-      let stepsTakenInDirection = 0;
-      let currentX = startX;
-      let currentY = startY;
-      let i = 0;
-      while (i < stamp.length) {
-        const currentChar = stamp.charAt(i);
-        if (currentChar !== ' ') {
-          rV.text(currentChar, currentX, currentY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
-        }
-        i++;
-        stepsTakenInDirection++;
-        if (stepsTakenInDirection >= stepsInDirection) {
-          direction = (direction + 1) % 4;
-          stepsTakenInDirection = 0;
-          if (direction % 2 === 0) {
-            stepsInDirection++;
+    // const drawSpiral = (stamp, startX, startY, rV) => {
+    //   const directions = [
+    //     { x: 1, y: 0 }, // right
+    //     { x: 0, y: 1 }, // down
+    //     { x: -1, y: 0 }, // left
+    //     { x: 0, y: -1 } // up
+    //   ];
+    //   let direction = 0;
+    //   let stepsInDirection = 1;
+    //   let stepsTakenInDirection = 0;
+    //   let currentX = startX;
+    //   let currentY = startY;
+    //   let i = 0;
+    //   while (i < stamp.length) {
+    //     const currentChar = stamp.charAt(i);
+    //     if (currentChar !== ' ') {
+    //       rV.text(currentChar, currentX, currentY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
+    //     }
+    //     i++;
+    //     stepsTakenInDirection++;
+    //     if (stepsTakenInDirection >= stepsInDirection) {
+    //       direction = (direction + 1) % 4;
+    //       stepsTakenInDirection = 0;
+    //       if (direction % 2 === 0) {
+    //         stepsInDirection++;
+    //       }
+    //     }
+    //     currentX += directions[direction].x;
+    //     currentY += directions[direction].y;
+    //   }
+    // }
+
+    const drawSpiral = (start, str, rv) => {
+      const x = start.x;
+      const y = start.y;
+      let dx = 0;
+      let dy = -1;
+      let len = 1;
+      let posX = x;
+      let posY = y;
+      let index = 0;
+
+      while (index < str.length) {
+        for (let i = 0; i < len; i++) {
+          if (index < str.length) {
+            const c = str.charAt(index);
+            if (c !== " ") {
+              rV.text(c, posX, posY, {opacity: 0.5, font: 0.5});
+            }
+            index++;
           }
+          posX += dx;
+          posY += dy;
         }
-        currentX += directions[direction].x;
-        currentY += directions[direction].y;
+        [dx, dy] = [-dy, dx];
+        if (dy === 0) {
+          len++;
+        }
       }
     }
 
     const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
     const rV = new RoomVisual(spawn.room.name);
-    drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
+    // drawSpiral(spiral, spawn.pos.x, spawn.pos.y, rV)
+    drawSpiral(spawn.pos, spiral, rV)
   }
 
 }
