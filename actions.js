@@ -9,7 +9,7 @@ const sRepair   = require('skaven.repair');
 const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
 
-let skavenActions = {
+let $actions = {
   harvest:  sHarvest,
   build:    sBuild,
   store:    sStore,
@@ -19,12 +19,12 @@ let skavenActions = {
 
   // What ever we have decided to do.. go do that.
   skitter: rat => {
-    if (rat.memory.task === 'harvest')  { skavenActions.harvest.using(rat); }
-    if (rat.memory.task === 'build')    { skavenActions.build.using(rat); }
-    if (rat.memory.task === 'repair')   { skavenActions.repair.using(rat); }
-    if (rat.memory.task === 'upgrade')  { skavenActions.upgrade.using(rat); }
-    if (rat.memory.task === 'store')    { skavenActions.store.using(rat); }
-    if (rat.memory.task === 'renew')    { skavenActions.renew.using(rat); }
+    if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
+    if (rat.memory.task === 'build')    { $actions.build.using(rat); }
+    if (rat.memory.task === 'repair')   { $actions.repair.using(rat); }
+    if (rat.memory.task === 'upgrade')  { $actions.upgrade.using(rat); }
+    if (rat.memory.task === 'store')    { $actions.store.using(rat); }
+    if (rat.memory.task === 'renew')    { $actions.renew.using(rat); }
   },
   // Number of rats actively doing a give task
   numActive: task => {
@@ -38,7 +38,7 @@ let skavenActions = {
   summonSkavenSlave: (energy, memory) => {
     let ratName = 'Slave-' + Game.time;
     let ratSpawn = Object.keys(Game.spawns)[0];
-    let ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...skavenActions.defaultMemory(), ...memory } };
+    let ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
     // Calculate the number of body parts based on energySize
     let numWork  = Math.floor(energy * 0.50 / 100); // 50% of the energy to work
     energy = energy - numWork * 100;
@@ -59,7 +59,7 @@ let skavenActions = {
   summonRatOgre: (energy, memory) => {
     let ratName = 'RatOgre-' + Game.time;
     let ratSpawn = Object.keys(Game.spawns)[0];
-    let ratBrain = { memory: { role: 'ogre', spawn: ratSpawn, ...skavenActions.defaultMemory(), ...memory } };
+    let ratBrain = { memory: { role: 'ogre', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
     // Calculate the number of body parts based on energySize
     let numAttack  = Math.floor(energy * 0.60 / 80); // 60% of the energy to attack
     energy = energy - numAttack * 80;
@@ -97,4 +97,4 @@ let skavenActions = {
   }
 };
 
-module.exports = skavenActions;
+module.exports = $actions;

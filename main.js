@@ -49,7 +49,7 @@ module.exports.loop = function () {
 
   // Work Towers
   structures.tower.run();
-structures.findHabitrail();
+  structures.findHabitrail();
 
   // Report what's up..
   console.log(statusUpdate);
