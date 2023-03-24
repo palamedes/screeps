@@ -8,7 +8,7 @@ let sMove = {
 
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
   memorizePath: (rat, target) => {
-    if (!creep.memory.path || creep.memory.path.target !== target.id) {
+    if (!rat.memory.path || rat.memory.path.target !== target.id) {
       const path = rat.room.findPath(rat.pos, target.pos, {
         ignoreCreeps: true,
         maxRooms: 1,
