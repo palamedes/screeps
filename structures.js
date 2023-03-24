@@ -132,7 +132,8 @@ let structures = {
             const c = str.charAt(index);
             if (c !== " ") {
               let terrain = Game.map.getRoomTerrain(roomName);
-              if (terrain.get(posX, posY) !== "wall") {
+              console.log(terrain.get(posX, posY));
+              if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
               }
             }
