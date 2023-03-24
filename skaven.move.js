@@ -2,11 +2,10 @@ let sMove = {
 
   // have our rat move to a location
   moveTo: (rat, target, stroke) => {
-    console.log(rat.memory.path.length)
     let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
-    if (res === ERR_NOT_FOUND || res === ERR_INVALID_ARGS) {
+    if (res === ERR_NOT_FOUND || res === ERR_INVALID_ARGS || (rat.memory.attempted + 3) > rat.memory.path.length) {
       rat.memory.path = null;
     }
   },
