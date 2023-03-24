@@ -79,6 +79,7 @@ let structures = {
     basePlan[12]= "#·#····@····#·#";
     basePlan[13]= "##···········##";
     basePlan[14]= "###############";
+    basePlan[15]= "###############";
 
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
