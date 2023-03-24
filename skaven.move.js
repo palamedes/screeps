@@ -6,22 +6,17 @@ let sMove = {
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
     if (res === ERR_NOT_FOUND) {
-      console.log('still no')
       rat.memory.path = null;
     }
   },
 
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
   memorizePath: (rat, target) => {
-    if (!rat.memory.path || rat.memory.path.target !== target.id) {
-      const path = rat.room.findPath(rat.pos, target.pos, {
+    if (!rat.memory.path || rat.memory.myTargetId !== target.id) {
+      rat.memory.path = rat.room.findPath(rat.pos, target.pos, {
         ignoreCreeps: false,
         maxRooms: 1,
       });
-      rat.memory.path = {
-        target: target.id,
-        path: path //.map((step) => ({x: step.x, y: step.y})),
-      };
     }
     return rat.memory.path.path;
   },
