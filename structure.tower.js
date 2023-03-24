@@ -1,13 +1,18 @@
-var structureTower = {
+let structureTower = {
 
   // Run the tower code
   run: () => {
-    let towers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER);
+    let towers = structureTower.getTowers();
     let onAlert = structureTower.attack(towers);
     if (!onAlert) {
       structureTower.heal(towers);
       structureTower.repair(towers);
     }
+  },
+
+  // Get our towers
+  getTowers: () => {
+    return Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER)
   },
 
   // Heal any damaged rats near by
