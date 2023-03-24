@@ -1,5 +1,5 @@
 const roleSkaven = require('role.skaven');
-const structures = require('structure');
+const structures = require('structures');
 
 // let startCPU = Game.cpu.getUsed();
 //   CODE HERE
