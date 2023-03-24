@@ -53,7 +53,7 @@ module.exports.loop = function () {
   let startCPU = Game.cpu.getUsed();
   console.log(statusUpdate);
   let endCPU = Game.cpu.getUsed();
-  let resCPU = Math.round(((startCPU-endCPU) * 1000) *1000)/10000
+  let resCPU = Math.round(((endCPU-startCPU) * 1000) *1000)/10000
   console.log(resCPU);
 
 
