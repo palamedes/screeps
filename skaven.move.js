@@ -4,7 +4,11 @@ let sMove = {
   moveTo: (rat, target, stroke) => {
     let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
-    console.log(rat.moveByPath(path, options));
+    let res = rat.moveByPath(path, options)
+    if (res === ERR_NOT_FOUND) {
+      console.log('Newp.. recalculate.. ')
+      rat.memory.path = null;
+    }
   },
 
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
