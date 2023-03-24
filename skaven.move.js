@@ -2,7 +2,7 @@ let sMove = {
 
   // have our rat move to a location
   moveTo: (rat, target, stroke) => {
-    let options = { noPathFinding: false, visualizePathStyle: { stroke: stroke } }
+    let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     let path = sMove.memorizePath(rat, target);
     let res = rat.moveByPath(path, options)
     if (res === ERR_NOT_FOUND) {
@@ -15,7 +15,7 @@ let sMove = {
   memorizePath: (rat, target) => {
     if (!rat.memory.path || rat.memory.path.target !== target.id) {
       const path = rat.room.findPath(rat.pos, target.pos, {
-        ignoreCreeps: true,
+        ignoreCreeps: false,
         maxRooms: 1,
       });
       rat.memory.path = {
