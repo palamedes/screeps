@@ -67,7 +67,7 @@ let structures = {
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
     // const plan = "@,#Tee#eeT,eT.e#e#.#.#e#ee#"
 
-    const basePlan = {};
+    const basePlan = [];
     basePlan[0] = "###############";
     basePlan[1] = "##···········##";
     basePlan[2] = "#·#····@····#·#";
