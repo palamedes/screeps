@@ -1,4 +1,5 @@
 const roleSkaven = require('role.skaven');
+const structureTower = require('structure.tower');
 
 let utility = require('utility');
 module.exports.loop = function () {
@@ -39,6 +40,10 @@ module.exports.loop = function () {
   }
   // Work the rats
   for(let name in Game.creeps) { var rat = Game.creeps[name]; roleSkaven.skitter(rat); }
+
+  // Work Towers
+  structureTower.heal();
+
   // Report what's up..
   console.log(statusUpdate);
 }
