@@ -42,10 +42,9 @@ module.exports.loop = function () {
     statusUpdate += (ogres.length > 0) ? ', Ogres: ' + ogres.length : '';
 
     // Get the data we need to determine if we need more slaves
-    let extensions = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
-    let extensionCapacity = _.sum(extensions, (extension) => extension.energyCapacity);
-    let spawnCapacity = Game.spawns[Object.keys(Game.spawns)[0]].energyCapacity;
-    let maxEnergyCapacity = extensionCapacity + spawnCapacity;
+    let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
+    let maxEnergyCapacity = _.sum(energyHolders, (holder) => holder.energyCapacity);
+
     let controllerLevel = room.controller.level
 
     // Rejigger max slaves for this room based on the level of the room
