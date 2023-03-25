@@ -28,7 +28,7 @@ module.exports.loop = function () {
     Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = Memory.rooms[room.name] || {}
     Memory.rooms[room.name] = {
-      setup:      Memory.rooms[room.name].status    || 'init',
+      status:     Memory.rooms[room.name].status    || 'init',
       maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
     }
