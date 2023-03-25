@@ -160,8 +160,11 @@ let structures = {
       }
       return results;
     }
+
     let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
-    return modifyDrawnSpiral(spawn.pos, unmodifiedBasePlan);
+    let modifiedBasePlan = modifyDrawnSpiral(spawn.pos, unmodifiedBasePlan);
+    return unmodifiedBasePlan;
+    // return modifiedBasePlan;
   }
 
 }
