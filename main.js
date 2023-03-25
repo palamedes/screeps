@@ -21,9 +21,9 @@ module.exports.loop = function () {
   let statusUpdate = "";
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
   // Iterate through each room we are in
-  for (let i in Object.keys(Game.spawns)) {
-    let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
-    let room = spawn.room;
+  for (let i in Memory.roomsList) {
+    // let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
+    let room = Memory.roomsList[i];
 
     Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = Memory.rooms[room.name] || {}
