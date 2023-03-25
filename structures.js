@@ -28,11 +28,9 @@ let structures = {
     const roomName = room.name;
     const rV = new RoomVisual(roomName);
     // Plan the room and store it in memory
-    structures.basePlan(room);
-    // Function to take the spiral string, and draw it back to the map.
-    // Save the sprial map (string of characters) to the rooms memory.. this is our base plan!
-    const drawSpiral = (start, str, rv, checkForWalls) => {
-      let results = ""
+    Memory.rooms[room.name].basePlan = Memory.rooms[room.name].basePlan || structures.basePlan(room);
+    // Function to take the spiral string, and actually draw it out on the map.
+    const drawSpiral = (start, str, rv) => {
       const x = start.x, y = start.y;
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
@@ -41,11 +39,7 @@ let structures = {
             let c = str.charAt(index);
             let terrain = Game.map.getRoomTerrain(roomName);
             if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-              if (checkForWalls && hasWallInAdjacentSquares(posX, posY, terrain)) {
-                c = '%';
-              }
               rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
-              results += c;
             }
             index++;
           }
@@ -57,17 +51,9 @@ let structures = {
           len++;
         }
       }
-      return results;
     }
-    // Check cardinal directions for walls
-    let hasWallInAdjacentSquares = (x,y,terrain) => {
-      return (terrain.get(x-1, y) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x+1, y) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x, y+1) === TERRAIN_MASK_WALL)
-    }
-    // Draw the beast on the map
-    console.log(drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rV, true));
+    // Draw the beast on the map!
+    drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rVx);
   } ,
 
   // Okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should
@@ -75,6 +61,7 @@ let structures = {
   // dynamically alter itself during the spiral draw to fit the terrain and then the bot itself will add what it wants
   // over time.  # are roads, e are extensions, T are towers, · can be anything..etc..
   basePlan: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roomName = room.name;
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
@@ -95,7 +82,7 @@ let structures = {
     basePlan[12]= "#·#····#····#·#";
     basePlan[13]= "##·····#·····##";
     basePlan[14]= "###############";
-    // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
+    // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards.  This allows us to dynamically change as we draw.
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
     const spiralStamp = (basePlan, startX, startY) => {
@@ -134,7 +121,47 @@ let structures = {
       }
       return plan;
     };
-    Memory.rooms[room.name].spiralStamp = Memory.rooms[room.name].spiralStamp || spiralStamp(basePlan,7, 7);
+    // Check cardinal directions for walls so we add roads here
+    let hasWallInAdjacentSquares = (x,y,terrain) => {
+      return (terrain.get(x-1, y) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x+1, y) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x, y+1) === TERRAIN_MASK_WALL)
+    }
+    // Function to take the spiral string created in spiralStamp, and draw it back to the map once to test the fit, and to modify it.
+    // Modifications will not try to put things in walls, for example.. or be smarter about roads near walls..etc..
+    // Save the new spiralStamp map (string of characters) to the rooms memory.. this is our base plan for this room.  Neat huh?
+    // (okay I'll admit this is likely VERY heavy handed and stupid, but it was amusing to create.. )
+    const modifyDrawnSpiral = (start, str) => {
+      let results = ""
+      const x = start.x, y = start.y;
+      let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
+      while (index < str.length) {
+        for (let i = 0; i < len; i++) {
+          if (index < str.length) {
+            let c = str.charAt(index);
+            let terrain = Game.map.getRoomTerrain(roomName);
+            if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
+              if (checkForWalls && hasWallInAdjacentSquares(posX, posY, terrain)) {
+                c = '%';
+              }
+              // rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
+              results += c;
+            }
+            index++;
+          }
+          posX += dx;
+          posY += dy;
+        }
+        [dx, dy] = [-dy, dx];
+        if (dy === 0) {
+          len++;
+        }
+      }
+      return results;
+    }
+    let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
+    return modifyDrawnSpiral(spawn.pos, unmodifiedBasePlan);
   }
 
 }
