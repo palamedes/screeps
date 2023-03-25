@@ -133,8 +133,9 @@ let structures = {
       }
     }
 
-    let spiral = spiralStamp(basePlan,7, 7);
-    drawSpiral(spawn.pos, spiral, rV)
+    Memory.rooms[room.name].spiralStamp = Memory.rooms[room.name].spiralStamp || spiralStamp(basePlan,7, 7);
+
+    drawSpiral(spawn.pos, spiral, rV);
   }
 
 }
