@@ -69,8 +69,8 @@ let structures = {
 
     const basePlan = [];
     basePlan[0] = "###############";
-    basePlan[1] = "##···········##";
-    basePlan[2] = "#·#····@····#·#";
+    basePlan[1] = "##·····#·····##";
+    basePlan[2] = "#·#····#····#·#";
     basePlan[3] = "#··#···#···#··#";
     basePlan[4] = "#···#·###·#···#";
     basePlan[5] = "#····#e#e#····#";
@@ -80,8 +80,8 @@ let structures = {
     basePlan[9] = "#····#eee#····#";
     basePlan[10]= "#···#·#e#·#···#";
     basePlan[11]= "#··#···#···#··#";
-    basePlan[12]= "#·#····@····#·#";
-    basePlan[13]= "##···········##";
+    basePlan[12]= "#·#····#····#·#";
+    basePlan[13]= "##·····#·····##";
     basePlan[14]= "###############";
 
     // let hasAdjacentWall = (x,y) => {
