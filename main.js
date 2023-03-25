@@ -1,5 +1,6 @@
 const roleSkaven = require('role.skaven');
 const structures = require('structures');
+const rooms = require('rooms');
 
 // let startCPU = Game.cpu.getUsed();
 //   CODE HERE
@@ -9,13 +10,11 @@ const structures = require('structures');
 
 let utility = require('utility');
 module.exports.loop = function () {
-
-  // Track tick count ~ we can use this to do things on certain ticks to lower CPU costs
+  // Track tick count since we started ~ we can use this to do things on certain ticks to lower CPU costs
   Memory.tickCount = Memory.tickCount || 0; Memory.tickCount++;
-
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
-  // Get all our rooms.
+  // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
   let statusUpdate = "";
@@ -25,7 +24,7 @@ module.exports.loop = function () {
     // let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
     let roomName = Memory.roomsList[i];
     let room = Game.rooms[roomName];
-
+    // Setup the room if it hasn't been yet
     Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = Memory.rooms[room.name] || {}
     Memory.rooms[room.name] = {
@@ -44,7 +43,6 @@ module.exports.loop = function () {
     // Get the data we need to determine if we need more slaves
     let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
     let maxEnergyCapacity = _.sum(energyHolders, (holder) => holder.energyCapacity);
-
     let controllerLevel = room.controller.level
 
     // Rejigger max slaves for this room based on the level of the room
@@ -60,7 +58,7 @@ module.exports.loop = function () {
     }
 
     // Based on the status of the room
-
+    rooms.run(room);
   }
 
   // Set the max number of slaves for a room to the room controller size
