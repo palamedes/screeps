@@ -33,11 +33,11 @@ module.exports.loop = function () {
       maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
     }
+    let mem = Memory.rooms[room.name];
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
     let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
-
     statusUpdate += (slaves.length > 0) ? ' ~ Slaves: ' + slaves.length : '';
     statusUpdate += (ogres.length > 0) ? ', Ogres: ' + ogres.length : '';
 
@@ -49,16 +49,18 @@ module.exports.loop = function () {
     let controllerLevel = room.controller.level
 
     // Rejigger max slaves for this room based on the level of the room
-
+    // @TODO
 
     // Spawn a skaven slave
-    if ((slaves.length < 2 || (slaves.length < Memory.maxSlaves && room.energyAvailable >= maxEnergyCapacity)) && room.energyAvailable >= 200) {
+    if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= maxEnergyCapacity)) && room.energyAvailable >= 200) {
       statusUpdate += roleSkaven.summonSkaven(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
     }
     // Spawn a rat ogre
-    if (ogres < Memory.maxOgres && ogres.length === Memory.maxOgres && room.energyAvailable >= maxEnergyCapacity) {
+    if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= maxEnergyCapacity) {
       statusUpdate += roleSkaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
     }
+
+    // Based on the status of the room
 
   }
 
