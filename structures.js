@@ -164,7 +164,7 @@ let structures = {
               let terrain = Game.map.getRoomTerrain(roomName);
               if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
                 if (hasWallInAdjacentSquares(posX, posY, terrain)) {
-                  c = '#';
+                  // c = '#';
                 }
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
               }
