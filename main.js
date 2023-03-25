@@ -38,7 +38,7 @@ module.exports.loop = function () {
 
   // Spawn a skaven slave
   if ((slave.length < 2 || (slave.length < Memory.maxSlaves && room.energyAvailable >= maxEnergyCapacity)) && room.energyAvailable >= 200) {
-    statusUpdate += roleSkaven.summonSkaven(energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
+    statusUpdate += roleSkaven.summonSkaven(room.energyAvailable, { roomBound: Game.spawns[Object.keys(Game.spawns)[0]].room.name });
   }
   // Spawn a rat ogre
   if (ogres < Memory.maxOgres && ogres.length === Memory.maxOgres && room.energyAvailable >= maxEnergyCapacity) {
