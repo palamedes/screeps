@@ -7,7 +7,7 @@ let sHarvest = {
 
     // If the rat doesn't know where to go.. Find it.
     if (!rat.memory.myTargetId) {
-      const emergencyPickupAmount = 200;
+      const emergencyPickupAmount = 50; // Change this based on controller level
       // if we have a high volume emergency pickup, lets go get it
       let emergencyPickup = rat.room.find([FIND_DROPPED_RESOURCES, FIND_RUINS, FIND_TOMBSTONES], {
         filter: (dropped) => {
