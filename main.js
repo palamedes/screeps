@@ -18,6 +18,7 @@ module.exports.loop = function () {
   // Get all our rooms.
   Memory.rooms = Memory.rooms || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
+  const statusUpdate = "";
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
   // Iterate through each room we are in
   for (let i in Object.keys(Game.spawns)) {
@@ -30,7 +31,7 @@ module.exports.loop = function () {
       maxOgres: Memory.rooms[room].maxOgres || 8,
     }
 
-    let statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
+    statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
     let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
 
