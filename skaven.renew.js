@@ -8,7 +8,7 @@ let sRenew = {
         let result = closestSpawn.renewCreep(rat);
         doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
       } else {
-        rat.moveTo(closestSpawn, {visualizePathStyle: {stroke: '#ffffff'}});
+        rat.moveTo(closestSpawn, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
         doneRenewing = false
       }
     } else {

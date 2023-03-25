@@ -3,8 +3,8 @@ let sUpgrade = {
   using: rat => {
     var target = rat.room.controller;
     if (rat.room.controller && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
-      if (rat.upgradeController(rat.room.controller) == ERR_NOT_IN_RANGE) {
-        rat.moveTo(rat.room.controller, { visualizePathStyle: { stroke: '#ffffff' } });
+      if (rat.upgradeController(rat.room.controller) === ERR_NOT_IN_RANGE) {
+        rat.moveTo(rat.room.controller, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
       }
     } else {
       rat.say(rat.memory.slept > 2 ? '💤' : '💡');

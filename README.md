@@ -21,6 +21,8 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - Towers know how to Attack, Heal and Repair
 
 #### TODO
+- If there is no energy available in the room, range to another room
+  - If that room is dangerous, add it to the danger list until we can deal with the danger
 - Add ability to "specialize" skaven to only do certain things and build them as such
   - If we have just 2 rats running around, they are slaves that do all the things
   - The 3rd rat becomes a hauler only.  And one of the first 2 needs to just harvest and drop energy
