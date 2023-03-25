@@ -1,5 +1,4 @@
 const roleSkaven = require('role.skaven');
-const structures = require('structures');
 const rooms = require('rooms');
 
 // let startCPU = Game.cpu.getUsed();
@@ -68,12 +67,6 @@ module.exports.loop = function () {
 
   // Work the rats
   for(let name in Game.creeps) { var rat = Game.creeps[name]; roleSkaven.skitter(rat); }
-
-  // Work Towers
-  structures.tower.run();
-  // structures.findHabitrail();
-
-  structures.drawBaseplan();
 
   // Report what's up..
   console.log(statusUpdate);

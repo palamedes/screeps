@@ -1,8 +1,9 @@
-const roleSkaven = require("./role.skaven");
+const structures = require('structures');
 
 let rooms = {
   run: room => {
-    if (Memory.rooms[room.name].status  === 'init') { rooms.init(room); }
+    if (Memory.rooms[room.name].status  === 'init')     { rooms.init(room); }
+    if (Memory.rooms[room.name].status  === 'running')  { rooms.running(room); }
   },
   // Setup plan for base, roads to sources..etc.
   init: room => {
@@ -27,7 +28,14 @@ let rooms = {
     // Once this is all said and done, we can run the room.
     Memory.rooms[room.name].status = "running";
   },
-  running: () => {
+  // okay do the day to day running of the room
+  running: room => {
+    // Work Towers
+    structures.tower.run();
+    // structures.findHabitrail();
+
+    // Draw the base plan based on the rooms information
+    structures.drawBaseplan(room);
 
   }
 }
