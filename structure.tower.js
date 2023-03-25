@@ -3,10 +3,12 @@ let structureTower = {
   // Run the tower code
   run: () => {
     let towers = structureTower.getTowers();
-    let onAlert = structureTower.attack(towers);
-    if (!onAlert) {
-      structureTower.heal(towers);
-      structureTower.repair(towers);
+    if (towers.length > 0) {
+      let onAlert = structureTower.attack(towers);
+      if (!onAlert) {
+        structureTower.heal(towers);
+        structureTower.repair(towers);
+      }
     }
   },
 
@@ -52,7 +54,7 @@ let structureTower = {
   // Attack any hostile creeps
   attack: towers => {
     // Are there any hostile creeps?
-    const hostileCreeps = Game.spawns[Object.keys(Game.spawns)[0]].room.find(FIND_HOSTILE_CREEPS);
+    const hostileCreeps = towers[id].room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length > 0) {
       for (let id in towers) {
         // let tower = Game.towers[towerId];
