@@ -167,8 +167,8 @@ let structures = {
     let modifiedBasePlan = modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
     Memory.rooms[room.name].modifiedBasePlan = Memory.rooms[room.name].modifiedBasePlan || modifiedBasePlan;
 
-    return unmodifiedBasePlan;
-    // return modifiedBasePlan;
+    // return unmodifiedBasePlan;
+    return modifiedBasePlan;
   }
 
 }
