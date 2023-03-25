@@ -15,8 +15,7 @@ var roleSkaven = {
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
         const spawn = Game.spawns[rat.memory.spawn];
-        const energyAvailable = spawn.memory.energy
-        if (energyAvailable > 100) {
+        if (spawn.memory.energy > 100) {
           rat.memory.task = 'renew';
           rat.say('⌛');
         }
