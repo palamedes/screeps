@@ -32,6 +32,7 @@ let structures = {
     // Function to take the spiral string, and draw it back to the map.
     // Save the sprial map (string of characters) to the rooms memory.. this is our base plan!
     const drawSpiral = (start, str, rv, checkForWalls) => {
+      let results = ""
       const x = start.x, y = start.y;
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
@@ -41,10 +42,10 @@ let structures = {
             let terrain = Game.map.getRoomTerrain(roomName);
             if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
               if (checkForWalls && hasWallInAdjacentSquares(posX, posY, terrain)) {
-                str[index] = '%'
                 c = '%';
               }
               rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
+              results += c;
             }
             index++;
           }
@@ -56,7 +57,7 @@ let structures = {
           len++;
         }
       }
-      return str
+      return results;
     }
     // Check cardinal directions for walls
     let hasWallInAdjacentSquares = (x,y,terrain) => {
