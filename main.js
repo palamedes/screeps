@@ -18,7 +18,7 @@ module.exports.loop = function () {
   // Get all our rooms.
   Memory.rooms = Memory.rooms || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
-  const statusUpdate = "";
+  let statusUpdate = "";
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
   // Iterate through each room we are in
   for (let i in Object.keys(Game.spawns)) {
