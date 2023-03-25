@@ -84,6 +84,27 @@ let structures = {
     basePlan[13]= "##···········##";
     basePlan[14]= "###############";
 
+    let hasAdjacentWall = (x,y) => {
+      const terrain = Game.map.getRoomTerrain(pos.roomName);
+      // Check all eight surrounding squares
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx === 0 && dy === 0) {
+            // Skip the center square
+            continue;
+          }
+          const newX = x + dx;
+          const newY = y + dy;
+          if (terrain.get(newX, newY) === TERRAIN_MASK_WALL) {
+            // Found a wall in one of the surrounding squares
+            return true;
+          }
+        }
+      }
+      // No walls found in surrounding squares
+      return false;
+    }
+
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
@@ -132,8 +153,10 @@ let structures = {
             const c = str.charAt(index);
             if (c !== " ") {
               let terrain = Game.map.getRoomTerrain(roomName);
-              console.log(terrain.get(posX, posY));
               if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
+                if (hasAdjacentWall(posX,posY)) {
+                  c = '#';
+                }
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
               }
             }
