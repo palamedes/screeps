@@ -1,6 +1,4 @@
-
 const sTower  = require('structure.tower');
-const roleSkaven = require("./role.skaven");
 
 let structures = {
   tower: sTower,
