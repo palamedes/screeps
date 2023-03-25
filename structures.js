@@ -104,7 +104,7 @@ let structures = {
     //   // No walls found in surrounding squares
     //   return false;
     // }
-    let hasWallInAdjacentSquares = (x,y,terran) => {
+    let hasWallInAdjacentSquares = (x,y,terrain) => {
       return (terrain.get(x-1, y) === TERRAIN_MASK_WALL) ||
         (terrain.get(x+1, y) === TERRAIN_MASK_WALL) ||
         (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
