@@ -38,12 +38,10 @@ let structures = {
         for (let i = 0; i < len; i++) {
           if (index < str.length) {
             let c = str.charAt(index);
-            if (c !== " ") {
-              let terrain = Game.map.getRoomTerrain(roomName);
-              if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-                if (hasWallInAdjacentSquares(posX, posY, terrain)) { c = '#'; }
-                rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
-              }
+            let terrain = Game.map.getRoomTerrain(roomName);
+            if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
+              if (hasWallInAdjacentSquares(posX, posY, terrain)) { c = '#'; }
+              rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
             }
             index++;
           }
@@ -63,7 +61,6 @@ let structures = {
         (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
         (terrain.get(x, y+1) === TERRAIN_MASK_WALL)
     }
-
     // Draw the beast on the map
     drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rV);
   } ,
