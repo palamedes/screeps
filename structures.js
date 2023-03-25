@@ -150,7 +150,7 @@ let structures = {
       while (index < str.length) {
         for (let i = 0; i < len; i++) {
           if (index < str.length) {
-            const c = str.charAt(index);
+            let c = str.charAt(index);
             if (c !== " ") {
               let terrain = Game.map.getRoomTerrain(roomName);
               if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
