@@ -31,7 +31,7 @@ let structures = {
     structures.basePlan(room);
     // Function to take the spiral string, and draw it back to the map.
     // Save the sprial map (string of characters) to the rooms memory.. this is our base plan!
-    const drawSpiral = (start, str, rv) => {
+    const drawSpiral = (start, str, rv, checkForWalls) => {
       const x = start.x, y = start.y;
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
@@ -40,7 +40,10 @@ let structures = {
             let c = str.charAt(index);
             let terrain = Game.map.getRoomTerrain(roomName);
             if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-              if (hasWallInAdjacentSquares(posX, posY, terrain)) { c = '#'; }
+              if (checkForWalls && hasWallInAdjacentSquares(posX, posY, terrain)) {
+                str[index] = '#'
+                c = '#';
+              }
               rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
             }
             index++;
@@ -53,6 +56,7 @@ let structures = {
           len++;
         }
       }
+      return str
     }
     // Check cardinal directions for walls
     let hasWallInAdjacentSquares = (x,y,terrain) => {
@@ -62,7 +66,7 @@ let structures = {
         (terrain.get(x, y+1) === TERRAIN_MASK_WALL)
     }
     // Draw the beast on the map
-    drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rV);
+    console.log(drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rV, true));
   } ,
 
   // Okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should
