@@ -135,10 +135,10 @@ let structures = {
     const modifyDrawnSpiral = (basePlan, x, y) => {
       let results = ""
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
-      while (index < str.length) {
+      while (index < basePlan.length) {
         for (let i = 0; i < len; i++) {
-          if (index < str.length) {
-            let c = str.charAt(index);
+          if (index < basePlan.length) {
+            let c = basePlan.charAt(index);
             let terrain = Game.map.getRoomTerrain(roomName);
             if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
               if (hasWallInAdjacentSquares(posX, posY, terrain)) {
