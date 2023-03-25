@@ -132,9 +132,8 @@ let structures = {
     // Modifications will not try to put things in walls, for example.. or be smarter about roads near walls..etc..
     // Save the new spiralStamp map (string of characters) to the rooms memory.. this is our base plan for this room.  Neat huh?
     // (okay I'll admit this is likely VERY heavy handed and stupid, but it was amusing to create.. )
-    const modifyDrawnSpiral = (start, str) => {
+    const modifyDrawnSpiral = (basePlan, x, y) => {
       let results = ""
-      const x = start.x, y = start.y;
       let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
       while (index < str.length) {
         for (let i = 0; i < len; i++) {
@@ -162,7 +161,10 @@ let structures = {
     }
 
     let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
-    let modifiedBasePlan = modifyDrawnSpiral(spawn.pos, unmodifiedBasePlan);
+    Memory.rooms[room.name].unmodifiedBasePlan = Memory.rooms[room.name].unmodifiedBasePlan || unmodifiedBasePlan;
+    let modifiedBasePlan = modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
+    Memory.rooms[room.name].modifiedBasePlan = Memory.rooms[room.name].modifiedBasePlan || modifiedBasePlan;
+
     return unmodifiedBasePlan;
     // return modifiedBasePlan;
   }
