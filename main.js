@@ -16,7 +16,7 @@ module.exports.loop = function () {
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
   // Get all our rooms.
-  Memory.roomsList = Memory.rooms || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
+  Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
   let statusUpdate = "";
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
@@ -25,7 +25,7 @@ module.exports.loop = function () {
     let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
     let room = spawn.room;
 
-    Memory.rooms[room.name] = Memory.rooms[room.name] || {}
+    Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = {
       maxSlaves: Memory.rooms[room.name].maxSlaves || 8,
       maxOgres: Memory.rooms[room.name].maxOgres || 8,
