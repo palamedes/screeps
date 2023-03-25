@@ -26,6 +26,7 @@ module.exports.loop = function () {
     let room = spawn.room;
 
     Memory.rooms = Memory.rooms || {}
+    Memory.rooms[room.name] = Memory.rooms[room.name] || {}
     Memory.rooms[room.name] = {
       maxSlaves: Memory.rooms[room.name].maxSlaves || 8,
       maxOgres: Memory.rooms[room.name].maxOgres || 8,
