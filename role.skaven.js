@@ -13,7 +13,7 @@ var roleSkaven = {
       let upgradeTarget = rat.room.controller;
 
       // If our ticks to live is down to 200, stop what you're doing and go solve that.
-      if (rat.ticksToLive <= 100 && rat.memory.task !== 'renew') {
+      if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
         rat.memory.task = 'renew';
         rat.say('⌛');
       }
