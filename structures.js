@@ -53,7 +53,7 @@ let structures = {
       }
     }
     // Draw the beast on the map!
-    drawSpiral(spawn.pos, Memory.rooms[room.name].spiralStamp, rV);
+    drawSpiral(spawn.pos, Memory.rooms[room.name].basePlan, rV);
   } ,
 
   // Okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should
