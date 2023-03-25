@@ -8,7 +8,23 @@ let rooms = {
   init: room => {
     // Find our sources and build path from spawn to
     const energySources = room.find(FIND_SOURCES);
-    const sourcePositions = energySources.map(source => source.pos);
+
+    let surroundings = source => {
+      const surroundings = [];
+      for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
+        for (let y = source.pos.y - 1; y <= source.pos.y + 1; y++) {
+          if (x === source.pos.x && y === source.pos.y) continue;
+          const look = source.room.lookAt(x, y);
+          if (look.some(obj => obj.type === LOOK_TERRAIN && obj.terrain === 'wall')) continue;
+          if (look.some(obj => obj.type === LOOK_STRUCTURES && OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType))) continue;
+          surroundings.push({x: x, y: y});
+        }
+      }
+      return surroundings;
+    }
+    const sourcePositions = energySources.map(source => surroundings(source));
+
+
     console.log(sourcePositions);
   },
   running: () => {
