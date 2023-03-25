@@ -64,7 +64,7 @@ let structures = {
 
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
-    // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION
+    // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
     // const plan = "@,#Tee#eeT,eT.e#e#.#.#e#ee#"
 
     const basePlan = [];
@@ -74,9 +74,9 @@ let structures = {
     basePlan[3] = "#··#···#···#··#";
     basePlan[4] = "#···#·###·#···#";
     basePlan[5] = "#····#e#e#····#";
-    basePlan[6] = "#···#ee#ee#···#";
-    basePlan[7] = "#ee#eeT*Tee#ee#";
-    basePlan[8] = "#···#e#·#e#···#";
+    basePlan[6] = "#···#··#··#···#";
+    basePlan[7] = "#ee#··T*T··#ee#";
+    basePlan[8] = "#···#·#·#·#···#";
     basePlan[9] = "#····#eee#····#";
     basePlan[10]= "#···#·#e#·#···#";
     basePlan[11]= "#··#···#···#··#";
@@ -163,6 +163,8 @@ let structures = {
                   c = '#';
                 }
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
+                // Create Memory base plan array that houses what should be on the spot we are drawing on.
+
               }
             }
             index++;
