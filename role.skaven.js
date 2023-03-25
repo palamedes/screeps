@@ -38,9 +38,9 @@ var roleSkaven = {
             rat.memory.slept = 0;
             rat.say('🔧');
           }
-          // Upgrade comes third... But only if we have 80% of max slaves and then only 20% can do the work..
+          // Upgrade comes third... But only if we have 80% of max slaves and then only 50% can do the work..
           // or if we have slept a while.. Meaning there is nothing else to do.. go upgrade.
-          else if (upgradeTarget && ((slave.length >= (maxSlaves*0.8) && $actions.numActive('upgrade') <= (maxSlaves*0.2)) || rat.memory.slept > 5)) {
+          else if (upgradeTarget && ((slave.length >= (maxSlaves*0.8) && $actions.numActive('upgrade') <= (maxSlaves*0.5)) || rat.memory.slept > 5)) {
             rat.memory.task = 'upgrade';
             rat.memory.slept = 0;
             rat.say('🛠️');
