@@ -21,12 +21,8 @@ let structures = {
     roomVisual.line(10, 10, 40, 40, { color: 'blue' });
   },
 
-
-
   drawBaseplan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
-    const roomName = room.name;
-    const rV = new RoomVisual(roomName);
     console.log(Memory.rooms[room.name].basePlan);
     // Plan the room and store it in memory
     Memory.rooms[room.name].basePlan = Memory.rooms[room.name].basePlan || structures.basePlan(room);
@@ -54,7 +50,7 @@ let structures = {
       }
     }
     // Draw the beast on the map!
-    drawSpiral(spawn.pos, Memory.rooms[room.name].basePlan, rV);
+    drawSpiral(spawn.pos, Memory.rooms[room.name].basePlan, new RoomVisual(room.name));
   } ,
 
   // Okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should

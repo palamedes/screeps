@@ -31,6 +31,7 @@ module.exports.loop = function () {
       sources:    Memory.rooms[room.name].sources   || {},
       maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
+      basePlan:   Memory.rooms[room.name].basePlan  || null,
     }
     let mem = Memory.rooms[room.name];
 

@@ -9,7 +9,6 @@ let rooms = {
   init: room => {
     // Find our sources and build path from spawn to
     const energySources = room.find(FIND_SOURCES);
-console.log('INIT');
     let surroundings = source => {
       const surroundings = [];
       for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
@@ -25,6 +24,9 @@ console.log('INIT');
     }
     Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
 
+
+
+
     // Once this is all said and done, we can run the room.
     Memory.rooms[room.name].status = "running";
   },
@@ -32,8 +34,6 @@ console.log('INIT');
   running: room => {
     // Work Towers
     structures.tower.run();
-    // structures.findHabitrail();
-
     // Draw the base plan based on the rooms information
     structures.drawBaseplan(room);
 
