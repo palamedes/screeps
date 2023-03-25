@@ -27,6 +27,7 @@ let structures = {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roomName = room.name;
     const rV = new RoomVisual(roomName);
+    console.log(Memory.rooms[room.name].basePlan);
     // Plan the room and store it in memory
     Memory.rooms[room.name].basePlan = Memory.rooms[room.name].basePlan || structures.basePlan(room);
     // Function to take the spiral string, and actually draw it out on the map.
