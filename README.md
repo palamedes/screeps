@@ -21,6 +21,7 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - Towers know how to Attack, Heal and Repair
 
 #### TODO
+- Add "homeRoom" to rat memory and "currentRoom" and get roomBound working
 - If there is no energy available in the room, range to another room
   - If that room is dangerous, add it to the danger list until we can deal with the danger
 - Add ability to "specialize" skaven to only do certain things and build them as such
