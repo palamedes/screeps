@@ -61,6 +61,7 @@ let structures = {
   // dynamically alter itself during the spiral draw to fit the terrain and then the bot itself will add what it wants
   // over time.  # are roads, e are extensions, T are towers, · can be anything..etc..
   basePlan: room => {
+    console.log('called');
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roomName = room.name;
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
@@ -161,14 +162,8 @@ let structures = {
       }
       return results;
     }
-
     let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
-    Memory.rooms[room.name].unmodifiedBasePlan = Memory.rooms[room.name].unmodifiedBasePlan || unmodifiedBasePlan;
-    let modifiedBasePlan = modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
-    Memory.rooms[room.name].modifiedBasePlan = Memory.rooms[room.name].modifiedBasePlan || modifiedBasePlan;
-
-    // return unmodifiedBasePlan;
-    return modifiedBasePlan;
+    return modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
   }
 
 }
