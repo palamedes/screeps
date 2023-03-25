@@ -9,7 +9,7 @@ let rooms = {
   init: room => {
     // Find our sources and build path from spawn to
     const energySources = room.find(FIND_SOURCES);
-
+console.log('INIT');
     let surroundings = source => {
       const surroundings = [];
       for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
