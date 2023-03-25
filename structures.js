@@ -146,6 +146,8 @@ let structures = {
               }
               // rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
               results += c;
+            } else {
+              results += ' ';
             }
             index++;
           }
