@@ -22,10 +22,10 @@ let rooms = {
       }
       return surroundings;
     }
-    const sourcePositions = energySources.map(source => surroundings(source));
+    Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
 
-
-    console.log(sourcePositions);
+    // Once this is all said and done, we can run the room.
+    Memory.rooms[room.name].status = "running";
   },
   running: () => {
 
