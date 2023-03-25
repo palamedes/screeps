@@ -25,10 +25,10 @@ module.exports.loop = function () {
     let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
     let room = spawn.room;
 
-    Memory.rooms[room] = Memory.rooms[room] || {}
-    Memory.rooms[room] = {
-      maxSlaves: Memory.rooms[room].maxSlaves || 8,
-      maxOgres: Memory.rooms[room].maxOgres || 8,
+    Memory.rooms[room.name] = Memory.rooms[room.name] || {}
+    Memory.rooms[room.name] = {
+      maxSlaves: Memory.rooms[room.name].maxSlaves || 8,
+      maxOgres: Memory.rooms[room.name].maxOgres || 8,
     }
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
