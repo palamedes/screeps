@@ -84,27 +84,36 @@ let structures = {
     basePlan[13]= "##···········##";
     basePlan[14]= "###############";
 
-    let hasAdjacentWall = (x,y) => {
-      let terrain = Game.map.getRoomTerrain(roomName);
-      // Check all eight surrounding squares
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          if (dx === 0 && dy === 0) {
-            // Skip the center square
-            continue;
-          }
-          const newX = x + dx;
-          const newY = y + dy;
-          if (terrain.get(newX, newY) === TERRAIN_MASK_WALL) {
-            // Found a wall in one of the surrounding squares
-            return true;
-          }
-        }
-      }
-      // No walls found in surrounding squares
-      return false;
+    // let hasAdjacentWall = (x,y) => {
+    //   let terrain = Game.map.getRoomTerrain(roomName);
+    //   // Check all eight surrounding squares
+    //   for (let dx = -1; dx <= 1; dx++) {
+    //     for (let dy = -1; dy <= 1; dy++) {
+    //       if (dx === 0 && dy === 0) {
+    //         // Skip the center square
+    //         continue;
+    //       }
+    //       const newX = x + dx;
+    //       const newY = y + dy;
+    //       if (terrain.get(newX, newY) === TERRAIN_MASK_WALL) {
+    //         // Found a wall in one of the surrounding squares
+    //         return true;
+    //       }
+    //     }
+    //   }
+    //   // No walls found in surrounding squares
+    //   return false;
+    // }
+    let hasWallInAdjacentSquares = (x,y,terran) => {
+      return (terrain.get(x-1, y) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x+1, y) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x, y+1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x-1, y-1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x-1, y+1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x+1, y-1) === TERRAIN_MASK_WALL) ||
+        (terrain.get(x+1, y+1) === TERRAIN_MASK_WALL);
     }
-
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
@@ -154,7 +163,7 @@ let structures = {
             if (c !== " ") {
               let terrain = Game.map.getRoomTerrain(roomName);
               if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-                if (hasAdjacentWall(posX,posY)) {
+                if (hasWallInAdjacentSquares(posX, posY, terrain)) {
                   c = '#';
                 }
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
