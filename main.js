@@ -23,7 +23,8 @@ module.exports.loop = function () {
   // Iterate through each room we are in
   for (let i in Memory.roomsList) {
     // let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
-    let room = Memory.roomsList[i];
+    let roomName = Memory.roomsList[i];
+    let room = Game.room[roomName];
 
     Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = Memory.rooms[room.name] || {}
