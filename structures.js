@@ -23,37 +23,16 @@ let structures = {
 
 
 
-  drawBaseplan: () => {
-    structures.basePlan();
+  drawBaseplan: room => {
+    structures.basePlan(room);
   } ,
 
-
-  drawBaseplanStamp: () => {
-    const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    const roomName = spawn.room.name
-    const rV = new RoomVisual(roomName);
-    const plan = structures.basePlanStamp();
-    const startSpawn = { x:-6, y:-8 };
-    for(let y in plan) {
-      let line = plan[y].replace(/ /g,'');
-      for(let x in line) {
-        // console.log(Math.parseInt(spawn.pos.x) + " " + startSpawn.x + " "+ x + '::' + (spawn.pos.x + startSpawn.x + x));
-        let placeX = parseInt(spawn.pos.x) + parseInt(startSpawn.x) + parseInt(x);
-        let placeY = parseInt(spawn.pos.y) + parseInt(startSpawn.y) + parseInt(y);
-        // if the terrain at this point is a wall we can't use it
-        const terrain = Game.map.getRoomTerrain(placeX, placeY, roomName);
-        if (terrain !== "wall") {
-          rV.text(line[x], placeX, placeY, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
-        }
-      }
-    }
-    // rV.text("#", spawn.pos.x, spawn.pos.y, { color: '#ff0000', font: 0.8, opacity: 0.5, scale: 3 });
-    // visual.drawIcon(RESOURCE_ENERGY, 3, 11, {scale: 1.5, opacity: 0.8, color: '#ff0000'});
-  },
-
-  basePlan: () => {
-    const spawn = Game.spawns[Object.keys(Game.spawns)[0]];
-    const roomName = spawn.room.name;
+  // okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should
+  // sorta look like.  this is a stamp, but only in that it's a rough guess as to what it should look like and it will
+  // dynamically alter itself during the spiral draw to fit the terrain.
+  basePlan: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const roomName = room.name;
     const rV = new RoomVisual(roomName);
 
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
