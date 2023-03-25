@@ -22,6 +22,7 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 
 #### TODO
 - Add "homeRoom" to rat memory and "currentRoom" and get roomBound working
+- Set what the controller level was at the time a slave is spawned, such that later if we go up in controller level we allow that slave to die off and generate a new better one.  Think, version numbers.  This prevents ups from renewing old janky creeps.
 - If there is no energy available in the room, range to another room
   - If that room is dangerous, add it to the danger list until we can deal with the danger
 - Add ability to "specialize" skaven to only do certain things and build them as such
