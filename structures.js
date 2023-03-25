@@ -108,11 +108,7 @@ let structures = {
       return (terrain.get(x-1, y) === TERRAIN_MASK_WALL) ||
         (terrain.get(x+1, y) === TERRAIN_MASK_WALL) ||
         (terrain.get(x, y-1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x, y+1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x-1, y-1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x-1, y+1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x+1, y-1) === TERRAIN_MASK_WALL) ||
-        (terrain.get(x+1, y+1) === TERRAIN_MASK_WALL);
+        (terrain.get(x, y+1) === TERRAIN_MASK_WALL)
     }
     // Convert the above stamp, to a spiral starting at the main base "*" (6,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards
