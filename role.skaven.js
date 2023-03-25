@@ -12,7 +12,7 @@ var roleSkaven = {
       let repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
       let upgradeTarget = rat.room.controller;
 
-      // If our ticks to live is down to 200, stop what you're doing and go solve that.
+      // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
         const spawn = Game.spawns[rat.memory.spawn];
         if (spawn.memory.energy > 100) {
