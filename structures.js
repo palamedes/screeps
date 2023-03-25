@@ -84,8 +84,7 @@ let structures = {
     basePlan[13]= "##···········##";
     basePlan[14]= "###############";
 
-    let hasAdjacentWall = (x,y) => {
-      const terrain = Game.map.getRoomTerrain(pos.roomName);
+    let hasAdjacentWall = (x,y,terrain) => {
       // Check all eight surrounding squares
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
@@ -154,7 +153,7 @@ let structures = {
             if (c !== " ") {
               let terrain = Game.map.getRoomTerrain(roomName);
               if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-                if (hasAdjacentWall(posX,posY)) {
+                if (hasAdjacentWall(posX,posY,terrain)) {
                   c = '#';
                 }
                 rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
