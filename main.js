@@ -29,7 +29,8 @@ module.exports.loop = function () {
     Memory.rooms = Memory.rooms || {}
     Memory.rooms[room.name] = Memory.rooms[room.name] || {}
     Memory.rooms[room.name] = {
-      maxSlaves:  Memory.rooms[room.name].maxSlaves || 8,
+      setup:      false,
+      maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
     }
 
