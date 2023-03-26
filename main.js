@@ -30,7 +30,7 @@ module.exports.loop = function () {
     const totalSpawnsCapacity = _.sum(spawns, (s) => s.energyCapacity);
     const totalExtensionsCapacity = _.sum(extensions, (e) => e.energyCapacity);
     const totalCapacity = totalSpawnsCapacity + totalExtensionsCapacity;
-    Memory.rooms[roomName].maxEnergy = totalSpawns + totalExtensions
+    Memory.rooms[roomName].maxEnergy = totalCapacity;
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
