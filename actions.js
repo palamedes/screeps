@@ -44,7 +44,7 @@ let $actions = {
     const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
     const numHarvesters = _.filter(slaves, (slave) => slave.body.some((part) => part.type !== CARRY)).length;
 
-    const ratName = 'Slave-' + Game.time + '-' + energy;
+    const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
     const ratSpawn = room.find(FIND_MY_SPAWNS)[0]
     const ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
 
