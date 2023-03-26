@@ -19,6 +19,7 @@ let structures = {
   },
 
   buildStructure: (room, buildPos, structure) => {
+    if (!buildPos) return;
     let results = room.createConstructionSite(buildPos.x, buildPos.y, structure);
     if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
       structures.updateBasePlan(room, buildPos.index);
