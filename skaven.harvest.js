@@ -11,8 +11,15 @@ let sHarvest = {
         filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
       if (droppedEnergy.length > 0) {
-        let maxDroppedEnergy = _.maxBy(droppedEnergy, 'amount');
-        rat.memory.myTargetId = maxDroppedEnergy.id;
+        let highestEnergy = 0;
+        let highestEnergyId = null;
+        for (let i = 0; i < droppedEnergy.length; i++) {
+          if (droppedEnergy[i].amount > highestEnergy) {
+            highestEnergy = droppedEnergy[i].amount;
+            highestEnergyId = droppedEnergy[i].id;
+          }
+        }
+        rat.memory.myTargetId = highestEnergyId;
       }
     }
     // // If the rat doesn't know where to go.. Find tombstone energy?
