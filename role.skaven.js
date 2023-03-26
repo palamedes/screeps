@@ -16,7 +16,6 @@ var roleSkaven = {
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
         // let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
         // const spawn = Game.spawns[rat.memory.spawn];
-        console.log(Game.rooms[rat.memory.roomBound].energyAvailable)
         if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) {
           rat.memory.task = 'renew';
           rat.say('⌛');
