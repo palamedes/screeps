@@ -40,7 +40,7 @@ let sHarvest = {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a ruin, then go withdraw the energy
-      if (target.structureType === STRUCTURE_RUIN && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      if (target instanceof Tombstone && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
