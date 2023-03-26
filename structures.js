@@ -99,21 +99,21 @@ let structures = {
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
     const basePlan = [];
-    basePlan[0] = "###############";
-    basePlan[1] = "##·····#·····##";
-    basePlan[2] = "#·#····#····#·#";
-    basePlan[3] = "#··#···#···#··#";
-    basePlan[4] = "#···#e#e#e#···#";
-    basePlan[5] = "#···e#e#e#e···#";
-    basePlan[6] = "#··e#·###·#e··#";
-    basePlan[7] = "####··T*T··####";
-    basePlan[8] = "#··e#·###·#e··#";
-    basePlan[9] = "#···e#e#e#e···#";
-    basePlan[10]= "#···#e#e#e#···#";
-    basePlan[11]= "#··#···#···#··#";
-    basePlan[12]= "#·#····#····#·#";
-    basePlan[13]= "##·····#·····##";
-    basePlan[14]= "###############";
+    basePlan[0] = ", , # # # # # # # # # # # , ,".replace(/ /g, '');
+    basePlan[1] = ", # · · · · · # · · · · · # ,".replace(/ /g, '');
+    basePlan[2] = "# · # · # · · # · · # · # · #".replace(/ /g, '');
+    basePlan[3] = "# · · # · · · # · · · # · · #".replace(/ /g, '');
+    basePlan[4] = "# · # · # e # e # e # · # · #".replace(/ /g, '');
+    basePlan[5] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
+    basePlan[6] = "# · · e # · # # # · # e · · #".replace(/ /g, '');
+    basePlan[7] = "# # # # · · T * T · · # # # #".replace(/ /g, '');
+    basePlan[8] = "# · · e # · # # # · # e · · #".replace(/ /g, '');
+    basePlan[9] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
+    basePlan[10]= "# · # · # e # e # e # · # · #".replace(/ /g, '');
+    basePlan[11]= "# · · # · · · # · · · # · · #".replace(/ /g, '');
+    basePlan[12]= "# · # · # · · # · · # · # · #".replace(/ /g, '');
+    basePlan[13]= ", # · · · · · # · · · · · # ,".replace(/ /g, '');
+    basePlan[14]= ", , # # # # # # # # # # # , ,".replace(/ /g, '');
     // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards.  This allows us to dynamically change as we draw.
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
