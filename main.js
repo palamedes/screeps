@@ -33,9 +33,8 @@ module.exports.loop = function () {
 
     // Get the data we need to determine if we need more slaves
     let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
-    let maxEnergyCapacity = _.sum(energyHolders, (holder) => holder.energyCapacity);
+    Memory.rooms[room.name].maxEnergy = _.sum(energyHolders, (holder) => holder.energyCapacity);
     let controllerLevel = room.controller.level
-
 
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     // Rejigger max slaves for this room based on the number of suckle points..
@@ -43,11 +42,11 @@ module.exports.loop = function () {
 
 
     // Spawn a skaven slave
-    if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= maxEnergyCapacity)) && room.energyAvailable >= 200) {
+    if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
       statusUpdate += roleSkaven.summonSkaven(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
     }
     // Spawn a rat ogre
-    if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= maxEnergyCapacity) {
+    if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= Memory.rooms[room.name].maxEnergy) {
       statusUpdate += roleSkaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
     }
 
