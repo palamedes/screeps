@@ -20,8 +20,8 @@ var roleSkaven = {
         if (rat.body.filter(part => part.type === CARRY).length === 0) {
           rat.memory.task = 'harvest'; rat.memory.myTargetId = null; rat.memory.slept = 0; rat.say('⚡');
         }
-        // If rat has less than 20% free capacity (80% full) then go do some work.. Else harvest.
-        if (rat.store.getUsedCapacity() === 0) {    // (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
+        // If rat has less than 90% free capacity (10% full) then go do some work.. Else harvest.
+        if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.9) {
           // Upgrade Controller
           if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
             rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
