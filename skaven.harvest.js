@@ -38,7 +38,6 @@ let sHarvest = {
       });
       if (sourceEnergy.length > 0) {
         rat.memory.myTargetId = rat.pos.findClosestByRange(sourceEnergy).id;
-        console.log(rat.name+' '+rat.memory.myTargetId);
       }
     }
 
