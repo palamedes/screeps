@@ -1,6 +1,6 @@
 const move = require("skaven.move");
 let sUpgrade = {
-  // Go find something to build and go build it, if there is nothing or we have finished building something, reset.
+  // Go upgrade the room controller. (Note; if a rat is bored it will also do this task without the task being set)
   using: rat => {
     var target = rat.room.controller;
     if (rat.room.controller && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
