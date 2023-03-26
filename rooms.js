@@ -12,6 +12,7 @@ let rooms = {
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
       basePlan:   Memory.rooms[room.name].basePlan  || null,
       tickCount:  Memory.rooms[room.name].tickCount || 0,
+      maxEnergy:  Memory.rooms[room.name].maxEnergy || 0,
     }
     return Memory.rooms[room.name];
   },
