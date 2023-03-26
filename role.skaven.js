@@ -13,14 +13,17 @@ var roleSkaven = {
       let upgradeTarget = rat.room.controller;
 
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
-      if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
-        // let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
-        // const spawn = Game.spawns[rat.memory.spawn];
-        if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) {
-          rat.memory.task = 'renew';
-          rat.say('⌛');
-        }
-      }
+
+      // Disabling renew for now while I get creep versioning working.. (version + bodypart count?)
+      // if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew') {
+      //   // let room = Game.spawns[Object.keys(Game.spawns)[0]].room;
+      //   // const spawn = Game.spawns[rat.memory.spawn];
+      //   if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) {
+      //     rat.memory.task = 'renew';
+      //     rat.say('⌛');
+      //   }
+      // }
+
       // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
         // If rat has less than 20% free capacity (80% full) then go do some work.
