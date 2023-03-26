@@ -24,16 +24,14 @@ module.exports.loop = function () {
     const room = Game.rooms[roomName];
     // Setup the room if it hasn't been yet
     const mem = rooms.setMemory(room);
-
+    // Get energy amounts
     const spawns = room.find(FIND_MY_SPAWNS);
     const extensions = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
     const totalSpawns = _.sum(spawns, (s) => s.store.getUsedCapacity(RESOURCE_ENERGY));
     const totalExtensions = _.sum(extensions, (e) => e.store.getUsedCapacity(RESOURCE_ENERGY));
     Memory.rooms[roomName].maxEnergy = totalSpawns + totalExtensions
 
-    console.log(totalSpawns + totalExtensions);
-
-    statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
+    statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
     let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
     statusUpdate += (slaves.length > 0) ? ' ~ Slaves: ' + slaves.length + '/' + Memory.rooms[room.name].maxSlaves : '';
