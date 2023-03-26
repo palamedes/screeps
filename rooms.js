@@ -56,6 +56,8 @@ let rooms = {
     structures.tower.run();
     // Draw the base plan based on the rooms information
     structures.drawBaseplan(room);
+    // Okay every so often we need the room to build something
+    structures.buildSomething(room);
 
   }
 }
