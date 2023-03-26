@@ -28,20 +28,22 @@ let rooms = {
     // Find our sources and build path from spawn to
     const energySources = room.find(FIND_SOURCES);
     let surroundings = source => {
-      const surroundings = {};
+      const surroundings = [];
       for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
         for (let y = source.pos.y - 1; y <= source.pos.y + 1; y++) {
           if (x === source.pos.x && y === source.pos.y) continue;
           const look = source.room.lookAt(x, y);
           if (look.some(obj => obj.type === LOOK_TERRAIN && obj.terrain === 'wall')) continue;
           if (look.some(obj => obj.type === LOOK_STRUCTURES && OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType))) continue;
-          if (!surroundings[source.id]) surroundings[source.id] = [];
-          surroundings[source.id].push({x: x, y: y});
+          surroundings.push({x: x, y: y});
         }
       }
       return surroundings;
     }
-    Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
+    for(let source in energySources) {
+      Memory.rooms[room.name].sources[source.id] = surroundings(source);
+    }
+    // Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
 
 
 
