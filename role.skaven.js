@@ -25,6 +25,8 @@ var roleSkaven = {
       if (!rat.memory.task) {
         // If rat has less than 20% free capacity (80% full) then go do some work.
         if (rat.store.getFreeCapacity() / rat.store.getCapacity() < 0.2) {
+          console.log(constructionTargets.length);
+          console.log(slave.length >= (maxSlaves/2));
           // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
           if (constructionTargets && constructionTargets.length > 0 && slave.length >= (maxSlaves/2) && $actions.numActive('build') <= (maxSlaves*0.5)) {
             rat.memory.task = 'build';
