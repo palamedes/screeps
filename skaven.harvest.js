@@ -10,8 +10,8 @@ let sHarvest = {
       const emergencyPickupAmount = 50; // Change this based on controller level
       // if we have a high volume emergency pickup, lets go get it
       let emergencyPickup = rat.room.find([FIND_DROPPED_RESOURCES, FIND_RUINS, FIND_TOMBSTONES], {
-        filter: (dropped) => {
-          return (target.resourceType === RESOURCE_ENERGY && target.amount > emergencyPickupAmount) ||
+        filter: (target) => {
+          return (target.resourceType  === RESOURCE_ENERGY && target.amount > emergencyPickupAmount) ||
                  (target.structureType === STRUCTURE_TOMBSTONE && target.store[RESOURCE_ENERGY] > emergencyPickupAmount) ||
                  (target.structureType === STRUCTURE_RUIN && target.store[RESOURCE_ENERGY] > emergencyPickupAmount)
         }
