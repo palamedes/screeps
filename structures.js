@@ -29,7 +29,7 @@ let structures = {
     let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
-      let buildPos = findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
 console.log(pos);
       // rat.room.createConstructionSite(parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y), STRUCTURE_ROAD);
     }
