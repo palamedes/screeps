@@ -1,5 +1,5 @@
 const structureTower = require('structure.tower');
-const move = require("./skaven.move");
+const move = require("skaven.move");
 
 let sRepair = {
   // Go find something to repair
@@ -15,14 +15,11 @@ let sRepair = {
       if(target) {
         if(rat.repair(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ff0000');
+          return true;
         }
       }
-    } else {
-      rat.say(rat.memory.slept > 2 ? '💤' : '💡');
-      rat.memory.myTargetId = null;
-      rat.memory.task = null;
-      rat.memory.slept++;
     }
+    return false;
   },
 
   // Get any repair targets for this rat

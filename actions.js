@@ -20,11 +20,18 @@ let $actions = {
   // What ever we have decided to do.. go do that.
   skitter: rat => {
     if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
-    if (rat.memory.task === 'build')    { $actions.build.using(rat); }
-    if (rat.memory.task === 'repair')   { $actions.repair.using(rat); }
-    if (rat.memory.task === 'upgrade')  { $actions.upgrade.using(rat); }
     if (rat.memory.task === 'store')    { $actions.store.using(rat); }
-    if (rat.memory.task === 'renew')    { $actions.renew.using(rat); }
+    if (rat.memory.task === 'renew')    { if (!$actions.renew.using(rat))   { $actions.sleep(rat); } }
+    if (rat.memory.task === 'upgrade')  { if (!$actions.upgrade.using(rat)) { $actions.sleep(rat); } }
+    if (rat.memory.task === 'build')    { if (!$actions.build.using(rat))   { $actions.sleep(rat); } }
+    if (rat.memory.task === 'repair')   { if (!$actions.repair.using(rat))  { $actions.sleep(rat); } }
+  },
+
+  sleep: rat => {
+    rat.say(rat.memory.slept > 1 ? '💤' : '💡');
+    rat.memory.myTargetId = null;
+    rat.memory.task = null;
+    rat.memory.slept++;
   },
 
   // Number of rats actively doing a give task
