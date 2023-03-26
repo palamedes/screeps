@@ -29,7 +29,7 @@ let structures = {
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
       let results = room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
       if (results === OK) {
-        structures.updateBasePlan(buildPos.index);
+        structures.updateBasePlan(room, buildPos.index);
       } else {
         console.log("we couldnt build for some reason. somethings wrong. " + results)
       }
@@ -208,7 +208,7 @@ let structures = {
   },
 
   // Look at what is actually placed.. and update the base plan accordingly to remove those items from the plan.
-  updateBasePlan: (index) => {
+  updateBasePlan: (room, index) => {
     // if index is set, then just update that one location
     let replaceChar = (str, index, replacement) => {
       return str.slice(0, index) + replacement + str.slice(index + 1);
