@@ -6,7 +6,7 @@ var roleSkaven = {
   skitter: rat => {
 
     if (rat.memory.role === 'slave') {
-      $actions.trackTileVisits(rat);
+
       let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 5) {
