@@ -77,7 +77,7 @@ let sHarvest = {
                 foundSucklePoint = true;
                 rat.memory.myTargetId = id;
                 console.log('I should move to ' + id);
-                move.moveTo(rat, Game.getObjectById(rat.memory.myTargetId), '#ffaa00');
+                move.moveTo(rat, Game.getObjectById(id), '#ffaa00');
                 break;
               }
             }
