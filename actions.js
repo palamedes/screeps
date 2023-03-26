@@ -73,25 +73,6 @@ let $actions = {
     ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
   },
 
-  // // Spawn us a skaven harvester ~ Harvesters will stand at an energy suckle point and drain it..
-  // summonSkavenHarvester: (energy, memory) => {
-  //   let ratName = 'Harvester-' + Game.time;
-  //   let ratSpawn = Object.keys(Game.spawns)[0];
-  //   let ratBrain = { memory: { role: 'harvester', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
-  //   // Calculate the number of body parts based on energySize
-  //   let numWork  = Math.floor(energy * 0.80 / 100); // 80% of the energy to work
-  //   energy = energy - numWork * 100;
-  //   let numMove  = Math.floor(energy / 50); // 100% remaining to move
-  //   energy = energy - numMove * 50;
-  //   let numTough = Math.floor(energy / 10); // Any amount left over, add toughness
-  //   // Build the array of body parts based on the calculated numbers
-  //   let ratParts = [];
-  //   for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
-  //   for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
-  //   for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
-  //   Game.spawns[ratSpawn].spawnCreep(ratParts, ratName, ratBrain);
-  // },
-  //
   // // Spawn us a rat ogre
   // summonRatOgre: (energy, memory) => {
   //   let ratName = 'RatOgre-' + Game.time;
