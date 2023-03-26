@@ -3,7 +3,7 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    const canCarry = rat.body.filter(part => part.type === CARRY).length === 0
+    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
     // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId && canCarry) {
       // Try to pickup dropped energy first
@@ -14,15 +14,15 @@ let sHarvest = {
         rat.memory.myTargetId = rat.pos.findClosestByRange(droppedEnergy).id;
       }
     }
-    // If the rat doesn't know where to go.. Find tombstone energy?
-    if (!rat.memory.myTargetId && canCarry) {
-      let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONES, {
-        filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
-      });
-      if (tombstoneEnergy.length > 0) {
-        rat.memory.myTargetId = rat.pos.findClosestByRange(tombstoneEnergy).id;
-      }
-    }
+    // // If the rat doesn't know where to go.. Find tombstone energy?
+    // if (!rat.memory.myTargetId && canCarry) {
+    //   let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONES, {
+    //     filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
+    //   });
+    //   if (tombstoneEnergy.length > 0) {
+    //     rat.memory.myTargetId = rat.pos.findClosestByRange(tombstoneEnergy).id;
+    //   }
+    // }
     // If the rat doesn't know where to go.. Find source energy?
     if (!rat.memory.myTargetId) {
       let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
