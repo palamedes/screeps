@@ -42,7 +42,7 @@ let $actions = {
   summonSkavenSlave: (room, memory) => {
     // Get our slaves and then get the number of them that don't have the ability to carry anything.
     const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
-    const numHarvesters = _.filter(slaves, (slave) => slave.body.some((part) => part.type !== CARRY)).length;
+    const numHarvesters = _.filter(slaves, (slave) => !slave.body.some((part) => part.type === CARRY)).length;
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
     const ratSpawn = room.find(FIND_MY_SPAWNS)[0]
