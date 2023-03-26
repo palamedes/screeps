@@ -15,7 +15,6 @@ module.exports.loop = function () {
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
   let statusUpdate = "";
-  // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
   // Iterate through each room we are in
   for (let i in Memory.roomsList) {
 
@@ -40,27 +39,22 @@ module.exports.loop = function () {
     // Get the data we need to determine if we need more slaves
 
 
-    let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     // Rejigger max slaves for this room based on the number of suckle points..
+    let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
+    Memory.rooms[room.name].numSucklePoints = numSucklePoints();
     Memory.rooms[room.name].maxSlaves = numSucklePoints() * 2;
-
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
-      statusUpdate += roleSkaven.summonSlave(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
+      statusUpdate += roleSkaven.summonSlave(room, { homeRoom: room.name, version: room.controller.level });
     }
     // Spawn a rat ogre
-    if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= Memory.rooms[room.name].maxEnergy) {
-      statusUpdate += roleSkaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
-    }
-
+    // if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= Memory.rooms[room.name].maxEnergy) {
+    //   statusUpdate += roleSkaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
+    // }
     // Based on the status of the room
     rooms.run(room);
   }
-
-  // Set the max number of slaves for a room to the room controller size
-
-  // If we have less than x harvesters, add more
 
   // Work the rats
   for(let name in Game.creeps) { var rat = Game.creeps[name]; roleSkaven.skitter(rat); }
