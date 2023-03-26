@@ -4,6 +4,7 @@ const $actions = require('actions');
 var roleSkaven = {
 
   skitter: rat => {
+
     if (rat.memory.role === 'slave') {
       $actions.trackTileVisits(rat);
       let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
@@ -99,20 +100,18 @@ var roleSkaven = {
     return false;
   },
 
-  // Spawn us a rat ~ Standard Skaven worker rat
-  summonSlave: (energy, memory) => {
-    if (energy >= 300) { $actions.summonSkavenSlave(energy, memory); return ' ~ Spawning new Slave ('+energy+')' } else { return ''; }
+  // Spawn us a rat ~ Standard Skaven Slave worker rat
+  summonSlave: (room, memory) => {
+    if (room.energyAvailable >= 300) {
+      $actions.summonSkavenSlave(room, memory);
+      return ' ~ Spawning new Slave ('+room.energyAvailable+')'
+    } else { return ''; }
   },
 
-  // Spawn us a rat ~ Standard Skaven worker rat
-  summonHarvester: (energy, memory) => {
-    if (energy >= 300) { $actions.summonSkavenHarvester(energy, memory); return ' ~ Spawning new Harvester ('+energy+')' } else { return ''; }
-  },
-
-  // Spawn us a rat ~ Standard Skaven worker rat
-  summonRatOgre: (energy, memory) => {
-    if (energy >= 600) { $actions.summonRatOgre(energy, memory); return ' ~ Spawning new Rat Ogre ('+energy+')'; } else { return ''; }
-  },
+  // // Spawn us a rat ~ Standard Skaven worker rat
+  // summonRatOgre: (energy, memory) => {
+  //   if (energy >= 600) { $actions.summonRatOgre(energy, memory); return ' ~ Spawning new Rat Ogre ('+energy+')'; } else { return ''; }
+  // },
 
 }
 module.exports = roleSkaven;
