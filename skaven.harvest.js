@@ -3,44 +3,44 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    // let roomBounds = Game.rooms[creep.room.name].getBounds();
-
-    // If the rat doesn't know where to go.. Find it.
+    // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId) {
-      const emergencyPickupAmount = 50; // Change this based on controller level
-      // if we have a high volume emergency pickup, lets go get it
-      let emergencyPickup = rat.room.find([FIND_DROPPED_RESOURCES, FIND_RUINS, FIND_TOMBSTONES], {
-        filter: (target) => {
-          return (target.resourceType  === RESOURCE_ENERGY && target.amount > emergencyPickupAmount) ||
-                 (target.structureType === STRUCTURE_TOMBSTONE && target.store[RESOURCE_ENERGY] > emergencyPickupAmount) ||
-                 (target.structureType === STRUCTURE_RUIN && target.store[RESOURCE_ENERGY] > emergencyPickupAmount)
-        }
+      // Try to pickup dropped energy first
+      let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
+        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
-      // If we have any "emergency pickup" stuff, let's go get that and just act as a hauler
-      if (emergencyPickup.length > 0) {
-        let closestEmergency = rat.pos.findClosestByRange(emergencyPickup);
-        rat.memory.myTargetId = closestEmergency.id
-      } else {
-        // Get a list of all possible targets
-        let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
-          filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
-        });
-        let harvestEnergy = rat.room.find(FIND_SOURCES, {
-          filter: (source) => source.energy > 0
-        });
-        let possibleTargets = [...droppedEnergy, ...harvestEnergy]
-        // Find the closest one
-        let closestTarget = rat.pos.findClosestByRange(possibleTargets);
-        if (closestTarget) {
-          rat.memory.myTargetId = closestTarget.id;
-        }
+      if (droppedEnergy.length > 0) {
+        rat.memory.myTargetId = rat.pos.findClosestByRange(droppedEnergy).id;
       }
     }
+    // If the rat doesn't know where to go.. Find tombstone energy?
+    if (!rat.memory.myTargetId) {
+      let tombstoneEnergy = rat.room.find(FIND_TOMBSTONE, {
+        filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
+      });
+      if (tombstoneEnergy.length > 0) {
+        rat.memory.myTargetId = rat.pos.findClosestByRange(tombstoneEnergy).id;
+      }
+    }
+    // If the rat doesn't know where to go.. Find source energy?
+    if (!rat.memory.myTargetId) {
+      let sourceEnergy = rat.room.find(FIND_SOURCES, {
+        filter: (source) => source.energy > 0
+      });
+      if (sourceEnergy.length > 0) {
+        rat.memory.myTargetId = rat.pos.findClosestByRange(sourceEnergy).id;
+      }
+    }
+
     // Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
     if (target && target.energy > 0) {
       // If the target is a pickup, then go try to pick it up
       if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+        move.moveTo(rat, target, '#ffaa00');
+      }
+      // If the target is a ruin, then go withdraw the energy
+      if (target.structureType === STRUCTURE_RUIN && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
