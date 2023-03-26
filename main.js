@@ -28,7 +28,7 @@ module.exports.loop = function () {
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
     let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
-    statusUpdate += (slaves.length > 0) ? ' ~ Slaves: ' + slaves.length : '';
+    statusUpdate += (slaves.length > 0) ? ' ~ Slaves: ' + slaves.length + '/' + Memory.rooms[room.name].maxSlaves : '';
     statusUpdate += (ogres.length > 0) ? ', Ogres: ' + ogres.length : '';
 
     // Get the data we need to determine if we need more slaves
