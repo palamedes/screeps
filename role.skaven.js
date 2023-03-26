@@ -74,7 +74,7 @@ var roleSkaven = {
       // Are less than 50% of them doing the work?
       const notEnoughActive = $actions.numActive('build') <= (maxSlaves*0.5);
       // Are we full energy?
-      const fullEnergy = rat.room.energyAvailable === Memory.rooms[room.name].maxEnergy
+      const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
       if (enoughSlaves && notEnoughActive && fullEnergy) return true;
     }
@@ -92,7 +92,7 @@ var roleSkaven = {
       // Are less than 25% doing the work?
       const notEnoughActive = $actions.numActive('upgrade') <= (maxSlaves*0.25);
       // Are we full energy?
-      const fullEnergy = rat.room.energyAvailable === Memory.rooms[room.name].maxEnergy
+      const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
       if (enoughSlaves && notEnoughActive && fullEnergy) return true;
     }
