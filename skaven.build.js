@@ -7,8 +7,8 @@ let sBuild = {
     if(targets.length > 0 && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
       if(rat.build(targets[0]) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, targets[0], '#0000ff');
-        return true;
       }
+      return true;
     }
     return false;
   },

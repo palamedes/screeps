@@ -15,8 +15,8 @@ let sRepair = {
       if(target) {
         if(rat.repair(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ff0000');
-          return true;
         }
+        return true;
       }
     }
     return false;
