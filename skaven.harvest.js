@@ -39,9 +39,14 @@ let sHarvest = {
     // Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
     if (target && target.energy > 0) {
-      // Move to the target and harvest it or pickit up
-      if((target instanceof Source && rat.harvest(target) === ERR_NOT_IN_RANGE) ||
-         (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE)) {
+      // If the target is a pickup, then go try to pick it up
+
+      // if the target is a harvest then we need to see if there are any available suckle points
+
+
+      // Move to the target and harvest it or pick it up
+      if((target instanceof Source   && rat.harvest(target) === ERR_NOT_IN_RANGE) ||
+         (target instanceof Resource && rat.pickup(target)  === ERR_NOT_IN_RANGE)) {
         move.moveTo(rat, target, '#ffaa00');
         // rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 10 });
       }

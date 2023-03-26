@@ -11,14 +11,18 @@ let rooms = {
       maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
       maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
       basePlan:   Memory.rooms[room.name].basePlan  || null,
+      tickCount:  Memory.rooms[room.name].tickCount || 0,
     }
     return Memory.rooms[room.name];
   },
 
   run: room => {
-    if (Memory.rooms[room.name].status  === 'init')     { rooms.init(room); }
-    if (Memory.rooms[room.name].status  === 'running')  { rooms.running(room); }
+    let mem = Memory.rooms[room.name];
+    mem.tickCount++;
+    if (mem.status  === 'init')     { rooms.init(room); }
+    if (mem.status  === 'running')  { rooms.running(room); }
   },
+
   // Setup plan for base, roads to sources..etc.
   init: room => {
     // Find our sources and build path from spawn to

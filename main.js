@@ -9,8 +9,6 @@ const rooms = require('rooms');
 
 let utility = require('utility');
 module.exports.loop = function () {
-  // Track tick count since we started ~ we can use this to do things on certain ticks to lower CPU costs
-  Memory.tickCount = Memory.tickCount || 0; Memory.tickCount++;
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
   // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
@@ -20,6 +18,7 @@ module.exports.loop = function () {
   // @TODO have this main loop iterate trhough each game spawns and do all of them as if they were their own group
   // Iterate through each room we are in
   for (let i in Memory.roomsList) {
+
     // let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
     let roomName = Memory.roomsList[i];
     let room = Game.rooms[roomName];
