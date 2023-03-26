@@ -37,7 +37,13 @@ module.exports.loop = function () {
     let controllerLevel = room.controller.level
 
 
-    let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
+    let numSucklePoints = () => {
+      let count = 0;
+      for (let i in Memory.rooms[room.name].sources) {
+        count = count + Memory.rooms[room.name].sources[i].length;
+      }
+      return count;
+    }
     // Rejigger max slaves for this room based on the level of the room
     Memory.rooms[room.name].maxSlaves = numSucklePoints();
 
