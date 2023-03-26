@@ -33,7 +33,7 @@ module.exports.loop = function () {
 
     // Get the data we need to determine if we need more slaves
     let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
-    Memory.rooms[room.name].maxEnergy = _.sum(energyHolders, (holder) => holder.energyCapacity);
+    Memory.rooms[roomName].maxEnergy = _.sum(energyHolders, (holder) => holder.energyCapacity);
     let controllerLevel = room.controller.level
 
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
