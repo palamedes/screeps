@@ -45,7 +45,7 @@ let $actions = {
     const numHarvesters = _.filter(slaves, (slave) => slave.body.some((part) => part.type !== CARRY)).length;
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
-    const ratSpawn = room.find(FIND_MY_SPAWNS)[0]
+    const ratSpawn = _.find(Game.spawns, (s) => s.room.name === room.name);
     const ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
 
     let percentWork = 0.5, percentCarry = 0.50;
