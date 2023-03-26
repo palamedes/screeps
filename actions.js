@@ -26,15 +26,18 @@ let $actions = {
     if (rat.memory.task === 'store')    { $actions.store.using(rat); }
     if (rat.memory.task === 'renew')    { $actions.renew.using(rat); }
   },
+
   // Number of rats actively doing a give task
   numActive: task => {
     return _.filter(Game.creeps, rat => rat.memory.task === task).length;
   },
+
   // Commonly used memory items for Skaven
   defaultMemory: () => {
     return { task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 }
   },
-  // Spawn us a skaven slave
+
+  // Spawn us a skaven slave ~ Slaves are "do it all" workers, move, carry, work..
   summonSkavenSlave: (energy, memory) => {
     let ratName = 'Slave-' + Game.time;
     let ratSpawn = Object.keys(Game.spawns)[0];
@@ -55,6 +58,26 @@ let $actions = {
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
     Game.spawns[ratSpawn].spawnCreep(ratParts, ratName, ratBrain);
   },
+
+  // Spawn us a skaven harvester ~ Harvesters will stand at an energy suckle point and drain it..
+  summonSkavenHarvester: (energy, memory) => {
+    let ratName = 'Harvester-' + Game.time;
+    let ratSpawn = Object.keys(Game.spawns)[0];
+    let ratBrain = { memory: { role: 'harvester', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
+    // Calculate the number of body parts based on energySize
+    let numWork  = Math.floor(energy * 0.80 / 100); // 80% of the energy to work
+    energy = energy - numWork * 100;
+    let numMove  = Math.floor(energy / 50); // 100% remaining to move
+    energy = energy - numMove * 50;
+    let numTough = Math.floor(energy / 10); // Any amount left over, add toughness
+    // Build the array of body parts based on the calculated numbers
+    let ratParts = [];
+    for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
+    for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
+    for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
+    Game.spawns[ratSpawn].spawnCreep(ratParts, ratName, ratBrain);
+  },
+
   // Spawn us a rat ogre
   summonRatOgre: (energy, memory) => {
     let ratName = 'RatOgre-' + Game.time;
@@ -73,6 +96,7 @@ let $actions = {
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
     Game.spawns[Object.keys(Game.spawns)[0]].spawnCreep(ratParts, ratName, ratBrain);
   },
+
   // Track tile visits by rats, so we can determine how frequently they go there.
   trackTileVisits: rat => {
     if (!Memory.tileVisits) { Memory.tileVisits = {}; }
@@ -80,6 +104,7 @@ let $actions = {
     if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
     Memory.tileVisits[rat.pos.x][rat.pos.y]++;
   },
+
   // Get the most visited tile
   getMostVisitedTile: () => {
     let mostVisited = {x: null, y: null, count: 0};
