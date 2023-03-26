@@ -10,8 +10,8 @@ let structures = {
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
 
       // If we can build an extension, we should..
-      console.log('extensionsAllowed: ' + parseInt(extensionsAllowed) - parseInt(extensionsBuilt));
-      if (parseInt(extensionsAllowed) - parseInt(extensionsBuilt) > 0) { structures.buildExtension(room); }
+      console.log('extensionsAllowed: ' + (extensionsAllowed - extensionsBuilt));
+      if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
 
 
 
