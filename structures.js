@@ -3,23 +3,29 @@ const sTower  = require('structure.tower');
 let structures = {
   tower: sTower,
 
+  // Build something!
+  buildSomething: room => {
+    let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
+console.log(extensionsAllowed);
+  },
+
   // Place one of the road sections around the base
-  buildRoad: () => {
+  buildRoad: (x,y) => {
 
   },
 
   // Place an extension around the base
-  buildExtension: () => {
+  buildExtension: (x,y) => {
     // Do we have anything else being built?
     // Do we have any extensions available to be built?
 
   },
 
-  findHabitrails: () => {
-    //
-    const roomVisual = new RoomVisual('W24S37');
-    roomVisual.line(10, 10, 40, 40, { color: 'blue' });
-  },
+  // findHabitrails: () => {
+  //   //
+  //   const roomVisual = new RoomVisual('W24S37');
+  //   roomVisual.line(10, 10, 40, 40, { color: 'blue' });
+  // },
 
   drawBaseplan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
@@ -50,7 +56,7 @@ let structures = {
     }
     // Draw the beast on the map!
     drawSpiral(spawn.pos, Memory.rooms[room.name].basePlan, new RoomVisual(room.name));
-  } ,
+  },
 
   // Okay this may seem heavy handed but this is a good way for me to get my brain around what I think the base should
   // sorta look like.  this is a stamp, but only in that it's a rough guess as to what it should look like and it will
