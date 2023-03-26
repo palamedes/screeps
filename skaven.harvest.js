@@ -62,37 +62,34 @@ let sHarvest = {
 
       // If the target is a source
       if (target instanceof Source) {
+        let foundSucklePoint = false;
         // ...and we are at one of the known suckle points, harvest.
         if (isNearResource(rat, Memory.rooms[rat.room.name].sources)) {
+          foundSucklePoint = true; // we are on it..
           if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
             console.log('somethings wrong');
           }
         // ...otherwise find us a suckle point that is open and move to it.
         } else {
-          let foundSucklePoint = false;
           for (let id in Memory.rooms[rat.room.name].sources) {
             if (foundSucklePoint) break;
             for (let sucklePoint in Memory.rooms[rat.room.name].sources[id]) {
               if (!isRatPresentAtLocation(Memory.rooms[rat.room.name].sources[id][sucklePoint].x, Memory.rooms[rat.room.name].sources[id][sucklePoint].y)) {
                 foundSucklePoint = true;
                 rat.memory.myTargetId = id;
-                console.log('I should move to ' + id);
                 move.moveTo(rat, Game.getObjectById(id), '#ffaa00');
                 break;
               }
             }
           }
         }
+        // If we didn't find a suckle point, then ask for something else to do..
+        if (!foundSucklePoint) {
+          rat.memory.myTargetId = null;
+          rat.memory.task = null;
+        }
       }
-      // if the target is a harvest then we need to see if there are any available suckle points
-
-
-      // Move to the target and harvest it or pick it up
-      // if(() ||
-      //    (target instanceof Resource && rat.pickup(target)  === ERR_NOT_IN_RANGE)) {
-      //   // rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 10 });
-      // }
-      // If the rat is full, or the target is empty.. unass
+      // If the rat is full, or the target is empty then find something else to do.
       if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
         rat.memory.myTargetId = null;
         rat.memory.task = null;
