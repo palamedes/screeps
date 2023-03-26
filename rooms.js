@@ -41,7 +41,7 @@ let rooms = {
       return surroundings;
     }
     for(let source in energySources) {
-      Memory.rooms[room.name].sources[source.id] = surroundings(source);
+      Memory.rooms[room.name].sources[source.id] = surroundings(Game.getObjectById(source));
     }
     // Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
 
