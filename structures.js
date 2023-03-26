@@ -137,11 +137,10 @@ let structures = {
           if (index < basePlan.length) {
             let c = basePlan.charAt(index);
             let terrain = Game.map.getRoomTerrain(roomName);
+            // If we are hitting a wall.. well dont do that..
             if (terrain.get(posX, posY) !== TERRAIN_MASK_WALL) {
-              if (hasWallInAdjacentSquares(posX, posY, terrain)) {
-                c = '%';
-              }
-              // rV.text(c, posX, posY, {opacity: 0.8, font: 0.5, color: 'red'});
+              // if there is an adjacent wall, road it.
+              if (hasWallInAdjacentSquares(posX, posY, terrain)) { c = '#'; }
               results += c;
             } else {
               results += ' ';
