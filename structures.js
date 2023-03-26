@@ -29,7 +29,7 @@ let structures = {
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
       let results = room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
       if (results === OK) {
-        structures.updateBasePlans(buildPos.index);
+        structures.updateBasePlan(buildPos.index);
       } else {
         console.log("we couldnt build for some reason. somethings wrong. " + results)
       }
