@@ -56,7 +56,7 @@ let sHarvest = {
         return false;
       }
       let isRatPresentAtLocation = (x,y) => {
-        let creepAtLocation = Game.rooms[roomName].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
+        let creepAtLocation = Game.rooms[rat.room.name].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
         return creepAtLocation.length > 0
       }
 
