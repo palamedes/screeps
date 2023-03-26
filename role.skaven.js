@@ -1,5 +1,5 @@
 const $actions = require('actions');
-// const utility = require('utility');
+
 /** Skaven! */
 var roleSkaven = {
 
