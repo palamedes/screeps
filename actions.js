@@ -45,7 +45,7 @@ let $actions = {
     const numHarvesters = _.filter(slaves, (slave) => slave.body.some((part) => part.type !== CARRY)).length;
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
-    const ratSpawn = _.find(Game.spawns, (s) => s.room.name === room.name);
+    const ratSpawn = room.find(FIND_MY_SPAWNS)[0]
     const ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
 
     let percentWork = 0.5, percentCarry = 0.50;
@@ -70,7 +70,7 @@ let $actions = {
     for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
     for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
-    Game.spawns[ratSpawn].spawnCreep(ratParts, ratName, ratBrain);
+    ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
   },
 
   // // Spawn us a skaven harvester ~ Harvesters will stand at an energy suckle point and drain it..
