@@ -42,8 +42,8 @@ let sHarvest = {
       // Move to the target and harvest it or pickit up
       if((target instanceof Source && rat.harvest(target) === ERR_NOT_IN_RANGE) ||
          (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE)) {
-        // move.moveTo(rat, target, '#ffaa00')
-        rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 10 });
+        move.moveTo(rat, target, '#ffaa00')
+        // rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 10 });
       }
       // If the rat is full, or the target is empty.. unass
       if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
