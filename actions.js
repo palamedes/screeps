@@ -28,7 +28,6 @@ let $actions = {
   },
 
   sleep: rat => {
-    rat.say(rat.memory.slept > 1 ? '💤' : '💡');
     rat.memory.myTargetId = null;
     rat.memory.task = null;
     rat.memory.slept++;
