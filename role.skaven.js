@@ -36,7 +36,11 @@ var roleSkaven = {
           }
           // No work to do, go store...
           else {
-            rat.memory.task = 'store'; rat.say('🔋');
+            if (rat.room.energyAvailable === Memory.rooms[roomName].maxEnergy) {
+              rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
+            } else {
+              rat.memory.task = 'store'; rat.say('🔋');
+            }
           }
         } else {
           rat.memory.task = 'harvest'; rat.memory.myTargetId = null; rat.memory.slept = 0; rat.say('⚡');
