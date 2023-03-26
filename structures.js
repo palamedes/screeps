@@ -27,8 +27,11 @@ let structures = {
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
-      if (room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION) === OK) {
+      let results = room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
+      if (results === OK) {
         structures.updateBasePlans(index);
+      } else {
+        console.log("we couldnt build for some reason. somethings wrong. " + results)
       }
     }
   },
@@ -202,7 +205,7 @@ let structures = {
         len++;
       }
     }
-  }
+  },
 
   // Look at what is actually placed.. and update the base plan accordingly to remove those items from the plan.
   updateBasePlan: (index) => {
