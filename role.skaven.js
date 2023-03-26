@@ -22,17 +22,17 @@ var roleSkaven = {
         }
         // If rat has less than 20% free capacity (80% full) then go do some work.. Else harvest.
         if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
-          // Construction comes first...
+          // Upgrade Controller
+          else if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
+            rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
+          }
+          // Construction
           if (roleSkaven.shouldWeBuild(rat, slaves)) {
             rat.memory.task = 'build'; rat.memory.slept = 0; rat.say('🚧');
           }
-          // Repair comes second...
+          // Repair
           else if (roleSkaven.shouldWeRepair(rat, slaves)) {
             rat.memory.task = 'repair'; rat.memory.slept = 0; rat.say('🔧');
-          }
-          // Upgrade comes third...
-          else if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
-            rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
           }
           // No work to do, go store...
           else {
@@ -75,10 +75,12 @@ var roleSkaven = {
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves*0.8);
       // Are less than 25% doing the work?
       const notEnoughActive = $actions.numActive('upgrade') <= (Memory.rooms[rat.room.name].maxSlaves*0.25);
+      // Is No one upgrading?!
+      const noSlavesUpgrading = slaves.every((slave) => !slave.memory.upgrading);
       // Are we full energy?
       const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
-      if (enoughSlaves && notEnoughActive && fullEnergy) return true;
+      if (enoughSlaves && notEnoughActive && fullEnergy && noSlavesUpgrading) return true;
     }
     return false;
   },

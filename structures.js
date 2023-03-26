@@ -10,8 +10,7 @@ let structures = {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
       if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
-
-      // Build Ramparts and roads next if possible.. based on room level
+      // If we can build a tower, we should..
 
       // Early room level, build the roads
       structures.buildRoad(room);
