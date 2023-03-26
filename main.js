@@ -20,10 +20,18 @@ module.exports.loop = function () {
   for (let i in Memory.roomsList) {
 
     // let spawn = Game.spawns[Object.keys(Game.spawns)[i]]
-    let roomName = Memory.roomsList[i];
-    let room = Game.rooms[roomName];
+    const roomName = Memory.roomsList[i];
+    const room = Game.rooms[roomName];
     // Setup the room if it hasn't been yet
-    let mem = rooms.setMemory(room);
+    const mem = rooms.setMemory(room);
+
+    const spawns = room.find(FIND_MY_SPAWNS);
+    const extensions = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
+    const totalSpawns = _.sum(spawns, (s) => s.store.getUsedCapacity(RESOURCE_ENERGY));
+    const totalExtensions = _.sum(extensions, (e) => e.store.getUsedCapacity(RESOURCE_ENERGY));
+    Memory.rooms[roomName].maxEnergy = totalSpawns + totalExtensions
+
+    console.log(totalSpawns + totalExtensions);
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
@@ -32,9 +40,7 @@ module.exports.loop = function () {
     statusUpdate += (ogres.length > 0) ? ', Ogres: ' + ogres.length : '';
 
     // Get the data we need to determine if we need more slaves
-    let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
-    console.log('energyHolders:', energyHolders);
-    Memory.rooms[roomName].maxEnergy = _.sum(energyHolders, (holder) => holder.energyCapacity);
+
 
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     // Rejigger max slaves for this room based on the number of suckle points..
