@@ -6,7 +6,7 @@ let sHarvest = {
     // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId) {
       // Try to pickup dropped energy first
-      let droppedEnergy = rat.room.find(FIND_DROPPED_RESOURCES, {
+      let droppedEnergy = Game.rooms[rat.room.name].find(FIND_DROPPED_RESOURCES, {
         filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
       if (droppedEnergy.length > 0) {
@@ -15,7 +15,7 @@ let sHarvest = {
     }
     // If the rat doesn't know where to go.. Find tombstone energy?
     if (!rat.memory.myTargetId) {
-      let tombstoneEnergy = rat.room.find(FIND_TOMBSTONE, {
+      let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONE, {
         filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
       });
       if (tombstoneEnergy.length > 0) {
@@ -24,7 +24,7 @@ let sHarvest = {
     }
     // If the rat doesn't know where to go.. Find source energy?
     if (!rat.memory.myTargetId) {
-      let sourceEnergy = rat.room.find(FIND_SOURCES, {
+      let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
       });
       if (sourceEnergy.length > 0) {
