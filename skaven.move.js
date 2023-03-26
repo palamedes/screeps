@@ -13,6 +13,10 @@ let sMove = {
     // }
   },
 
+  moveToXY: (rat, x, y, stroke) => {
+
+  },
+
   // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
   memorizePath: (rat, target) => {
     if (!rat.memory.path || rat.memory.myTargetId !== target.id) {
