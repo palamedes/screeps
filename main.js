@@ -36,8 +36,11 @@ module.exports.loop = function () {
     let maxEnergyCapacity = _.sum(energyHolders, (holder) => holder.energyCapacity);
     let controllerLevel = room.controller.level
 
+
+    let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     // Rejigger max slaves for this room based on the level of the room
-    // @TODO
+    Memory.rooms[room.name].maxSlaves = numSucklePoints();
+
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= maxEnergyCapacity)) && room.energyAvailable >= 200) {
