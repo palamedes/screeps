@@ -8,6 +8,7 @@ let structures = {
     if (_.size(Game.constructionSites) === 0) {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       // If we can build an extension, we should..
+      console.log('extensionsAllowed: ' + extensionsAllowed);
       if (extensionsAllowed > 0) { structures.buildExtension(room); }
 
 
