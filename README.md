@@ -14,7 +14,7 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 
 ### Features
 - Dynamic creep creation based on power levels
-- Slaves are Creeps that know how to Harvest, Store, Upgrade, Repair and Renew
+- Slaves are Creeps that know how to Harvest, Store, Upgrade, Repair and Renew.  They are also dynamically smart in that they will change their behavior based on the number of harvest suckle points. 
 - Rat Ogres are Creeps with high physical damage & Toughness @TODO
 - Gutter Runners are Creeps with high toughness, fast, with some ranged and physical attack @TODO
 - Jezzails are Creeps with high ranged attack attack @TODO
