@@ -27,8 +27,9 @@ module.exports.loop = function () {
     // Get energy amounts
     const spawns = room.find(FIND_MY_SPAWNS);
     const extensions = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
-    const totalSpawns = _.sum(spawns, (s) => s.store.getUsedCapacity(RESOURCE_ENERGY));
-    const totalExtensions = _.sum(extensions, (e) => e.store.getUsedCapacity(RESOURCE_ENERGY));
+    const totalSpawnsCapacity = _.sum(spawns, (s) => s.energyCapacity);
+    const totalExtensionsCapacity = _.sum(extensions, (e) => e.energyCapacity);
+    const totalCapacity = totalSpawnsCapacity + totalExtensionsCapacity;
     Memory.rooms[roomName].maxEnergy = totalSpawns + totalExtensions
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
