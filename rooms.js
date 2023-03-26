@@ -27,7 +27,8 @@ let rooms = {
   init: room => {
     // Find our sources and build path from spawn to
     const energySources = room.find(FIND_SOURCES);
-    let surroundings = source => {
+    // Look around the sources, and find the suckle points
+    let findSucklePoints = source => {
       const surroundings = [];
       for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
         for (let y = source.pos.y - 1; y <= source.pos.y + 1; y++) {
@@ -41,10 +42,8 @@ let rooms = {
       return surroundings;
     }
     for(let i in energySources) {
-      Memory.rooms[room.name].sources[energySources[i].id] = surroundings(energySources[i]);
+      Memory.rooms[room.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
     }
-    // Memory.rooms[room.name].sources = energySources.map(source => surroundings(source));
-
 
 
 
