@@ -11,7 +11,8 @@ let sHarvest = {
         filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
       if (droppedEnergy.length > 0) {
-        rat.memory.myTargetId = rat.pos.findClosestByRange(droppedEnergy).id;
+        let maxDroppedEnergy = _.maxBy(droppedEnergy, 'amount');
+        rat.memory.myTargetId = maxDroppedEnergy.id;
       }
     }
     // // If the rat doesn't know where to go.. Find tombstone energy?
