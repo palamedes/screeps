@@ -70,7 +70,7 @@ var roleSkaven = {
     const upgradeTarget = rat.room.controller;
     if (upgradeTarget && canCarry) {
       // if the rat has been sleeping on the job, go make him upgrade..
-      if (rat.memory.slept > 5) return true;
+      if (rat.memory.slept > 2) return true;
       // Do we have 80% of max slaves?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves*0.8);
       // Are less than 25% doing the work?
