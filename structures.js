@@ -6,7 +6,10 @@ let structures = {
   // Build something!
   buildSomething: room => {
     let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
-console.log(extensionsAllowed);
+    let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
+
+    console.log(extensionsAllowed);
+    console.log(extensionsBeingBuilt);
   },
 
   // Place one of the road sections around the base
