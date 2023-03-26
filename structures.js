@@ -8,8 +8,8 @@ let structures = {
     let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
     let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
 
-    console.log(extensionsAllowed);
-    console.log(extensionsBeingBuilt);
+    // console.log(extensionsAllowed);
+    // console.log(extensionsBeingBuilt);
   },
 
   // Place one of the road sections around the base
