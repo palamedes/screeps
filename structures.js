@@ -32,7 +32,6 @@ let structures = {
   buildRoad: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roadsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_ROAD}}).length;
-    console.log(roadsBeingBuilt);
     if (roadsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
@@ -44,6 +43,7 @@ let structures = {
   buildExtension: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
+    console.log(extensionsBeingBuilt);
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
