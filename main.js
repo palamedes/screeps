@@ -24,16 +24,7 @@ module.exports.loop = function () {
     let roomName = Memory.roomsList[i];
     let room = Game.rooms[roomName];
     // Setup the room if it hasn't been yet
-    Memory.rooms = Memory.rooms || {}
-    Memory.rooms[room.name] = Memory.rooms[room.name] || {}
-    Memory.rooms[room.name] = {
-      status:     Memory.rooms[room.name].status    || 'init',
-      sources:    Memory.rooms[room.name].sources   || {},
-      maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
-      maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
-      basePlan:   Memory.rooms[room.name].basePlan  || null,
-    }
-    let mem = Memory.rooms[room.name];
+    let mem = rooms.setMemory(room);
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + ' energy';
     let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;

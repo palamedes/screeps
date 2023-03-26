@@ -1,6 +1,20 @@
 const structures = require('structures');
 
 let rooms = {
+
+  setMemory: room => {
+    Memory.rooms = Memory.rooms || {}
+    Memory.rooms[room.name] = Memory.rooms[room.name] || {}
+    Memory.rooms[room.name] = {
+      status:     Memory.rooms[room.name].status    || 'init',
+      sources:    Memory.rooms[room.name].sources   || {},
+      maxSlaves:  Memory.rooms[room.name].maxSlaves || 2,
+      maxOgres:   Memory.rooms[room.name].maxOgres  || 0,
+      basePlan:   Memory.rooms[room.name].basePlan  || null,
+    }
+    return Memory.rooms[room.name];
+  },
+
   run: room => {
     if (Memory.rooms[room.name].status  === 'init')     { rooms.init(room); }
     if (Memory.rooms[room.name].status  === 'running')  { rooms.running(room); }
