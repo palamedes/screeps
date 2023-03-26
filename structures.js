@@ -7,9 +7,11 @@ let structures = {
   buildSomething: room => {
     if (_.size(Game.constructionSites) === 0) {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
+      let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
+
       // If we can build an extension, we should..
-      console.log('extensionsAllowed: ' + extensionsAllowed);
-      if (extensionsAllowed > 0) { structures.buildExtension(room); }
+      console.log('extensionsAllowed: ' + extensionsAllowed - extensionsBuilt);
+      if (extensionsAllowed - extensionsBuilt > 0) { structures.buildExtension(room); }
 
 
 
@@ -29,10 +31,10 @@ let structures = {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
       let results = room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
-      if (results === OK) {
+      if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
         structures.updateBasePlan(room, buildPos.index);
       } else {
-        console.log("we couldnt build for some reason. somethings wrong. " + results)
+        console.log("we couldn't build for some reason. somethings wrong. Results:" + results)
       }
     }
   },
