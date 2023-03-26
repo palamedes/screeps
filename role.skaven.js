@@ -74,10 +74,10 @@ var roleSkaven = {
       // Do we have 80% of max slaves?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves*0.8);
       // Are less than 25% doing the work?
-      console.log($actions.numActive('upgrade'))
+      console.log((Memory.rooms[rat.room.name].maxSlaves*0.25))
       const notEnoughActive = $actions.numActive('upgrade') <= (Memory.rooms[rat.room.name].maxSlaves*0.25);
       // Is No one upgrading?!
-      const noSlavesUpgrading = slaves.every((slave) => !slave.memory.upgrading);
+      const noSlavesUpgrading = $actions.numActive('upgrade') === 0;
       // Are we full energy?
       const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
