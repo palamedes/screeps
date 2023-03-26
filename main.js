@@ -33,9 +33,9 @@ module.exports.loop = function () {
 
     // Get the data we need to determine if we need more slaves
     let energyHolders = room.find(FIND_MY_STRUCTURES, { filter: { structureType: [STRUCTURE_EXTENSION, STRUCTURE_SPAWN] } });
+    console.log('energyHolders:', energyHolders);
     Memory.rooms[roomName].maxEnergy = _.sum(energyHolders, (holder) => holder.energyCapacity);
-    let controllerLevel = room.controller.level
- console.log(room.name);
+
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     // Rejigger max slaves for this room based on the number of suckle points..
     Memory.rooms[room.name].maxSlaves = numSucklePoints() * 2;
