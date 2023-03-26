@@ -5,20 +5,36 @@ let structures = {
 
   // Build something!
   buildSomething: room => {
-    let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
-    let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
+    if (_.size(Game.constructionSites) === 0) {
+      let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
+      //
+      if (extensionsAllowed > 0) { structures.buildExtension(room); }
+
+
+
+    }
+
 
     // console.log(extensionsAllowed);
     // console.log(extensionsBeingBuilt);
   },
 
   // Place one of the road sections around the base
-  buildRoad: (x,y) => {
+  buildRoad: room => {
 
   },
 
   // Place an extension around the base
-  buildExtension: (x,y) => {
+  buildExtension: room => {
+    let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
+    if (extensionsBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      let buildPos = findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
+console.log(pos);
+      // rat.room.createConstructionSite(parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y), STRUCTURE_ROAD);
+    }
+    // Look at the base plan and find a spot to plop down an extension
+
     // Do we have anything else being built?
     // Do we have any extensions available to be built?
 
@@ -168,6 +184,31 @@ let structures = {
     }
     let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
     return modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
+  },
+
+  // In the same way we spiral around and draw the base, find our next build site based on the sent structure.
+  findBuildLocationFromPlan: (start, str, structure) => {
+    let findSymbol = '·';
+    if (structure === STRUCTURE_EXTENSION) { findSymbol = 'e'; }
+    const x = start.x, y = start.y;
+    let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
+    while (index < str.length) {
+      for (let i = 0; i < len; i++) {
+        if (index < str.length) {
+          let c = str.charAt(index);
+          if (c === findSymbol) {
+            return {x: posX, y: posY};
+          }
+          index++;
+        }
+        posX += dx;
+        posY += dy;
+      }
+      [dx, dy] = [-dy, dx];
+      if (dy === 0) {
+        len++;
+      }
+    }
   }
 
 }
