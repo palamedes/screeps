@@ -21,7 +21,7 @@ var roleSkaven = {
           rat.memory.task = 'harvest'; rat.memory.myTargetId = null; rat.memory.slept = 0; rat.say('⚡');
         }
         // If rat has less than 20% free capacity (80% full) then go do some work.. Else harvest.
-        if (creep.store.getUsedCapacity() === 0) {    // (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
+        if (rat.store.getUsedCapacity() === 0) {    // (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
           // Upgrade Controller
           if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
             rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
@@ -45,6 +45,11 @@ var roleSkaven = {
       // Okay rat... Do something..
       $actions.skitter(rat);
     }
+  },
+
+  // Should we store power?
+  shouldWeStore: (rat, slaves) => {
+
   },
 
   // Should we build something? If we have 50% or more rats, and we don't have more than 50% doing the work
