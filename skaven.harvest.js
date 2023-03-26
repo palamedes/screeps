@@ -69,17 +69,19 @@ let sHarvest = {
           }
         // ...otherwise find us a suckle point that is open and move to it.
         } else {
+          let foundSucklePoint = false;
           for (let id in Memory.rooms[rat.room.name].sources) {
+            if (foundSucklePoint) break;
             for (let sucklePoint in Memory.rooms[rat.room.name].sources[id]) {
               if (!isRatPresentAtLocation(Memory.rooms[rat.room.name].sources[id][sucklePoint].x, Memory.rooms[rat.room.name].sources[id][sucklePoint].y)) {
+                foundSucklePoint = true;
                 rat.memory.myTargetId = id;
-
                 console.log('I should move to ' + id);
-                // move.moveTo(rat, target, '#ffaa00');
+                move.moveTo(rat, Game.getObjectById(rat.memory.myTargetId), '#ffaa00');
+                break;
               }
             }
           }
-
         }
       }
       // if the target is a harvest then we need to see if there are any available suckle points
