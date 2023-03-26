@@ -6,35 +6,47 @@ let structures = {
   // Build something!
   buildSomething: room => {
     if (_.size(Game.constructionSites) === 0) {
+      // If we can build an extension, we should..
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
-
-      // If we can build an extension, we should..
       if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
 
+      // Build Ramparts and roads next if possible.. based on room level
 
+      // Early room level, build the roads
+      structures.buildRoad(room);
 
+    }
+  },
+
+  buildStructure: (room, x, y, structure) => {
+    let results = room.createConstructionSite(x, y, structure);
+    if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
+      structures.updateBasePlan(room, buildPos.index);
+    } else {
+      console.log("we couldn't build " + structure + " for some reason. somethings wrong. Results:" + results)
     }
   },
 
   // Place one of the road sections around the base
   buildRoad: room => {
-
+    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const roadsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_ROAD}}).length;
+    if (roadsBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
+      structures.buildStructure(room, buildPos.x, buildPos.y, STRUCTURE_ROAD);
+    }
   },
 
   // Place an extension around the base
   buildExtension: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
-    let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
+    const extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
-      let results = room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
-      if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
-        structures.updateBasePlan(room, buildPos.index);
-      } else {
-        console.log("we couldn't build for some reason. somethings wrong. Results:" + results)
-      }
+      structures.buildStructure(room, buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
     }
   },
 
@@ -188,6 +200,7 @@ let structures = {
   findBuildLocationFromPlan: (start, str, structure) => {
     let findSymbol = '·';
     if (structure === STRUCTURE_EXTENSION) { findSymbol = 'e'; }
+    if (structure === STRUCTURE_ROAD)      { findSymbol = '#'; }
     const x = start.x, y = start.y;
     let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
     while (index < str.length) {
