@@ -7,10 +7,9 @@ var roleSkaven = {
     if (rat.memory.role === 'slave') {
       $actions.trackTileVisits(rat);
       let maxSlaves = Memory.rooms[rat.room.name].maxSlaves;
-      let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
+      let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       let constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
       let repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
-      let upgradeTarget = rat.room.controller;
 
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
 
@@ -29,20 +28,21 @@ var roleSkaven = {
         // If rat has less than 20% free capacity (80% full) then go do some work.
         if (rat.store.getFreeCapacity() / rat.store.getCapacity() < 0.2) {
           // Construction comes first... If we have 50% or more rats, and we don't have more than 50% doing the work
-          if (constructionTargets && constructionTargets.length > 0 && slave.length >= (maxSlaves/2) && $actions.numActive('build') <= (maxSlaves*0.5)) {
+          if (constructionTargets && constructionTargets.length > 0 && slaves.length >= (maxSlaves/2) && $actions.numActive('build') <= (maxSlaves*0.5)) {
             rat.memory.task = 'build';
             rat.memory.slept = 0;
             rat.say('🚧');
           }
           // Repair comes second... If we have 50% or more rats, and we have 20% or less repairing
-          else if (repairTargets && repairTargets.length > 0 && slave.length >= (maxSlaves/2) && $actions.numActive('repair') <= (maxSlaves*0.2)) {
+          else if (repairTargets && repairTargets.length > 0 && slaves.length >= (maxSlaves/2) && $actions.numActive('repair') <= (maxSlaves*0.2)) {
             rat.memory.task = 'repair';
             rat.memory.slept = 0;
             rat.say('🔧');
           }
-          // Upgrade comes third... But only if we have 80% of max slaves and then only 50% can do the work..
+          // Upgrade comes third... But only if we have 80% of max slaves and then only 25% can do the work..
           // or if we have slept a while.. Meaning there is nothing else to do.. go upgrade.
-          else if (upgradeTarget && ((slave.length >= (maxSlaves*0.8) && $actions.numActive('upgrade') <= (maxSlaves*0.5)) || rat.memory.slept > 5)) {
+          // else if (upgradeTarget && ((slave.length >= (maxSlaves*0.8) && $actions.numActive('upgrade') <= (maxSlaves*0.25)) || rat.memory.slept > 5)) {
+          else if (roleSkaven.shouldWeUpgrade(rat, slaves, maxSlaves)) {
             rat.memory.task = 'upgrade';
             rat.memory.slept = 0;
             rat.say('🛠️');
@@ -63,6 +63,18 @@ var roleSkaven = {
       // Okay rat... Do something..
       $actions.skitter(rat);
     }
+  },
+
+  // Should we upgrade the controller?
+  shouldWeUpgrade: (rat, slaves, maxSlaves) => {
+    let upgradeTarget = rat.room.controller;
+    if (upgradeTarget) {
+      if (rat.memory.slept > 5) return true;
+      let enoughSlaves = slaves.length >= (maxSlaves*0.8);
+      let notEnoughActive = $actions.numActive('upgrade') <= (maxSlaves*0.25);
+      if (enoughSlaves && notEnoughActive) return true;
+    }
+    return false;
   },
 
   // Spawn us a rat ~ Standard Skaven worker rat
