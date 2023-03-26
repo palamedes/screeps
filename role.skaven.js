@@ -23,11 +23,11 @@ var roleSkaven = {
         // If rat has less than 20% free capacity (80% full) then go do some work.. Else harvest.
         if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
           // Upgrade Controller
-          else if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
+          if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
             rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
           }
           // Construction
-          if (roleSkaven.shouldWeBuild(rat, slaves)) {
+          else if (roleSkaven.shouldWeBuild(rat, slaves)) {
             rat.memory.task = 'build'; rat.memory.slept = 0; rat.say('🚧');
           }
           // Repair
