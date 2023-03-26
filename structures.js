@@ -7,16 +7,12 @@ let structures = {
   buildSomething: room => {
     if (_.size(Game.constructionSites) === 0) {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
-      //
+      // If we can build an extension, we should..
       if (extensionsAllowed > 0) { structures.buildExtension(room); }
 
 
 
     }
-
-
-    // console.log(extensionsAllowed);
-    // console.log(extensionsBeingBuilt);
   },
 
   // Place one of the road sections around the base
@@ -31,14 +27,10 @@ let structures = {
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
-console.log(buildPos.x+' '+buildPos.y);
-      // rat.room.createConstructionSite(parseInt(Memory.mostVisitedTile.x), parseInt(Memory.mostVisitedTile.y), STRUCTURE_ROAD);
+      if (room.createConstructionSite(buildPos.x, buildPos.y, STRUCTURE_EXTENSION) === OK) {
+        structures.updateBasePlans(index);
+      }
     }
-    // Look at the base plan and find a spot to plop down an extension
-
-    // Do we have anything else being built?
-    // Do we have any extensions available to be built?
-
   },
 
   // findHabitrails: () => {
@@ -198,7 +190,7 @@ console.log(buildPos.x+' '+buildPos.y);
         if (index < str.length) {
           let c = str.charAt(index);
           if (c === findSymbol) {
-            return {x: posX, y: posY};
+            return {x: posX, y: posY, index: index};
           }
           index++;
         }
@@ -212,5 +204,13 @@ console.log(buildPos.x+' '+buildPos.y);
     }
   }
 
+  // Look at what is actually placed.. and update the base plan accordingly to remove those items from the plan.
+  updateBasePlan: (index) => {
+    // if index is set, then just update that one location
+    let replaceChar = (str, index, replacement) => {
+      return str.slice(0, index) + replacement + str.slice(index + 1);
+    }
+    Memory.rooms[room.name].basePlan = replaceChar(Memory.rooms[room.name].basePlan, index, ' ');
+  }
 }
 module.exports = structures;
