@@ -51,7 +51,6 @@ let $actions = {
     let percentWork = 0.5, percentCarry = 0.50;
     // If we have more than 2 slaves already, and we don't have as many dedicated harvesters as we need.. get one
     if (slaves.length >= 2 && numHarvesters < Memory.rooms[room.name].numSucklePoints) {
-      console.log('got here')
       percentWork = 0.75; percentCarry = 0;
     }
 
