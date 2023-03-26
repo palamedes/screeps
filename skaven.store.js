@@ -18,7 +18,6 @@ let sStore = {
       var target = rat.pos.findClosestByRange(targets);
       if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#aaaaaa');
-        // rat.moveTo(target, { visualizePathStyle: { stroke: '#aaffff' }, reusePath: 10 });
       }
     } else {
       rat.say(rat.memory.slept > 2 ? '💤' : '💡');

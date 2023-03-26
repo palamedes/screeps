@@ -6,7 +6,6 @@ let sUpgrade = {
     if (rat.room.controller && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
       if (rat.upgradeController(rat.room.controller) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, rat.room.controller, '#00ff00');
-        // rat.moveTo(rat.room.controller, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
       }
     } else {
       rat.say(rat.memory.slept > 2 ? '💤' : '💡');

@@ -10,7 +10,6 @@ let sRenew = {
         doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
       } else {
         move.moveTo(rat, closestSpawn, '#00ffff');
-        // rat.moveTo(closestSpawn, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
         doneRenewing = false
       }
     } else {
