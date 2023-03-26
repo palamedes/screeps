@@ -6,7 +6,7 @@ var roleSkaven = {
   skitter: rat => {
     if (rat.memory.role === 'slave') {
       $actions.trackTileVisits(rat);
-      let maxSlaves = Memory.maxSlaves;
+      let maxSlaves = Memory.rooms[rat.room.name].maxSlaves;
       let slave = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       let constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
       let repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
