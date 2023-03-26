@@ -26,6 +26,7 @@ let structures = {
 
   // Place an extension around the base
   buildExtension: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0];
     let extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
