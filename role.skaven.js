@@ -45,8 +45,9 @@ var roleSkaven = {
 
   // Should we build something? If we have 50% or more rats, and we don't have more than 50% doing the work
   shouldWeBuild: (rat, slaves) => {
+    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
     const constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
-    if (constructionTargets && constructionTargets.length > 0) {
+    if (constructionTargets && constructionTargets.length > 0 && canCarry) {
       // Do we have 50% or more max rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
       // Are less than 50% of them doing the work?
@@ -61,8 +62,9 @@ var roleSkaven = {
 
   // Should we upgrade the controller?
   shouldWeUpgrade: (rat, slaves) => {
+    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
     const upgradeTarget = rat.room.controller;
-    if (upgradeTarget) {
+    if (upgradeTarget && canCarry) {
       // if the rat has been sleeping on the job, go make him upgrade..
       if (rat.memory.slept > 5) return true;
       // Do we have 80% of max slaves?
@@ -81,8 +83,9 @@ var roleSkaven = {
   //If we have 50% or more rats, and we have 20% or less repairing
   //repairTargets && repairTargets.length > 0 && slaves.length >= (maxSlaves/2) && $actions.numActive('repair') <= (maxSlaves*0.2)
   shouldWeRepair: (rat, slaves) => {
+    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
     const repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
-    if (repairTargets && repairTargets.length > 0) {
+    if (repairTargets && repairTargets.length > 0 && canCarry) {
       // Do we have 50% or more rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
       // Are less than 25% doing the work?
