@@ -1,4 +1,5 @@
 const structureTower = require('structure.tower');
+const move = require("./skaven.move");
 
 let sRepair = {
   // Go find something to repair
@@ -13,7 +14,8 @@ let sRepair = {
       var target = Game.getObjectById(rat.memory.myTargetId);
       if(target) {
         if(rat.repair(target) === ERR_NOT_IN_RANGE) {
-          rat.moveTo(target, { visualizePathStyle: { stroke: '#ff0000' }, reusePath: 10 });
+          move.moveTo(rat, target, '#ff0000');
+          // rat.moveTo(target, { visualizePathStyle: { stroke: '#ff0000' }, reusePath: 10 });
         }
       }
     } else {

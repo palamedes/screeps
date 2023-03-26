@@ -1,3 +1,4 @@
+const move = require("./skaven.move");
 let sStore = {
   // Go store the energy
   using: rat => {
@@ -16,7 +17,8 @@ let sStore = {
     if(targets.length > 0) {
       var target = rat.pos.findClosestByRange(targets);
       if(rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        rat.moveTo(target, { visualizePathStyle: { stroke: '#aaffff' }, reusePath: 10 });
+        move.moveTo(rat, target, '#aaaaaa');
+        // rat.moveTo(target, { visualizePathStyle: { stroke: '#aaffff' }, reusePath: 10 });
       }
     } else {
       rat.say(rat.memory.slept > 2 ? '💤' : '💡');

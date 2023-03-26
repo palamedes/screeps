@@ -1,3 +1,4 @@
+const move = require("./skaven.move");
 let sRenew = {
   // Go find something to build and go build it, if there is nothing or we have finished building something, reset.
   using: rat => {
@@ -8,7 +9,8 @@ let sRenew = {
         let result = closestSpawn.renewCreep(rat);
         doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
       } else {
-        rat.moveTo(closestSpawn, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
+        move.moveTo(rat, closestSpawn, '#00ffff');
+        // rat.moveTo(closestSpawn, { visualizePathStyle: { stroke: '#ffffff' }, reusePath: 10 });
         doneRenewing = false
       }
     } else {
