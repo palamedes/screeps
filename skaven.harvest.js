@@ -15,7 +15,7 @@ let sHarvest = {
     }
     // If the rat doesn't know where to go.. Find tombstone energy?
     if (!rat.memory.myTargetId) {
-      let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONE, {
+      let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONES, {
         filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
       });
       if (tombstoneEnergy.length > 0) {
