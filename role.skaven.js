@@ -15,8 +15,9 @@ var roleSkaven = {
       }
       // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
+        const canNotCarry = rat.body.filter(part => part.type === CARRY).length === 0;
         // If rat has less than 20% free capacity (80% full) then go do some work.
-        if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2) {
+        if (canNotCarry || ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.2)) {
           // Construction comes first...
           if (roleSkaven.shouldWeBuild(rat, slaves)) {
             rat.memory.task = 'build'; rat.memory.slept = 0; rat.say('🚧');
