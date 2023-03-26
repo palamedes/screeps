@@ -19,8 +19,8 @@ let structures = {
     }
   },
 
-  buildStructure: (room, x, y, structure) => {
-    let results = room.createConstructionSite(x, y, structure);
+  buildStructure: (room, buildPos, structure) => {
+    let results = room.createConstructionSite(buildPos.x, buildPos.y, structure);
     if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
       structures.updateBasePlan(room, buildPos.index);
     } else {
@@ -35,7 +35,7 @@ let structures = {
     if (roadsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
-      structures.buildStructure(room, buildPos.x, buildPos.y, STRUCTURE_ROAD);
+      structures.buildStructure(room, buildPos, STRUCTURE_ROAD);
     }
   },
 
@@ -46,7 +46,7 @@ let structures = {
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_EXTENSION);
-      structures.buildStructure(room, buildPos.x, buildPos.y, STRUCTURE_EXTENSION);
+      structures.buildStructure(room, buildPos, STRUCTURE_EXTENSION);
     }
   },
 
