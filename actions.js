@@ -55,8 +55,6 @@ let $actions = {
       percentWork = 0.75; percentCarry = 0;
     }
 
-    console.log(slaves.length + ' ' + numHarvesters + ' ' + Memory.rooms[room.name].numSucklePoints);
-
     let energy = room.energyAvailable;
     // Calculate the number of body parts based on energySize
     const numWork  = Math.floor(energy * percentWork / 100); // 50% of the energy to work
@@ -73,7 +71,7 @@ let $actions = {
     for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
     for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
     for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
-    // ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
+    ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
   },
 
   // // Spawn us a skaven harvester ~ Harvesters will stand at an energy suckle point and drain it..
