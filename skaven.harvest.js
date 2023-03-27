@@ -35,8 +35,8 @@ let sHarvest = {
         sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
       });
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
-        console.log('here');
         rat.memory.myTargetId = containers[0].id;
+        console.log('I found a container! Setting it to memory', rat.memory.myTargetId);
       }
     }
 
@@ -52,7 +52,7 @@ let sHarvest = {
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
-console.log("I found that " + rat.memory.myTargetId + " yields a: ", target);
+console.log("I found that " + rat.memory.myTargetId + " yields a:", target);
     if (target && target.energy > 0) {
       // If the target is a pickup, then go try to pick it up
       if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {
