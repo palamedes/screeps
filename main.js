@@ -47,7 +47,7 @@ module.exports.loop = function () {
     if (Memory.rooms[room.name].numSucklePoints == 3) { maxSlaves = 8; }
     if (Memory.rooms[room.name].numSucklePoints == 4) { maxSlaves = 12; }
 
-    if (room.controller.level == 4) { maxSlaves--; }
+    // if (room.controller.level == 4) { maxSlaves--; }
 
 
 
