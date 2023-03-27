@@ -11,7 +11,9 @@ let structures = {
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
       if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
       // If we can build a tower, we should..
-
+      let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
+      let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
+      if ((towersAllowed - towersBuild) > 0) { structures.buildTower(room); }
       // Early room level, build the roads
       structures.buildRoad(room);
 
@@ -49,6 +51,19 @@ let structures = {
       structures.buildStructure(room, buildPos, STRUCTURE_EXTENSION);
     }
   },
+
+  // Place a tower around the base
+  buildTower: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const towersBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_TOWER}}).length;
+    if (towersBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_TOWER);
+      structures.buildStructure(room, buildPos, STRUCTURE_TOWER);
+    }
+  },
+
+
 
   // findHabitrails: () => {
   //   //
