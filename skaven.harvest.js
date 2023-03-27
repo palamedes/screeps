@@ -95,9 +95,9 @@ let sHarvest = {
             rat.memory.myTargetId = foundSucklePoint;
           }
           // Try to harvest it.. and if you can't.. just wait.
-          if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
+          // if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
             // Waiting for power to respawn most likely
-          }
+          // }
         // ...otherwise find us a suckle point that is open and move to it.
         } else {
           for (let id in Memory.rooms[rat.room.name].sources) {
