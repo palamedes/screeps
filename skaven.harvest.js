@@ -22,6 +22,9 @@ let sHarvest = {
         rat.memory.myTargetId = highestEnergyId;
       }
     }
+    // If the rat is currently sitting on a suckle point.. use that one.
+
+
     // // If the rat doesn't know where to go.. Find tombstone energy?
     // if (!rat.memory.myTargetId && canCarry) {
     //   let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONES, {
@@ -58,7 +61,7 @@ let sHarvest = {
         for (let sourceKey in sources) {
           for (let posKey in sources[sourceKey]) {
             if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
-              return true;
+              return sourceKey;
             }
           }
         }
@@ -72,9 +75,13 @@ let sHarvest = {
       // If the target is a source
       if (target instanceof Source) {
         let foundSucklePoint = false;
+        let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
         // ...and we are at one of the known suckle points, harvest.
-        if (isNearResource(rat, Memory.rooms[rat.room.name].sources)) {
+        if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
+          if (target.id !== sucklePointSourceId) {
+            rat.memory.myTargetId = foundSucklePoint;
+          }
           if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
             // Waiting for power to respawn most likely
           }
