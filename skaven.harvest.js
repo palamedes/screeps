@@ -62,7 +62,7 @@ let sHarvest = {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a container, then go transfer out some energy
-      if (target instanceof StructureContainer){ //&& target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      if (target instanceof Container){ //&& target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         console('trying to move to container');
         move.moveTo(rat, target, '#ffaa00');
       }
