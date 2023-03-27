@@ -19,13 +19,12 @@ let sRenew = {
   },
 
   decide: rat => {
-    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
-    if (canCarry && rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room)
+    // const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
+    // if (canCarry && rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room)
   }
-}
 
-    rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
-  if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100
+  //   rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
+  // if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100
 
 }
 module.exports = sRenew;
