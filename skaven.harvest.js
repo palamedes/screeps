@@ -35,6 +35,7 @@ let sHarvest = {
         },
         sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
       });
+      console.log(containers.length)
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
         rat.memory.myTargetId = containers[0];
       }
