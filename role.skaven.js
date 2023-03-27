@@ -9,8 +9,9 @@ var roleSkaven = {
 
       let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
-      if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 5) {
+      if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
         if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) {
+          rat.memory.renews--;
           rat.memory.task = 'renew'; rat.say('⌛');
         }
       }
