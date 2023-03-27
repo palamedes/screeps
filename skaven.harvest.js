@@ -53,16 +53,16 @@ let sHarvest = {
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
     // console.log('target:',target);
-    if (target && target.energy > 0) {
+    if (target) {
 
       console.log("I found that " + rat.memory.myTargetId + " yields a:", target);
 
       // If the target is a pickup, then go try to pick it up
-      if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+      if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a container, then go transfer out some energy
-      if (target instanceof Structure) { //&& target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      if (target instanceof StructureContainer && target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         console('trying to move to container');
         // move.moveTo(rat, target, '#ffaa00');
       }
@@ -85,7 +85,7 @@ let sHarvest = {
       }
 
       // If the target is a source find a suckle point for that source
-      if (target instanceof Source) {
+      if (target instanceof Source && target.energy > 0) {
         let foundSucklePoint = false;
         let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
         // ...and we are at one of the known suckle points, harvest.
