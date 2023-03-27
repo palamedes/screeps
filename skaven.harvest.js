@@ -6,6 +6,7 @@ let sHarvest = {
     // Can this rat carry things?
     const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
     // const noCarryRats = _.filter(Game.creeps, (rat) => !rat.body.some((part) => part.type === CARRY)).length;
+
     // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId && canCarry) {
       // Try to pickup dropped energy first
@@ -23,7 +24,11 @@ let sHarvest = {
         }
         rat.memory.myTargetId = highestEnergyId;
       }
-      // If there is no dropped energy, but there is a container with energy.. use that.
+    }
+
+    // If there is no dropped energy, but there is a container with energy.. use that.
+    if (!rat.memory.myTargetId && canCarry) {
+      console.log('looking for container');
       const containers = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => {
           return structure.structureType === STRUCTURE_CONTAINER;
@@ -34,7 +39,8 @@ let sHarvest = {
         rat.memory.myTargetId = containers[0];
       }
     }
-    // If the rat doesnt have a target and one wasn't set above, go find a source.
+
+    // If the rat still doesnt have a target and one wasn't set above, go find a source.
     if (!rat.memory.myTargetId) {
       let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
