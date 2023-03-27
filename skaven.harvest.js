@@ -36,7 +36,7 @@ let sHarvest = {
       });
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
         rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
-        console.log('I found a container! Setting it to memory', rat.memory.myTargetId);
+        // console.log('I found a container! Setting it to memory', rat.memory.myTargetId);
       }
     }
 
@@ -62,9 +62,9 @@ let sHarvest = {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a container, then go transfer out some energy
-      if (target instanceof Container){ //&& target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      if (target instanceof StructureContainer) { //&& target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         console('trying to move to container');
-        move.moveTo(rat, target, '#ffaa00');
+        // move.moveTo(rat, target, '#ffaa00');
       }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
