@@ -65,8 +65,6 @@ let sHarvest = {
       if (target instanceof StructureContainer && target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         console('trying to move to container');
         move.moveTo(rat, target, '#ffaa00');
-      } else {
-        console.log('errrrr' + target.transfer(rat, RESOURCE_ENERGY))
       }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
