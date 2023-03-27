@@ -52,6 +52,7 @@ let sHarvest = {
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
+    console.log(target);
     if (target && target.energy > 0 && target !== true) {
 
       console.log("I found that " + rat.memory.myTargetId + " yields a:", target);
