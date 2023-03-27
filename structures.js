@@ -112,6 +112,7 @@ let structures = {
     // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
     // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
     // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
+    // c = RESOURCE_CONTAINER, L = LINK
     const basePlan = [];
     basePlan[0] = ", , # # # # # # # # # # # , ,".replace(/ /g, '');
     basePlan[1] = ", # · · · · · # · · · · · # ,".replace(/ /g, '');
@@ -119,9 +120,9 @@ let structures = {
     basePlan[3] = "# · · # · · · # · · · # · · #".replace(/ /g, '');
     basePlan[4] = "# · # · # e # T # e # · # · #".replace(/ /g, '');
     basePlan[5] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
-    basePlan[6] = "# · · e # c # # # c # e · · #".replace(/ /g, '');
-    basePlan[7] = "# # # # · · T * T · · # # # #".replace(/ /g, '');
-    basePlan[8] = "# · · e # · # # # · # e · · #".replace(/ /g, '');
+    basePlan[6] = "# · e e # · # # # c # e e · #".replace(/ /g, '');
+    basePlan[7] = "# # # # · · T * T L c # # # #".replace(/ /g, '');
+    basePlan[8] = "# · e e # · # # # c # e e · #".replace(/ /g, '');
     basePlan[9] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
     basePlan[10]= "# · # · # e # T # e # · # · #".replace(/ /g, '');
     basePlan[11]= "# · · # · · · # · · · # · · #".replace(/ /g, '');
