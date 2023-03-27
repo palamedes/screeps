@@ -62,8 +62,9 @@ let sHarvest = {
         let withdraw = rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE
         if (withdraw === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
-        } else {
-          console.log(withdraw);
+        } else if (!withdraw) {
+          rat.memory.myTargetId = null;
+          rat.memory.task = null;
         }
       }
 
