@@ -14,7 +14,7 @@ let structureTower = {
 
   // Get our towers
   getTowers: () => {
-    return Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER)
+    return Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER);
   },
 
   // Heal any damaged rats near by
@@ -53,19 +53,21 @@ let structureTower = {
 
   // Attack any hostile creeps
   attack: towers => {
-    // Are there any hostile creeps?
-    const hostileCreeps = towers[id].room.find(FIND_HOSTILE_CREEPS);
-    if (hostileCreeps.length > 0) {
-      for (let id in towers) {
-        // let tower = Game.towers[towerId];
-        let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-        if (closestHostile) {
-          towers[id].attack(closestHostile);
+    for (let id in towers) {
+      // Are there any hostile creeps?
+      const hostileCreeps = towers[id].room.find(FIND_HOSTILE_CREEPS);
+      if (hostileCreeps.length > 0) {
+        for (let id in towers) {
+          // let tower = Game.towers[towerId];
+          let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+          if (closestHostile) {
+            towers[id].attack(closestHostile);
+          }
         }
+        return true;
+      } else {
+        return false;
       }
-      return true;
-    } else {
-      return false;
     }
   }
 
