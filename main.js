@@ -43,9 +43,9 @@ module.exports.loop = function () {
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     Memory.rooms[room.name].numSucklePoints = numSucklePoints();
     let maxSlaves = 14;
-    if (numSucklePoints <= 2) { maxSlaves = 6; }
-    if (numSucklePoints == 3) { maxSlaves = 8; }
-    if (numSucklePoints == 4) { maxSlaves = 12; }
+    if (Memory.rooms[room.name].numSucklePoints <= 2) { maxSlaves = 6; }
+    if (Memory.rooms[room.name].numSucklePoints == 3) { maxSlaves = 8; }
+    if (Memory.rooms[room.name].numSucklePoints == 4) { maxSlaves = 12; }
 
     if (room.controller.level == 4) { maxSlaves--; }
 
