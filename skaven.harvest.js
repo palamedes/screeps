@@ -76,7 +76,7 @@ let sHarvest = {
         if (isNearResource(rat, Memory.rooms[rat.room.name].sources)) {
           foundSucklePoint = true; // we are on it..
           if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
-            console.log('somethings wrong');
+            // Waiting for power to respawn most likely
           }
         // ...otherwise find us a suckle point that is open and move to it.
         } else {
