@@ -35,8 +35,7 @@ let sHarvest = {
         sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
       });
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
-        rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
-        // console.log('I found a container! Setting it to memory', rat.memory.myTargetId);
+        // rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
       }
     }
 
@@ -52,19 +51,15 @@ let sHarvest = {
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
-    // console.log('target:',target);
+
     if (target) {
-
-      console.log("I found that " + rat.memory.myTargetId + " yields a:", target);
-
       // If the target is a pickup, then go try to pick it up
       if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a container, then go transfer out some energy
       if (target instanceof StructureContainer && target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        console('trying to move to container');
-        // move.moveTo(rat, target, '#ffaa00');
+        move.moveTo(rat, target, '#ffaa00');
       }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
