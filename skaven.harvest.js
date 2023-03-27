@@ -56,6 +56,7 @@ let sHarvest = {
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
+    console.log(target instanceof StructureContainer)
     if (target && target.energy > 0) {
       // If the target is a pickup, then go try to pick it up
       if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {

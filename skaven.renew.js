@@ -1,4 +1,4 @@
-const move = require("./skaven.move");
+const move = require("skaven.move");
 let sRenew = {
   // Go find something to build and go build it, if there is nothing or we have finished building something, reset.
   using: rat => {
@@ -16,6 +16,16 @@ let sRenew = {
       doneRenewing = true
     }
     return !doneRenewing;
+  },
+
+  decide: rat => {
+    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
+    if (canCarry && rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room)
   }
+}
+
+    rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
+  if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100
+
 }
 module.exports = sRenew;
