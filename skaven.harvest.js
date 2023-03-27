@@ -35,7 +35,7 @@ let sHarvest = {
         sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
       });
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
-        rat.memory.myTargetId = containers[0].id;
+        rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         console.log('I found a container! Setting it to memory', rat.memory.myTargetId);
       }
     }
@@ -83,7 +83,7 @@ let sHarvest = {
         return creepAtLocation.length > 0
       }
 
-      // If the target is a source
+      // If the target is a source find a suckle point for that source
       if (target instanceof Source) {
         let foundSucklePoint = false;
         let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
