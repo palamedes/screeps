@@ -53,22 +53,20 @@ let structureTower = {
 
   // Attack any hostile creeps
   attack: towers => {
+    let alert = false;
     for (let id in towers) {
       // Are there any hostile creeps?
       const hostileCreeps = towers[id].room.find(FIND_HOSTILE_CREEPS);
       if (hostileCreeps.length > 0) {
-        for (let id in towers) {
-          // let tower = Game.towers[towerId];
-          let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-          if (closestHostile) {
-            towers[id].attack(closestHostile);
-          }
+        // let tower = Game.towers[towerId];
+        let closestHostile = towers[id].pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+        if (closestHostile) {
+          towers[id].attack(closestHostile);
         }
-        return true;
-      } else {
-        return false;
+        alert = true;
       }
     }
+    return alert;
   }
 
 }
