@@ -216,6 +216,7 @@ let structures = {
     let findSymbol = '·';
     if (structure === STRUCTURE_EXTENSION) { findSymbol = 'e'; }
     if (structure === STRUCTURE_ROAD)      { findSymbol = '#'; }
+    if (structure === STRUCTURE_TOWER)     { findSymbol = 'T'; }
     const x = start.x, y = start.y;
     let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
     while (index < str.length) {
