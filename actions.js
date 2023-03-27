@@ -54,13 +54,14 @@ let $actions = {
     const ratSpawn = room.find(FIND_MY_SPAWNS)[0]
     const ratBrain = { memory: { role: 'slave', spawn: ratSpawn, ...$actions.defaultMemory(), ...memory } };
 
+    let energy = room.energyAvailable;
     let percentWork = 0.5, percentCarry = 0.50;
+
     // If we have more than 2 slaves already, and we don't have as many dedicated harvesters as we need.. get one
     if (slaves.length >= 2 && numHarvesters < Memory.rooms[room.name].numSucklePoints) {
-      percentWork = 0.85; percentCarry = 0;
+      percentWork = 0.85; percentCarry = 0; energy = energy > 1000 ? 1000 : energy;
     }
 
-    let energy = room.energyAvailable;
     // Calculate the number of body parts based on energySize
     const numWork  = Math.floor(energy * percentWork / 100); // 50% of the energy to work
     energy = energy - numWork * 100;
