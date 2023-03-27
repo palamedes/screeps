@@ -6,14 +6,14 @@ let structures = {
   // Build something!
   buildSomething: room => {
     if (_.size(Game.constructionSites) === 0) {
-      // If we can build an extension, we should..
-      let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
-      let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
-      if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
       // If we can build a tower, we should..
       let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
       let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
       if ((towersAllowed - towersBuilt) > 0) { structures.buildTower(room); }
+      // If we can build an extension, we should..
+      let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
+      let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
+      if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
       // Early room level, build the roads
       structures.buildRoad(room);
 
