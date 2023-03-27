@@ -58,8 +58,13 @@ let sHarvest = {
         move.moveTo(rat, target, '#ffaa00');
       }
       // If the target is a container, then go transfer out some energy
-      if (target instanceof StructureContainer && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        move.moveTo(rat, target, '#ffaa00');
+      if (target instanceof StructureContainer) {
+        let withdraw = rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE
+        if (withdraw === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        } else {
+          console.log(withdraw);
+        }
       }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
