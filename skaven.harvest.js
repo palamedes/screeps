@@ -5,6 +5,7 @@ let sHarvest = {
   using: rat => {
     // Can this rat carry things?
     const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
+    // const noCarryRats = _.filter(Game.creeps, (rat) => !rat.body.some((part) => part.type === CARRY)).length;
     // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId && canCarry) {
       // Try to pickup dropped energy first
