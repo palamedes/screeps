@@ -28,16 +28,12 @@ let sHarvest = {
 
     // If there is no dropped energy, but there is a container with energy.. use that.
     if (!rat.memory.myTargetId && canCarry) {
-      console.log('looking for container');
       const containers = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => {
           return structure.structureType === STRUCTURE_CONTAINER;
         },
         sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
       });
-      console.log(containers.length);
-      console.log('containers', containers)
-
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
         console.log('here');
         rat.memory.myTargetId = containers[0].id;
@@ -56,6 +52,7 @@ let sHarvest = {
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
+console.log("I found a: " + target.constructor);
     if (target && target.energy > 0) {
       // If the target is a pickup, then go try to pick it up
       if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {
