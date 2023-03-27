@@ -23,8 +23,18 @@ let sHarvest = {
         }
         rat.memory.myTargetId = highestEnergyId;
       }
+      // If there is no dropped energy, but there is a container with energy.. use that.
+      const containers = room.find(FIND_STRUCTURES, {
+        filter: (structure) => {
+          return structure.structureType === STRUCTURE_CONTAINER;
+        },
+        sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
+      });
+      if (containers[0].store[RESOURCE_ENERGY] > 0) {
+        rat.memory.myTargetId = containers[0];
+      }
     }
-    // If the rat doesnt have a target and one wasnt set above, go find a source.
+    // If the rat doesnt have a target and one wasn't set above, go find a source.
     if (!rat.memory.myTargetId) {
       let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
@@ -41,10 +51,11 @@ let sHarvest = {
       if (target instanceof Resource && rat.pickup(target) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
-      // If the target is a ruin, then go withdraw the energy
-      if (target instanceof Tombstone && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      // If the target is a container, then go transfer out some energy
+      if (target instanceof StructureContainer && target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#ffaa00');
       }
+
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
       let isNearResource = (rat, sources) => {
         const x = rat.pos.x, y = rat.pos.y;
