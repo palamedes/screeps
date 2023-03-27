@@ -13,7 +13,7 @@ let structures = {
       // If we can build a tower, we should..
       let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
       let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
-      if ((towersAllowed - towersBuild) > 0) { structures.buildTower(room); }
+      if ((towersAllowed - towersBuilt) > 0) { structures.buildTower(room); }
       // Early room level, build the roads
       structures.buildRoad(room);
 
