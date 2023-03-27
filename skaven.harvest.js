@@ -59,6 +59,9 @@ let sHarvest = {
       }
       // If the target is a container, then go transfer out some energy
       if (target instanceof StructureContainer && target.transfer(rat, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        rat.memory.myTargetId = null;
+        rat.memory.task = null;
+
         move.moveTo(rat, target, '#ffaa00');
       }
 
