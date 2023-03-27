@@ -24,7 +24,7 @@ let sHarvest = {
         rat.memory.myTargetId = highestEnergyId;
       }
       // If there is no dropped energy, but there is a container with energy.. use that.
-      const containers = room.find(FIND_STRUCTURES, {
+      const containers = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => {
           return structure.structureType === STRUCTURE_CONTAINER;
         },
