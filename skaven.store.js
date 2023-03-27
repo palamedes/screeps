@@ -11,7 +11,7 @@ let sStore = {
                 structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
       },
       sort: (a, b) => {
-        const types = [ STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER ];
+        const types = [ STRUCTURE_CONTAINER, STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION  ];
         return types.indexOf(a.structureType) - types.indexOf(b.structureType);
       }
     });
