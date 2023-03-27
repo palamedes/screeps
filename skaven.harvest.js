@@ -39,7 +39,7 @@ let sHarvest = {
       console.log('containers', containers)
 
       if (containers[0].store[RESOURCE_ENERGY] > 0) {
-
+        console.log('here');
         rat.memory.myTargetId = containers[0].id;
       }
     }
