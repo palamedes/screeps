@@ -2,7 +2,7 @@ let sMove = {
 
   // have our rat move to a location
   moveTo: (rat, target, stroke) => {
-     rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 10 });
+     rat.moveTo(target, { visualizePathStyle: {stroke: '#ffaa00'}, reusePath: 6 });
 
     // let options = { noPathFinding: true, visualizePathStyle: { stroke: stroke } }
     // let path = sMove.memorizePath(rat, target);
