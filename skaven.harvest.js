@@ -3,6 +3,7 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
+    // Can this rat carry things?
     const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
     // If the rat doesn't know where to go.. Find dropped energy?
     if (!rat.memory.myTargetId && canCarry) {
@@ -22,19 +23,7 @@ let sHarvest = {
         rat.memory.myTargetId = highestEnergyId;
       }
     }
-    // If the rat is currently sitting on a suckle point.. use that one.
-
-
-    // // If the rat doesn't know where to go.. Find tombstone energy?
-    // if (!rat.memory.myTargetId && canCarry) {
-    //   let tombstoneEnergy = Game.rooms[rat.room.name].find(FIND_TOMBSTONES, {
-    //     filter: (tombstone) => tombstone.store[RESOURCE_ENERGY] > 25
-    //   });
-    //   if (tombstoneEnergy.length > 0) {
-    //     rat.memory.myTargetId = rat.pos.findClosestByRange(tombstoneEnergy).id;
-    //   }
-    // }
-    // If the rat doesn't know where to go.. Find source energy?
+    // If the rat doesnt have a target and one wasnt set above, go find a source.
     if (!rat.memory.myTargetId) {
       let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
@@ -44,7 +33,7 @@ let sHarvest = {
       }
     }
 
-    // Go to that target and harvest it, assuming it has power.
+    // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     let target = Game.getObjectById(rat.memory.myTargetId);
     if (target && target.energy > 0) {
       // If the target is a pickup, then go try to pick it up
@@ -79,9 +68,11 @@ let sHarvest = {
         // ...and we are at one of the known suckle points, harvest.
         if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
+          // If we are standing on a point but not the one we found, then use this one. (no sense in moving)
           if (target.id !== sucklePointSourceId) {
             rat.memory.myTargetId = foundSucklePoint;
           }
+          // Try to harvest it.. and if you can't.. just wait.
           if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
             // Waiting for power to respawn most likely
           }
