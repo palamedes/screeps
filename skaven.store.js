@@ -11,10 +11,11 @@ let sStore = {
                 structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
       },
       sort: (a, b) => {
-        const types = [ STRUCTURE_CONTAINER, STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION  ];
+        const types = [ STRUCTURE_CONTAINER, STRUCTURE_TOWER, STRUCTURE_SPAWN, STRUCTURE_EXTENSION ];
         return types.indexOf(a.structureType) - types.indexOf(b.structureType);
       }
     });
+    console.log('store Targets:',targets);
     if (rat.store.getUsedCapacity() === 0) {
       rat.memory.myTargetId = null;
       rat.memory.task = null;
