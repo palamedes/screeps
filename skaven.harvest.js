@@ -50,83 +50,85 @@ let sHarvest = {
     }
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-    let target = Game.getObjectById(rat.memory.myTargetId);
-    if (target) {
-      // If the target is a pickup, then go try to pick it up
-      if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
-        move.moveTo(rat, target, '#ffaa00');
-      }
-      // If the target is a container, then go transfer out some energy
-      if (target instanceof StructureContainer) {
-        let withdraw = rat.withdraw(target, RESOURCE_ENERGY);
-        if (withdraw === ERR_NOT_IN_RANGE) {
+    if (rat.memory.myTargetId) {
+      let target = Game.getObjectById(rat.memory.myTargetId);
+      if (target) {
+        // If the target is a pickup, then go try to pick it up
+        if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
-        } else if (!withdraw) {
-          rat.memory.myTargetId = null;
-          rat.memory.task = null;
         }
-      }
-
-      // Method to quickly check to see if we are standing on one of the suckle points we have in memory
-      let isNearResource = (rat, sources) => {
-        const x = rat.pos.x, y = rat.pos.y;
-        for (let sourceKey in sources) {
-          for (let posKey in sources[sourceKey]) {
-            if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
-              return sourceKey;
-            }
+        // If the target is a container, then go transfer out some energy
+        if (target instanceof StructureContainer) {
+          let withdraw = rat.withdraw(target, RESOURCE_ENERGY);
+          if (withdraw === ERR_NOT_IN_RANGE) {
+            move.moveTo(rat, target, '#ffaa00');
+          } else if (!withdraw) {
+            rat.memory.myTargetId = null;
+            rat.memory.task = null;
           }
         }
-        return false;
-      }
-      let isRatPresentAtLocation = (x,y) => {
-        let creepAtLocation = Game.rooms[rat.room.name].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
-        return creepAtLocation.length > 0
-      }
 
-      // If the target is a source find a suckle point for that source
-      if (target instanceof Source && target.energy > 0) {
-        let foundSucklePoint = false;
-        let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
-        // ...and we are at one of the known suckle points, harvest.
-        if (sucklePointSourceId) {
-          foundSucklePoint = true; // we are on it..
-          // If we are standing on a point but not the one we found, then use this one. (no sense in moving)
-          if (target.id !== sucklePointSourceId) {
-            rat.memory.myTargetId = foundSucklePoint;
-          }
-          // Try to harvest it.. and if you can't.. just wait.
-          if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
-            // Waiting for power to respawn most likely
-          }
-        // ...otherwise find us a suckle point that is open and move to it.
-        } else {
-          for (let id in Memory.rooms[rat.room.name].sources) {
-            if (foundSucklePoint) break;
-            for (let sucklePoint in Memory.rooms[rat.room.name].sources[id]) {
-              if (!isRatPresentAtLocation(Memory.rooms[rat.room.name].sources[id][sucklePoint].x, Memory.rooms[rat.room.name].sources[id][sucklePoint].y)) {
-                foundSucklePoint = true;
-                rat.memory.myTargetId = id;
-                move.moveTo(rat, Game.getObjectById(id), '#ffaa00');
-                break;
+        // Method to quickly check to see if we are standing on one of the suckle points we have in memory
+        let isNearResource = (rat, sources) => {
+          const x = rat.pos.x, y = rat.pos.y;
+          for (let sourceKey in sources) {
+            for (let posKey in sources[sourceKey]) {
+              if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
+                return sourceKey;
               }
             }
           }
+          return false;
         }
-        // If we didn't find a suckle point, then ask for something else to do..
-        if (!foundSucklePoint) {
+        let isRatPresentAtLocation = (x,y) => {
+          let creepAtLocation = Game.rooms[rat.room.name].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
+          return creepAtLocation.length > 0
+        }
+
+        // If the target is a source find a suckle point for that source
+        if (target instanceof Source && target.energy > 0) {
+          let foundSucklePoint = false;
+          let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
+          // ...and we are at one of the known suckle points, harvest.
+          if (sucklePointSourceId) {
+            foundSucklePoint = true; // we are on it..
+            // If we are standing on a point but not the one we found, then use this one. (no sense in moving)
+            if (target.id !== sucklePointSourceId) {
+              rat.memory.myTargetId = foundSucklePoint;
+            }
+            // Try to harvest it.. and if you can't.. just wait.
+            if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
+              // Waiting for power to respawn most likely
+            }
+            // ...otherwise find us a suckle point that is open and move to it.
+          } else {
+            for (let id in Memory.rooms[rat.room.name].sources) {
+              if (foundSucklePoint) break;
+              for (let sucklePoint in Memory.rooms[rat.room.name].sources[id]) {
+                if (!isRatPresentAtLocation(Memory.rooms[rat.room.name].sources[id][sucklePoint].x, Memory.rooms[rat.room.name].sources[id][sucklePoint].y)) {
+                  foundSucklePoint = true;
+                  rat.memory.myTargetId = id;
+                  move.moveTo(rat, Game.getObjectById(id), '#ffaa00');
+                  break;
+                }
+              }
+            }
+          }
+          // If we didn't find a suckle point, then ask for something else to do..
+          if (!foundSucklePoint) {
+            rat.memory.myTargetId = null;
+            rat.memory.task = null;
+          }
+        }
+        // If the rat is full, or the target is empty then find something else to do.
+        if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
           rat.memory.myTargetId = null;
           rat.memory.task = null;
         }
-      }
-      // If the rat is full, or the target is empty then find something else to do.
-      if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
+      } else {
         rat.memory.myTargetId = null;
         rat.memory.task = null;
       }
-    } else {
-      rat.memory.myTargetId = null;
-      rat.memory.task = null;
     }
   },
 }
