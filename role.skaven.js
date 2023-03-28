@@ -103,9 +103,10 @@ var roleSkaven = {
   //If we have 50% or more rats, and we have 20% or less repairing
   //repairTargets && repairTargets.length > 0 && slaves.length >= (maxSlaves/2) && $actions.numActive('repair') <= (maxSlaves*0.2)
   shouldWeRepair: (rat, slaves) => {
+    const canWork = rat.body.filter(part => part.type === WORK).length > 0
     const canCarry = rat.body.filter(part => part.type === CARRY).length > 0;
     const repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
-    if (repairTargets && repairTargets.length > 0 && canCarry) {
+    if (repairTargets && repairTargets.length > 0 && canCarry && canWork) {
       // Do we have 50% or more rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
       // Are less than 25% doing the work?
