@@ -29,7 +29,7 @@ module.exports.loop = function () {
     const containers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } });
     const totalSpawnsCapacity = _.sum(spawns, (s) => s.energyCapacity);
     const totalExtensionsCapacity = _.sum(extensions, (e) => e.energyCapacity);
-    const totalContainersCapacity = _.sum(containers, (e) => e.energyCapacity);
+    const totalContainersCapacity = _.sum(containers, (c) => c.store.getCapacity(RESOURCE_ENERGY));
     Memory.rooms[roomName].maxEnergy = totalSpawnsCapacity + totalExtensionsCapacity + totalContainersCapacity;
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
