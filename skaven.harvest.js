@@ -66,7 +66,7 @@ let sHarvest = {
           console.log(rat.name + ' trying ' + withdraw)
           if (withdraw === ERR_NOT_IN_RANGE) {
             move.moveTo(rat, target, '#ffaa00');
-          } else if (!withdraw) {
+          } else if (!withdraw || withdraw === ERR_NOT_ENOUGH_RESOURCES) {
             rat.memory.myTargetId = null;
             rat.memory.task = null;
           }
