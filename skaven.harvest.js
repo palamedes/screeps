@@ -62,6 +62,7 @@ let sHarvest = {
         }
         // If the target is a container, then go transfer out some energy
         if (target instanceof StructureContainer) {
+          console.log('trying');
           let withdraw = rat.withdraw(target, RESOURCE_ENERGY);
           if (withdraw === ERR_NOT_IN_RANGE) {
             move.moveTo(rat, target, '#ffaa00');
