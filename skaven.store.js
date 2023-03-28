@@ -23,10 +23,10 @@ let sStore = {
     }
     // If there are any targets store in order above..
     if (targets.length > 0) {
-      let randomIndex = Math.floor(Math.random() * targets.length);
-      let randomTarget = targets[randomIndex];
-      if(rat.transfer(randomTarget, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        move.moveTo(rat, randomTarget, '#aaaaaa');
+      // let randomIndex = Math.floor(Math.random() * targets.length);
+      // let randomTarget = targets[randomIndex];
+      if(rat.transfer(targets[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        move.moveTo(rat, targets[0], '#aaaaaa');
       }
       return true;
     }
