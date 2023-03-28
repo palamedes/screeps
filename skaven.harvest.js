@@ -3,43 +3,46 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    // Can this rat carry things?
     const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
-    // const noCarryRats = _.filter(Game.creeps, (rat) => !rat.body.some((part) => part.type === CARRY)).length;
+    const canWork = rat.body.filter(part => part.type === WORK).length > 0
+    // const noCarryRats = _.filter(Game.creeps, rat => !rat.body.some(part => part.type === CARRY)).length;
 
-    // If the rat doesn't know where to go.. Find dropped energy?
-    if (!rat.memory.myTargetId && canCarry) {
-      // Try to pickup dropped energy first
-      let droppedEnergy = Game.rooms[rat.room.name].find(FIND_DROPPED_RESOURCES, {
-        filter: (dropped) => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
-      });
-      if (droppedEnergy.length > 0) {
-        let highestEnergy = 0;
-        let highestEnergyId = null;
-        for (let i = 0; i < droppedEnergy.length; i++) {
-          if (droppedEnergy[i].amount > highestEnergy) {
-            highestEnergy = droppedEnergy[i].amount;
-            highestEnergyId = droppedEnergy[i].id;
-          }
+    // Can this rat carry? - So not harvesters
+    if (canCarry) {
+
+      // Try to get energy from a container first.. But only if they can work.
+      if (!rat.memory.myTargetId && canWork) {
+        const containers = rat.room.find(FIND_STRUCTURES, {
+          filter: structure => { return structure.structureType === STRUCTURE_CONTAINER; },
+          sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
+        });
+        if (containers[0].store[RESOURCE_ENERGY] > 0) {
+          rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
-        rat.memory.myTargetId = highestEnergyId;
       }
+
+      // Try to get energy that is dropped.. Anyone.
+      if (!rat.memory.myTargetId) {
+        // Try to pickup dropped energy first
+        let droppedEnergy = Game.rooms[rat.room.name].find(FIND_DROPPED_RESOURCES, {
+          filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
+        });
+        if (droppedEnergy.length > 0) {
+          let highestEnergy = 0;
+          let highestEnergyId = null;
+          for (let i = 0; i < droppedEnergy.length; i++) {
+            if (droppedEnergy[i].amount > highestEnergy) {
+              highestEnergy = droppedEnergy[i].amount;
+              highestEnergyId = droppedEnergy[i].id;
+            }
+          }
+          rat.memory.myTargetId = highestEnergyId;
+        }
+      }
+
     }
 
-    // If there is no dropped energy, but there is a container with energy.. use that.
-    if (!rat.memory.myTargetId && canCarry) {
-      const containers = rat.room.find(FIND_STRUCTURES, {
-        filter: (structure) => {
-          return structure.structureType === STRUCTURE_CONTAINER;
-        },
-        sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
-      });
-      if (containers[0].store[RESOURCE_ENERGY] > 0) {
-        rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
-      }
-    }
-
-    // If the rat still doesnt have a target and one wasn't set above, go find a source.
+    // If the rat still doesn't have a target and one wasn't set above, go find a source.
     if (!rat.memory.myTargetId) {
       let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
