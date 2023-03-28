@@ -15,7 +15,9 @@ let sHarvest = {
         const containers = rat.room.find(FIND_STRUCTURES, {
           filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
         });
-        rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
+        if (containers.length > 0) {
+          rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
+        }
       }
 
       // Try to get energy that is dropped.. Anyone.
