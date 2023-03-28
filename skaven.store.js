@@ -10,13 +10,17 @@ let sStore = {
     if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
     }
-    if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+
+    // If the rat cannot WORK then it's probably a hauler so check for more storage
+    const canNotWork = rat.body.every(part => part.type !== WORK);
+    if (canNotWork && targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
     }
-    if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+    if (canNotWork && targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
     }
 
+    // If the rat is empty then unset all the things.
     if (rat.store.getUsedCapacity() === 0) {
       rat.memory.myTargetId = null;
       rat.memory.task = null;
