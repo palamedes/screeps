@@ -44,7 +44,7 @@ module.exports.loop = function () {
     // Rejigger max slaves for this room based on the number of suckle points..
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     Memory.rooms[room.name].numSucklePoints = numSucklePoints();
-    Memory.rooms[room.name].maxSlaves = (Memory.rooms[room.name].numSucklePoints * 2) + Memory.rooms[room.name].numSucklePoints;
+    Memory.rooms[room.name].maxSlaves = (Memory.rooms[room.name].numSucklePoints * 2) + Memory.rooms[room.name].numSucklePoints + 1;
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
