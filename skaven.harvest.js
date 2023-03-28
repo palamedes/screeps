@@ -13,12 +13,9 @@ let sHarvest = {
       // Try to get energy from a container first.. But only if they can work.
       if (!rat.memory.myTargetId && canWork) {
         const containers = rat.room.find(FIND_STRUCTURES, {
-          filter: structure => { return structure.structureType === STRUCTURE_CONTAINER; },
-          sort: ((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY])
+          filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
         });
-        if (containers[0].store[RESOURCE_ENERGY] > 0) {
-          rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
-        }
+        rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
       }
 
       // Try to get energy that is dropped.. Anyone.
