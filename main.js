@@ -29,12 +29,6 @@ module.exports.loop = function () {
     const totalSpawnsCapacity = _.sum(spawns, (s) => s.energyCapacity);
     const totalExtensionsCapacity = _.sum(extensions, (e) => e.energyCapacity);
     Memory.rooms[roomName].maxEnergy = totalSpawnsCapacity + totalExtensionsCapacity;
-
-    // const containers = room.find(FIND_STRUCTURES, {
-    //   filter: (structure) => {
-    //     return structure.structureType === STRUCTURE_CONTAINER;
-    //   }
-    // });
     const containers = room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } });
     Memory.rooms[roomName].containerAvailability = _.sum(containers, (c) => c.store.getFreeCapacity(RESOURCE_ENERGY));
 
