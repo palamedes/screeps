@@ -36,6 +36,7 @@ module.exports.loop = function () {
     //   }
     // });
     const containers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } });
+    console.log('container:', containers[0].store.getFreeCapacity(RESOURCE_ENERGY));
     Memory.rooms[roomName].containerAvailability = _.sum(containers, (c) => c.store.getFreeCapacity(RESOURCE_ENERGY));
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
