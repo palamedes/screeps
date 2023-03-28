@@ -38,7 +38,8 @@ var roleSkaven = {
           // I'm not the designated Upgrader, There is no construction and there is nothing to repair..
           // Go store the power, unless it's full.. then go upgrade anyway.
           else {
-            if (rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy) {
+            if (rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy &&
+                Memory.rooms[rat.room.name].containerAvailability === 0) {
               rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
             } else {
               rat.memory.task = 'store'; rat.say('🔋');
