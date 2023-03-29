@@ -24,18 +24,15 @@ let sStore = {
     }
 
     // If the rat is empty then unset all the things.
-    if (rat.store.getUsedCapacity() === 0) {
-      rat.memory.myTargetId = null;
-      rat.memory.task = null;
-    }
+    if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
     // If there are any targets store in order above..
     if (targets.length > 0) {
       // let randomIndex = Math.floor(Math.random() * targets.length);
       // let randomTarget = targets[randomIndex];
-      if(rat.transfer(targets[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      if (rat.transfer(targets[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, targets[0], '#aaaaaa');
       } else {
-        console.log(rat.transfer(targets[0], RESOURCE_ENERGY));
+        rat.clearTask();
       }
       return true;
     }
