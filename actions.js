@@ -52,7 +52,9 @@ let $actions = {
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
     const ratSpawn = room.find(FIND_MY_SPAWNS)[0];
-    const ratBrain = { memory: { role: 'slave', renews: 1, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
+
+    let renews = 0;
+    const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
 
     let energy = room.energyAvailable;
     let percentWork = 0.5, percentCarry = 0.50;
@@ -60,6 +62,7 @@ let $actions = {
     // If we have more than 2 slaves already, and we don't have as many dedicated harvesters as we need..
     // Summon a dedicated harvester -- which is a rat that can't carry.
     if (slaves.length >= 2 && numHarvesters < Memory.rooms[room.name].numSucklePoints) {
+      renews = 0;
       percentWork = 0.85; percentCarry = 0; energy = energy > 1000 ? 1000 : energy;
     }
     // If we have more than 2 slaves already, and we have the max number of harvesters, and less haulers than harvesters..
@@ -67,6 +70,7 @@ let $actions = {
     const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
     if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < numHarvesters-1) {
       percentWork = 0; percentCarry = 0.60; energy = energy > 1500 ? 1500 : energy;
+      renews = (energy - 200) / (1500 - 200) * 20;
     }
 
     // Calculate the number of body parts based on energySize
