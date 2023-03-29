@@ -53,7 +53,7 @@ let $actions = {
     const numHarvesters = _.filter(slaves, (slave) => !slave.body.some((part) => part.type === CARRY)).length;
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
-    const ratSpawn = rat.getAvailableSpawn();
+    const ratSpawn = room.find(FIND_MY_SPAWNS)[0];
 
     let renews = 0;
     const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
@@ -136,6 +136,13 @@ let $actions = {
     return mostVisited;
   },
 
+  // Find us the nearest available spawn for the room this rat is in
+  getAvailableSpawn: rat => {
+    const spawns = rat.room.find(FIND_MY_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
+    });
+    return spawns.length > 0 ? rat.pos.findClosestByRange(spawns) : false;
+  }
 
 };
 
