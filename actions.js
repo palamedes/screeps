@@ -20,7 +20,7 @@ let $actions = {
   // What ever we have decided to do.. go do that.
   skitter: rat => {
     if (rat.name === 'Slave-46930987-1300') {
-      console.log('HAULER: "' + rat.memory.task + '" slept:' + rat.memory.slept);
+      // console.log('HAULER: "' + rat.memory.task + '" slept:' + rat.memory.slept);
     }
     if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
     if (rat.memory.task === 'store')    { if (!$actions.store.using(rat))   { $actions.sleep(rat); } }

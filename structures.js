@@ -35,7 +35,7 @@ let structures = {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roadsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_ROAD}}).length;
     if (roadsBeingBuilt === 0) {
-      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      // Pull the room base plan and translate the first "#" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
       structures.buildStructure(room, buildPos, STRUCTURE_ROAD);
     }
@@ -109,26 +109,7 @@ let structures = {
   basePlan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
     const roomName = room.name;
-    // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
-    // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
-    // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
-    // c = RESOURCE_CONTAINER, L = LINK, S = Storage
-    const basePlan = [];
-    basePlan[0] = ", , # # # # # # # # # # # , ,".replace(/ /g, '');
-    basePlan[1] = ", # · · · · · # · · · · · # ,".replace(/ /g, '');
-    basePlan[2] = "# · # · # · · # · · # · # · #".replace(/ /g, '');
-    basePlan[3] = "# · · # · · · # · · · # · · #".replace(/ /g, '');
-    basePlan[4] = "# · # · # e # T # e # · # · #".replace(/ /g, '');
-    basePlan[5] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
-    basePlan[6] = "# · e e # c # # # c # e e · #".replace(/ /g, '');
-    basePlan[7] = "# # # # c · T * T S c # # # #".replace(/ /g, '');
-    basePlan[8] = "# · e e # c # # # c # e e · #".replace(/ /g, '');
-    basePlan[9] = "# · · · e # e # e # e · · · #".replace(/ /g, '');
-    basePlan[10]= "# · # · # e # T # e # · # · #".replace(/ /g, '');
-    basePlan[11]= "# · · # · · · # · · · # · · #".replace(/ /g, '');
-    basePlan[12]= "# · # · # · · # · · # · # · #".replace(/ /g, '');
-    basePlan[13]= ", # · · · · · # · · · · · # ,".replace(/ /g, '');
-    basePlan[14]= ", , # # # # # # # # # # # , ,".replace(/ /g, '');
+    const basePlan = structures.baseStamp();
     // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards.  This allows us to dynamically change as we draw.
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
@@ -222,8 +203,7 @@ let structures = {
     while (index < str.length) {
       for (let i = 0; i < len; i++) {
         if (index < str.length) {
-          let c = str.charAt(index);
-          if (c === findSymbol) {
+          if (str.charAt(index) === findSymbol) {
             return {x: posX, y: posY, index: index};
           }
           index++;
@@ -245,6 +225,30 @@ let structures = {
       return str.slice(0, index) + replacement + str.slice(index + 1);
     }
     Memory.rooms[room.name].basePlan = replaceChar(Memory.rooms[room.name].basePlan, index, ' ');
+  }
+
+  // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
+  // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
+  // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
+  // c = RESOURCE_CONTAINER, L = LINK, S = Storage
+  baseStamp: () => {
+    const stamp = [];
+    stamp[0] = ", , # # # # # # # # # # # , ,".replace(/ /g, '');
+    stamp[1] = ", # · · · · · # · · · · · # ,".replace(/ /g, '');
+    stamp[2] = "# · # · # · · # · · # · # · #".replace(/ /g, '');
+    stamp[3] = "# · · # · · · % · · · # · · #".replace(/ /g, '');
+    stamp[4] = "# · # · # e % T % e # · # · #".replace(/ /g, '');
+    stamp[5] = "# · · · e % e # e % e · · · #".replace(/ /g, '');
+    stamp[6] = "# · e e % c # # # c % e e · #".replace(/ /g, '');
+    stamp[7] = "# # # % c · T * T S c % # # #".replace(/ /g, '');
+    stamp[8] = "# · e e % c # # # c % e e · #".replace(/ /g, '');
+    stamp[9] = "# · · · e % e # e % e · · · #".replace(/ /g, '');
+    stamp[10]= "# · # · # e % T % e # · # · #".replace(/ /g, '');
+    stamp[11]= "# · · # · · · % · · · # · · #".replace(/ /g, '');
+    stamp[12]= "# · # · # · · # · · # · # · #".replace(/ /g, '');
+    stamp[13]= ", # · · · · · # · · · · · # ,".replace(/ /g, '');
+    stamp[14]= ", , # # # # # # # # # # # , ,".replace(/ /g, '');  
+    return stamp;
   }
 }
 module.exports = structures;
