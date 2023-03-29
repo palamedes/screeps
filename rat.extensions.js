@@ -1,5 +1,5 @@
 // Utility to find all available spawns
-Creep.prototype.getAvailableSpawn = () => {
+Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
   });
@@ -7,4 +7,6 @@ Creep.prototype.getAvailableSpawn = () => {
 };
 
 // Can this Creep Carry?
-Creep.prototype.canCarry = () => { return this.body.some(part => part.type === CARRY); }
+Creep.prototype.canCarry = function() {
+  return this.body.some(part => part.type === CARRY);
+}
