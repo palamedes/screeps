@@ -24,11 +24,8 @@ var roleSkaven = {
           else if (roleSkaven.shouldWeBuild(rat, slaves)) { rat.setTask('build'); }
           // Repair
           else if (roleSkaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
-          // I'm not the designated Upgrader, There is no construction and there is nothing to repair..
-          // Go store the power, unless it's full.. then go upgrade anyway.
           else {
-            if (rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy &&
-              Memory.rooms[rat.room.name].containerAvailability === 0) {
+            if (roleSkaven.shouldWeUpgradeAnyway(rat)) {
               rat.setTask('upgrade');
             } else {
               rat.setTask('store');
@@ -82,6 +79,12 @@ var roleSkaven = {
       if (enoughSlaves && notEnoughActive && fullEnergy && noSlavesUpgrading) return true;
     }
     return false;
+  },
+  // I'm not the designated Upgrader, There is no construction and there is nothing to repair, everything is full...
+  shouldWeUpgradeAnyway: rat => {
+    const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy;
+    const fullContainers = Memory.rooms[rat.room.name].containerAvailability === 0;
+    return fullEnergy && fullContainers && rat.canWork()
   },
 
   // Should we repair something?
