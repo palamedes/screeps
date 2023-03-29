@@ -7,13 +7,13 @@ let sStore = {
     // If the rat cannot WORK then it's probably a hauler so check for more storage
     if (rat.cannotWork()) {
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      }
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-      }
-      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
-        filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
       }
     }
 
