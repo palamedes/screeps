@@ -39,7 +39,7 @@ let structureTower = {
           } else if (structure.structureType === STRUCTURE_WALL) {
             return structure.hits < structure.hitsMax * 0.0001;
           } else if (structure.structureType === STRUCTURE_RAMPART) {
-            return structure.hits < structure.hitsMax * 0.001;
+            return structure.hits < structure.hitsMax * 0.01;
           } else {
             return (structure.structureType !== STRUCTURE_CONTROLLER) &&
               structure.hits < structure.hitsMax;
