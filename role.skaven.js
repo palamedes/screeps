@@ -18,8 +18,14 @@ var roleSkaven = {
       if (!rat.memory.task) {
         // if this rat can't carry, then he's a harvester.. go do that.
         if (rat.cannotCarry()) { rat.setTask('harvest'); }
-        // If rat has less than 90% free capacity (10% full) then go do some work.. Else harvest.
-        if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.9) {
+
+        // If this rant can't work, then he's a hauler..
+        else if (rat.cannotWork() && rat.store.getFreeCapacity() === 0) {
+          rat.setTask('store');
+        }
+
+        // If rat has less than 80% free capacity ( at least 20% energy ) then go do some work.. Else harvest.
+        else if (rat.canWork() && rat.canCarry() && (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.8) {
           // Upgrade Controller
           if (roleSkaven.shouldWeUpgrade(rat, slaves)) { rat.setTask('upgrade'); }
           // Construction
