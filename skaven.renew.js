@@ -4,7 +4,7 @@ let sRenew = {
   using: rat => {
     let doneRenewing = false;
     const spawns = rat.room.find(FIND_MY_STRUCTURES, {
-      filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning;
+      filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
     });
     let closestSpawn = rat.pos.findClosestByPath(spawns);
     if (closestSpawn) {
