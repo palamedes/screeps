@@ -41,7 +41,7 @@ let sHarvest = {
 
     }
     // Can this rat work? - So not a hauler
-    if (canwork) {
+    if (canWork) {
       // If the rat still doesn't have a target and one wasn't set above, go find a source.
       if (!rat.memory.myTargetId) {
         let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
