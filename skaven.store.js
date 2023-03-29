@@ -34,7 +34,7 @@ let sStore = {
       } else {
         rat.clearTask();
       }
-      return true;
+      return true; // <--- this is dumb
     }
     return false;
   },
