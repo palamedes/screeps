@@ -16,6 +16,7 @@ Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.m
 Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
 
 Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
+Creep.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
 Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
   if (task === 'build')   { this.say('🚧'); }
   if (task === 'upgrade') { this.say('🛠️'); }
