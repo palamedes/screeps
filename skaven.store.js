@@ -34,13 +34,11 @@ let sStore = {
     if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
     // If there are any targets store in order above..
     else if (targets.length > 0) {
-      let target = rat.pos.findClosestByRange(targets);
-      if (rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        move.moveTo(rat, target, '#aaaaaa');
-      // } else {
-      //   rat.clearTask();
-      }
-      return true; // <--- this is dumb
+      const target = rat.pos.findClosestByRange(targets);
+      const results = rat.transfer(target, RESOURCE_ENERGY);
+      if (results === ERR_NOT_IN_RANGE)   { move.moveTo(rat, target, '#aaaaaa');}
+      else if (results === ERR_FULL)      { rat.clearTarget(); }
+      return true;
     }
     return false;
   },

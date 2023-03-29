@@ -14,6 +14,7 @@ Creep.prototype.cannotWork = function() { return this.body.every(part => part.ty
 
 Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
 Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
+Creep.prototype.clearTarget = function() { this.memory.myTargetId = null; }
 
 Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
 Creep.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
