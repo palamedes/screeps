@@ -20,9 +20,7 @@ var roleSkaven = {
         if (rat.cannotCarry()) { rat.setTask('harvest'); }
 
         // If this rant can't work, then he's a hauler..
-        else if (rat.cannotWork() && rat.store.getFreeCapacity() === 0) {
-          rat.setTask('store');
-        }
+        else if (rat.cannotWork() && rat.store.getFreeCapacity() === 0) { rat.setTask('storeUntilEmpty'); }
 
         // If rat has less than 80% free capacity ( at least 20% energy ) then go do some work.. Else harvest.
         else if (rat.canWork() && rat.canCarry() && (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.8) {

@@ -24,6 +24,7 @@ let $actions = {
     }
     if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
     if (rat.memory.task === 'store')    { if (!$actions.store.using(rat))   { $actions.sleep(rat); } }
+    if (rat.memory.task === 'storeUntilEmpty') { $actions.store.using(rat); }
     if (rat.memory.task === 'renew')    { if (!$actions.renew.using(rat))   { $actions.sleep(rat); } }
     if (rat.memory.task === 'upgrade')  { if (!$actions.upgrade.using(rat)) { $actions.sleep(rat); } }
     if (rat.memory.task === 'build')    { if (!$actions.build.using(rat))   { $actions.sleep(rat); } }
