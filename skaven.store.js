@@ -5,22 +5,29 @@ let sStore = {
     let targets = [];
 
     // If the rat cannot WORK then it's probably a hauler so check for more storage
-    if (rat.cannotWork() && targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
-      filter: (structure) => structure.structureType === STRUCTURE_CONTAINER    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-    }
-    if (rat.cannotWork() && targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
-      filter: (structure) => structure.structureType === STRUCTURE_STORAGE      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+    if (rat.cannotWork()) {
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      }
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      }
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      }
     }
 
     // all other rats, probably a slave, store it somewhere else.
-    if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+    if (rat.canWork()) {
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-    }
-    if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+      }
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_SPAWN      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-    }
-    if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
+      }
+      if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      }
     }
 
     // If the rat is empty then unset all the things.
