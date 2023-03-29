@@ -84,7 +84,7 @@ var roleSkaven = {
   shouldWeUpgradeAnyway: rat => {
     const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy;
     const fullContainers = Memory.rooms[rat.room.name].containerAvailability === 0;
-    console.log(rat.name + 'U anyway?' + 'fE:' + fullEnergy + ' fC'+fullContainers +' cW'+rat.canWork());
+    // console.log(rat.name + 'U anyway?' + 'fE:' + fullEnergy + ' fC'+fullContainers +' cW'+rat.canWork());
     return fullEnergy && fullContainers && rat.canWork()
   },
 
