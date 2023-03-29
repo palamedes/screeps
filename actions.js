@@ -66,7 +66,7 @@ let $actions = {
     // Summon a dedicated hauler -- which is a rat that can't work.
     const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
     if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < numHarvesters-1) {
-      percentWork = 0; percentCarry = 0.60; energy = energy > 1000 ? 1000 : energy;
+      percentWork = 0; percentCarry = 0.60; energy = energy > 1500 ? 1500 : energy;
     }
 
     // Calculate the number of body parts based on energySize
