@@ -7,4 +7,4 @@ Creep.prototype.getAvailableSpawn = () => {
 };
 
 // Can this Creep Carry?
-Creep.prototype.canCarry = () => { return this.body.filter(part => part.type === CARRY).length > 0 }
+Creep.prototype.canCarry = () => { return this.body.some(part => part.type === CARRY); }
