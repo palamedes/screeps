@@ -3,12 +3,12 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
+    // const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
     const canWork = rat.body.filter(part => part.type === WORK).length > 0
     // const noCarryRats = _.filter(Game.creeps, rat => !rat.body.some(part => part.type === CARRY)).length;
 
     // Can this rat carry? - So not harvesters
-    if (canCarry) {
+    if (rat.canCarry()) {
 
       // Try to get energy from a container first.. But only if they can work.
       if (!rat.memory.myTargetId && canWork) {

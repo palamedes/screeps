@@ -5,3 +5,6 @@ Creep.prototype.getAvailableSpawn = () => {
   });
   return spawns.length > 0 ? this.pos.findClosestByRange(spawns) : false;
 };
+
+// Can this Creep Carry?
+Creep.prototype.canCarry = () => { return this.body.filter(part => part.type === CARRY).length > 0 }
