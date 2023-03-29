@@ -12,6 +12,8 @@ var roleSkaven = {
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
         if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) { rat.setTask('renew'); }
       }
+
+
       // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
         // if this rat can't carry, then he's a harvester.. go do that.
@@ -83,9 +85,7 @@ var roleSkaven = {
   // I'm not the designated Upgrader, There is no construction and there is nothing to repair, everything is full...
   shouldWeUpgradeAnyway: rat => {
     const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy;
-    const fullContainers = Memory.rooms[rat.room.name].containerAvailability === 0;
-    // console.log(rat.name + 'U anyway?' + 'fE:' + fullEnergy + ' fC'+fullContainers +' cW'+rat.canWork());
-    return fullEnergy && fullContainers && rat.canWork()
+    return fullEnergy && rat.canWork()
   },
 
   // Should we repair something?
@@ -105,6 +105,9 @@ var roleSkaven = {
     }
     return false;
   },
+
+  // Should we renew?
+  // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
 
   // Spawn us a rat ~ Standard Skaven Slave worker rat
   summonSlave: (room, memory) => {
