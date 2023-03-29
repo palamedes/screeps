@@ -3,15 +3,13 @@ const move = require('skaven.move');
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
   using: rat => {
-    // const canCarry = rat.body.filter(part => part.type === CARRY).length > 0
-    const canWork = rat.body.filter(part => part.type === WORK).length > 0
     // const noCarryRats = _.filter(Game.creeps, rat => !rat.body.some(part => part.type === CARRY)).length;
 
     // Can this rat carry? - So not harvesters
     if (rat.canCarry()) {
 
       // Try to get energy from a container first.. But only if they can work.
-      if (!rat.memory.myTargetId && canWork) {
+      if (!rat.memory.myTargetId && rat.canWork()) {
         const containers = rat.room.find(FIND_STRUCTURES, {
           filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
         });
@@ -41,7 +39,7 @@ let sHarvest = {
 
     }
     // Can this rat work? - So not a hauler
-    if (canWork) {
+    if (rat.canWork()) {
       // If the rat still doesn't have a target and one wasn't set above, go find a source.
       if (!rat.memory.myTargetId) {
         let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
@@ -119,20 +117,11 @@ let sHarvest = {
             }
           }
           // If we didn't find a suckle point, then ask for something else to do..
-          if (!foundSucklePoint) {
-            rat.memory.myTargetId = null;
-            rat.memory.task = null;
-          }
+          if (!foundSucklePoint) { rat.clearTask(); }
         }
         // If the rat is full, or the target is empty then find something else to do.
-        if (rat.store.getFreeCapacity() === 0 || target.energy === 0) {
-          rat.memory.myTargetId = null;
-          rat.memory.task = null;
-        }
-      } else {
-        rat.memory.myTargetId = null;
-        rat.memory.task = null;
-      }
+        if (rat.store.getFreeCapacity() === 0 || target.energy === 0) { rat.clearTask(); }
+      } else { rat.clearTask(); }
     }
   },
 }
