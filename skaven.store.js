@@ -31,8 +31,8 @@ let sStore = {
       // let randomTarget = targets[randomIndex];
       if (rat.transfer(targets[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, targets[0], '#aaaaaa');
-      } else {
-        rat.clearTask();
+      // } else {
+      //   rat.clearTask();
       }
       return true; // <--- this is dumb
     }
