@@ -28,13 +28,10 @@ let sStore = {
     // If there are any targets store in order above..
     else if (targets.length > 0) {
       let target = rat.pos.findClosestByRange(targets);
-      console.log('store targets', targets, target);
-      // let randomIndex = Math.floor(Math.random() * targets.length);
-      // let randomTarget = targets[randomIndex];
       if (rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#aaaaaa');
-      // } else {
-      //   rat.clearTask();
+      } else {
+        rat.clearTask();
       }
       return true; // <--- this is dumb
     }
