@@ -22,5 +22,6 @@ Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.
   if (task === 'repair')  { this.say('🔧'); }
   if (task === 'upgrade') { this.say('🛠️'); }
   if (task === 'store')   { this.say('🔋'); }
+  if (task === 'renew')   { this.say('⌛'); this.memory.renews--; }
   if (task === 'harvest') { this.say('⚡'); this.setTarget(null); }
 }

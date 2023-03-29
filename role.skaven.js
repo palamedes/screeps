@@ -10,17 +10,12 @@ var roleSkaven = {
       let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
-        if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) {
-          rat.memory.renews--;
-          rat.memory.task = 'renew'; rat.say('⌛');
-        }
+        if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) { rat.setTask('renew'); }
       }
       // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
         // if this rat can't carry, then he's a harvester.. go do that.
-        if (rat.body.filter(part => part.type === CARRY).length === 0) {
-          rat.memory.task = 'harvest'; rat.memory.myTargetId = null; rat.memory.slept = 0; rat.say('⚡');
-        }
+        if (rat.cannotCarry()) { rat.setTask('harvest'); }
         // If rat has less than 90% free capacity (10% full) then go do some work.. Else harvest.
         if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.9) {
           // Upgrade Controller
