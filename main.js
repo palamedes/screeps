@@ -1,6 +1,8 @@
 const roleSkaven = require('role.skaven');
 const rooms = require('rooms');
 
+console.log(Memory.roomsList);
+
 // let startCPU = Game.cpu.getUsed();
 //   CODE HERE
 // let endCPU = Game.cpu.getUsed();
