@@ -36,8 +36,10 @@ let structureTower = {
         filter: (structure) => {
           if (structure.structureType === STRUCTURE_ROAD) {
             return structure.hits < structure.hitsMax * 0.8; // repair roads at 80% of maximum hits
-          } else if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
+          } else if (structure.structureType === STRUCTURE_WALL) {
             return structure.hits < structure.hitsMax * 0.0001;
+          } else if (structure.structureType === STRUCTURE_RAMPART) {
+            return structure.hits < structure.hitsMax * 0.001;
           } else {
             return (structure.structureType !== STRUCTURE_CONTROLLER) &&
               structure.hits < structure.hitsMax;
