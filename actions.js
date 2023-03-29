@@ -27,6 +27,7 @@ let $actions = {
     if (rat.memory.task === 'repair')   { if (!$actions.repair.using(rat))  { $actions.sleep(rat); } }
   },
 
+  // Sleep = Reset the rat...
   sleep: rat => {
     rat.memory.myTargetId = null;
     rat.memory.task = null;
@@ -48,10 +49,11 @@ let $actions = {
   summonSkavenSlave: (room, memory) => {
     // Get our slaves and then get the number of them that don't have the ability to carry anything.
     const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
+    const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
     const numHarvesters = _.filter(slaves, (slave) => !slave.body.some((part) => part.type === CARRY)).length;
 
     const ratName = 'Slave-' + Game.time + '-' + room.energyAvailable;
-    const ratSpawn = room.find(FIND_MY_SPAWNS)[0];
+    const ratSpawn = rat.getAvailableSpawn();
 
     let renews = 0;
     const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
@@ -65,9 +67,9 @@ let $actions = {
       renews = 0;
       percentWork = 0.85; percentCarry = 0; energy = energy > 1000 ? 1000 : energy;
     }
+
     // If we have more than 2 slaves already, and we have the max number of harvesters, and less haulers than harvesters..
     // Summon a dedicated hauler -- which is a rat that can't work.
-    const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
     if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < numHarvesters-1) {
       percentWork = 0; percentCarry = 0.60; energy = energy > 1500 ? 1500 : energy;
       renews = (energy - 200) / (1500 - 200) * 20;
@@ -132,7 +134,9 @@ let $actions = {
       }
     }
     return mostVisited;
-  }
+  },
+
+
 };
 
 module.exports = $actions;
