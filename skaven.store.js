@@ -16,7 +16,7 @@ let sStore = {
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        const target = rat.pos.findClosestByRange(targets);
+        target = rat.pos.findClosestByRange(targets);
       }
     }
 
