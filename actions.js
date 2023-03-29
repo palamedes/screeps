@@ -28,6 +28,13 @@ let $actions = {
     if (rat.memory.task === 'repair')   { if (!$actions.repair.using(rat))  { $actions.sleep(rat); } }
   },
 
+  // Sleep = Reset the rat...
+  sleep: rat => {
+    rat.memory.myTargetId = null;
+    rat.memory.task = null;
+    rat.memory.slept++;
+  },
+
   // Number of rats actively doing a give task
   numActive: task => {
     return _.filter(Game.creeps, rat => rat.memory.task === task).length;
