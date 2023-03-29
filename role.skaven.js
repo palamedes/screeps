@@ -24,30 +24,22 @@ var roleSkaven = {
         // If rat has less than 90% free capacity (10% full) then go do some work.. Else harvest.
         if ((rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.9) {
           // Upgrade Controller
-          if (roleSkaven.shouldWeUpgrade(rat, slaves)) {
-            rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
-          }
+          if (roleSkaven.shouldWeUpgrade(rat, slaves)) { rat.setTask('upgrade'); }
           // Construction
-          else if (roleSkaven.shouldWeBuild(rat, slaves)) {
-            rat.setTask('build');
-            // rat.memory.task = 'build'; rat.memory.slept = 0; rat.say('🚧');
-          }
+          else if (roleSkaven.shouldWeBuild(rat, slaves)) { rat.setTask('build'); }
           // Repair
-          else if (roleSkaven.shouldWeRepair(rat, slaves)) {
-            rat.memory.task = 'repair'; rat.memory.slept = 0; rat.say('🔧');
-          }
+          else if (roleSkaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
           // I'm not the designated Upgrader, There is no construction and there is nothing to repair..
           // Go store the power, unless it's full.. then go upgrade anyway.
           else {
-            if (rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy &&
-                Memory.rooms[rat.room.name].containerAvailability === 0) {
-              rat.memory.task = 'upgrade'; rat.memory.slept = 0; rat.say('🛠️');
+            if (rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy && Memory.rooms[rat.room.name].containerAvailability === 0) {
+              rat.setTask('upgrade');
             } else {
-              rat.memory.task = 'store'; rat.say('🔋');
+              rat.setTask('store');
             }
           }
         } else {
-          rat.memory.task = 'harvest'; rat.memory.myTargetId = null; rat.memory.slept = 0; rat.say('⚡');
+          rat.setTask('harvest');
         }
       }
       // Okay rat... Do something..
