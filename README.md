@@ -22,23 +22,19 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 
 #### TODO
 - Add "homeRoom" to rat memory and "currentRoom" and get roomBound working
+  - Turn on RoomBinding for rats so they stay in the room they are assigned to
 - Set what the controller level was at the time a slave is spawned, such that later if we go up in controller level we allow that slave to die off and generate a new better one.  Think, version numbers.  This prevents ups from renewing old janky creeps.
 - If there is no energy available in the room, range to another room
   - If that room is dangerous, add it to the danger list until we can deal with the danger
-- Add ability to "specialize" skaven to only do certain things and build them as such
-  - If we have just 2 rats running around, they are slaves that do all the things
-  - The 3rd rat becomes a hauler only.  And one of the first 2 needs to just harvest and drop energy
-  - Eventually body parts can be dynamically altered through new rats to do specific jobs. etc.. 
 - Get dynamic creation of extensions working via createConstructionSite
 - Put pathfinding in the rats head to lessen the demand on the cpu
   - Make rats use roads if there is a road path available
 - Make Max Slaves dynamic based on max power and the possible body part size?
-- Turn on RoomBinding for rats so they stay in the room they are assigned to
 - Make the system allow for multiple rooms and spawn points (right now it's one room only)
 - Figure out how to be smart about ranging into other rooms
 - If a rat gets done with a task and has more than 50% power, go store it first.
   - this means I need to refactor the sleep/think/reset code somewhere..
-- Create "base buildling" code that plans out a base and slowly builds it over time.
+
 
 #### Known Bugs
 - Right now if not careful rats will stack up at a power source and clog the area.  This is why I think I need to go to a harvest and drop model so no one is trapped.
