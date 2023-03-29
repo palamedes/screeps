@@ -64,8 +64,8 @@ let $actions = {
     }
     // If we have more than 2 slaves already, and we have the max number of harvesters, and less haulers than harvesters..
     // Summon a dedicated hauler -- which is a rat that can't work.
-    const numRatsCannotWork = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
-    if (slaves.length >= 2 && numHarvesters >= 2 && numRatsCannotWork < numHarvesters) {
+    const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
+    if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < numHarvesters-1) {
       percentWork = 0; percentCarry = 0.60; energy = energy > 1000 ? 1000 : energy;
     }
 
