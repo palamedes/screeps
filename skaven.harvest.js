@@ -40,14 +40,16 @@ let sHarvest = {
       }
 
     }
-
-    // If the rat still doesn't have a target and one wasn't set above, go find a source.
-    if (!rat.memory.myTargetId) {
-      let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
-        filter: (source) => source.energy > 0
-      });
-      if (sourceEnergy.length > 0) {
-        rat.memory.myTargetId = rat.pos.findClosestByRange(sourceEnergy).id;
+    // Can this rat work? - So not a hauler
+    if (canwork) {
+      // If the rat still doesn't have a target and one wasn't set above, go find a source.
+      if (!rat.memory.myTargetId) {
+        let sourceEnergy = Game.rooms[rat.room.name].find(FIND_SOURCES, {
+          filter: (source) => source.energy > 0
+        });
+        if (sourceEnergy.length > 0) {
+          rat.memory.myTargetId = rat.pos.findClosestByRange(sourceEnergy).id;
+        }
       }
     }
 
