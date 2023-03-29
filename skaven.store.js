@@ -37,8 +37,8 @@ let sStore = {
       let target = rat.pos.findClosestByRange(targets);
       if (rat.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         move.moveTo(rat, target, '#aaaaaa');
-      } else {
-        rat.clearTask();
+      // } else {
+      //   rat.clearTask();
       }
       return true; // <--- this is dumb
     }
