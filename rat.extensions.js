@@ -11,3 +11,8 @@ Creep.prototype.cannotCarry = function() { return this.body.every(part => part.t
 
 Creep.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
 Creep.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
+
+Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
+Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
+
+Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
