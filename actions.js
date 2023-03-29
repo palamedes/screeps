@@ -58,7 +58,7 @@ let $actions = {
     // If we have more than 2 slaves already, and we don't have as many dedicated harvesters as we need..
     // Summon a dedicated harvester -- which is a rat that can't carry.
     if (slaves.length >= 2 && numHarvesters < Memory.rooms[room.name].numSucklePoints) {
-      renews = 0;
+      renews = 5;
       percentWork = 0.85; percentCarry = 0; energy = energy > 1000 ? 1000 : energy;
     }
 

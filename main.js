@@ -42,10 +42,13 @@ module.exports.loop = function () {
     // Get the data we need to determine if we need more slaves
 
 
-    // Rejigger max slaves for this room based on the number of suckle points..
+    // Rejigger max slaves for this room based on the number of suckle points RCL 1 to 4
     let numSucklePoints = () => { return Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0); }
     Memory.rooms[room.name].numSucklePoints = numSucklePoints();
     Memory.rooms[room.name].maxSlaves = (Memory.rooms[room.name].numSucklePoints * 2) + Memory.rooms[room.name].numSucklePoints + 1;
+
+    // At RCL 5+ we need to start being smarter about our rats and who does what work.
+    if (room.controller.level === 5) Memory.rooms[room.name].maxSlaves--;
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
