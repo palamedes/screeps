@@ -31,8 +31,6 @@ var roleSkaven = {
               Memory.rooms[rat.room.name].containerAvailability === 0) {
               rat.setTask('upgrade');
             } else {
-              console.log(rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy, Memory.rooms[rat.room.name].containerAvailability);
-
               rat.setTask('store');
             }
           }
