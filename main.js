@@ -59,8 +59,8 @@ module.exports.loop = function () {
     rooms.run(room);
   }
 
-  // Work the rats
-  for(let name in Game.creeps) { var rat = Game.creeps[name]; roleSkaven.skitter(rat); }
+  // Work the rats!
+  for(let name in Game.creeps) { roleSkaven.skitter(Game.creeps[name]); }
 
   // Report what's up..
   console.log(statusUpdate);
