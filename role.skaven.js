@@ -47,7 +47,8 @@ var roleSkaven = {
 
   },
 
-  // Should we build something? If we have 50% or more rats, and we don't have more than 50% doing the work
+  // Should we build something?
+  // If we have 50% or more rats, and we don't have more than 50% doing the work
   shouldWeBuild: (rat, slaves) => {
     const constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
     if (constructionTargets && constructionTargets.length > 0 && rat.canCarry() && rat.canWork()) {
@@ -64,6 +65,7 @@ var roleSkaven = {
   },
 
   // Should we upgrade the controller?
+  // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
   shouldWeUpgrade: (rat, slaves) => {
     const upgradeTarget = rat.room.controller;
     if (upgradeTarget && rat.canCarry() && rat.canWork()) {
@@ -82,15 +84,14 @@ var roleSkaven = {
     }
     return false;
   },
-  // I'm not the designated Upgrader, There is no construction and there is nothing to repair, everything is full...
+  // While I'm not the designated Upgrader there is no construction, nothing to repair, and the extensions, spawns and towers are full..
   shouldWeUpgradeAnyway: rat => {
     const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy;
     return fullEnergy && rat.canWork()
   },
 
   // Should we repair something?
-  //If we have 50% or more rats, and we have 20% or less repairing
-  //repairTargets && repairTargets.length > 0 && slaves.length >= (maxSlaves/2) && $actions.numActive('repair') <= (maxSlaves*0.2)
+  // If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
   shouldWeRepair: (rat, slaves) => {
     const repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
     if (repairTargets && repairTargets.length > 0 && rat.canCarry() && rat.canWork()) {
