@@ -68,6 +68,7 @@ let sHarvest = {
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
+        console.log(target);
         // If the target is a pickup, then go try to pick it up
         if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
