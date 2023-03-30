@@ -72,7 +72,7 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         if (rat.pos.inRangeTo(target.pos, 1)) {
-          const res = rat.withdrawFrom(target);
+          const res = rat.takeFrom(target);
           console.log(res);
           // if (res === ERR_NOT_IN_RANGE) {
           //   console.log('ERROR: Not in range?!  How....');
