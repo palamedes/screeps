@@ -25,6 +25,7 @@ let sHarvest = {
         const containers = rat.room.find(FIND_TOMBSTONES, {
           filter: tombstone => { return tombstone.store.getUsedCapacity() > 0; }
         });
+        console.log('FOUND TOMBSTONE');
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
@@ -71,7 +72,7 @@ let sHarvest = {
         if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
-        // If the target is a pickup, then go try to pick it up
+        // If the target is a tombstone, then go try to withdraw
         if (target instanceof Tombstone && target.store.getUsedCapacity() > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
