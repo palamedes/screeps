@@ -66,7 +66,7 @@ Creep.prototype.takeAllFrom = function(target) {
 }
 Creep.prototype.takeFrom = function(target, resource) {
   let results = null;
-  if (target instanceof Resource && target.energy > 0) { results = rat.pickup(target); }
-  if (target instanceof StructureContainer && target.store[resource] > 0) { results = rat.withdraw(target, resource); }
+  if (target instanceof Resource && target.energy > 0) { results = this.pickup(target); }
+  if (target instanceof StructureContainer && target.store[resource] > 0) { results = this.withdraw(target, resource); }
   return results;
 }
