@@ -43,7 +43,7 @@ let sStore = {
       const resources = Object.keys(rat.store);
       let results = ERR_NOT_IN_RANGE;
       let transfer_item = null;
-      console.log('test', rat.store(resources[0]));
+      console.log('test', rat.store[resources[0]]);
 
       if (resources.length > 0) {
         if (resources[0] === 'GO') transfer_item = RESOURCE_GHODIUM_OXIDE;
