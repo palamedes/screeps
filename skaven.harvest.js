@@ -74,7 +74,7 @@ let sHarvest = {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a tombstone, then go try to withdraw
-        if (target instanceof Tombstone && target.store.getUsedCapacity() > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+        if (target instanceof Tombstone && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a container, then go transfer out some energy
