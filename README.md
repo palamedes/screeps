@@ -21,6 +21,10 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - Towers know how to Attack, Heal and Repair
 
 #### TODO
+- FIX RENEWS COUNT somethings up there... 
+- When a Hauler goes to pick up energy at a source, if there is no road.. track that and maybe add a road?
+- Make hauler transfer from ruins and enemy creep tomb stones ALL things.. not just energy
+
 - Add "homeRoom" to rat memory and "currentRoom" and get roomBound working
   - Turn on RoomBinding for rats so they stay in the room they are assigned to
 - Set what the controller level was at the time a slave is spawned, such that later if we go up in controller level we allow that slave to die off and generate a new better one.  Think, version numbers.  This prevents ups from renewing old janky creeps.
@@ -35,6 +39,10 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - If a rat gets done with a task and has more than 50% power, go store it first.
   - this means I need to refactor the sleep/think/reset code somewhere..
 
+#### New Room Thoughts
+- Find exits
+- Send scout creep (all moves and one claim) to each room to see if there is anything in the room
+- 
 
 #### Known Bugs
 - Right now if not careful rats will stack up at a power source and clog the area.  This is why I think I need to go to a harvest and drop model so no one is trapped.

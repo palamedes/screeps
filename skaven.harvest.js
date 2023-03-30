@@ -66,11 +66,9 @@ let sHarvest = {
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
-      console.log(target);
       if (target) {
-        console.log(target);
         // If the target is a pickup, then go try to pick it up
-        if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+        if (target instanceof Resource && target.energy > 0 && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a tombstone, then go try to withdraw
