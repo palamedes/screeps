@@ -26,7 +26,6 @@ let sHarvest = {
           filter: tombstone => { return tombstone.store.getUsedCapacity() > 0; }
         });
         if (containers.length > 0) {
-          console.log('FOUND TOMBSTONE');
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
       }
@@ -67,6 +66,7 @@ let sHarvest = {
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
+      console.log(target);
       if (target) {
         console.log(target);
         // If the target is a pickup, then go try to pick it up
