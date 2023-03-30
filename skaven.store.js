@@ -40,7 +40,20 @@ let sStore = {
     if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
     // If there are any targets store in order above..
     else if (target) {
-      const results = rat.transfer(target, RESOURCE_ENERGY);
+
+      const resources = Object.keys(target.store);
+      if (resources.length > 0) {
+        const results = rat.transfer(target, resources[0]);
+      }
+      // for (let i = 0; i < resources.length; i++) {
+      //   const results = rat.transfer(target, RESOURCE_ENERGY);
+      //   const resourceType = resources[i];
+      //   const amount = container.store[resourceType];
+      //   console.log(`${resourceType}: ${amount}`);
+      // }
+      //
+      //
+      // const results = rat.transfer(target, RESOURCE_ENERGY);
       // @TODO Transfer RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_OXYGEN, RESOURCE_HYDROGEN, RESOURCE_CATALYST
       if (results === ERR_NOT_IN_RANGE)   { move.moveTo(rat, target, '#aaaaaa');}
       else if (results === ERR_FULL)      { rat.clearTarget(); }
