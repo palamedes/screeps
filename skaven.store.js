@@ -41,10 +41,13 @@ let sStore = {
     // If there are any targets store in order above..
     else if (target) {
       const resources = Object.keys(rat.store);
-      let results = ERR_NOT_IN_RANGE
-      console.log('test', resources);
+      let results = ERR_NOT_IN_RANGE;
+      let transfer_item = null;
+      console.log('test', resources[0]);
 
       if (resources.length > 0) {
+        if (resources[0] === 'GO') transfer_item = RESOURCE_GHODIUM_OXIDE;
+
         results = rat.transfer(target, resources[0]);
       }
       // for (let i = 0; i < resources.length; i++) {
