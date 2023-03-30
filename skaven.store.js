@@ -65,8 +65,9 @@ let sStore = {
       //
       // const results = rat.transfer(target, RESOURCE_ENERGY);
       // @TODO Transfer RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_OXYGEN, RESOURCE_HYDROGEN, RESOURCE_CATALYST
-      if (results === ERR_NOT_IN_RANGE)   { move.moveTo(rat, target, '#aaaaaa');}
-      else if (results === ERR_FULL)      { rat.clearTarget(); }
+      if (results === ERR_NOT_IN_RANGE)         { move.moveTo(rat, target, '#aaaaaa');}
+      else if (results === ERR_FULL)            { rat.clearTarget(); }
+      else if (results === ERR_INVALID_TARGET)  { rat.clearTask(); }
       return true;
     }
     return false;
