@@ -40,9 +40,9 @@ let sStore = {
     if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
     // If there are any targets store in order above..
     else if (target) {
-      const resources = Object.keys(target.store);
+      const resources = Object.keys(rat.store);
       let results = ERR_NOT_IN_RANGE
-      console.log('test',resources);
+      console.log('test', resources);
 
       if (resources.length > 0) {
         results = rat.transfer(target, resources[0]);
