@@ -31,8 +31,8 @@ Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.
 
 Creep.prototype.takeAllFrom = function(target) {
   let results = [];
-  const store = Object.keys(target.store);
-  if (store) {
+  if (target.store) {
+    const store = Object.keys(target.store);
     for (let i = 0; i < store.length; i++) {
       if (store[i] === 'energy')  results.push(this.takeFrom(target, RESOURCE_ENERGY));
       if (store[i] === 'U')       results.push(this.takeFrom(target, RESOURCE_UTRIUM));
