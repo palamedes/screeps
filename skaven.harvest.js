@@ -67,6 +67,18 @@ let sHarvest = {
       }
     }
 
+    let isNearResource = (rat, sources) => {
+      const x = rat.pos.x, y = rat.pos.y;
+      for (let sourceKey in sources) {
+        for (let posKey in sources[sourceKey]) {
+          if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
+            return sourceKey;
+          }
+        }
+      }
+      return false;
+    }
+
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
@@ -142,17 +154,6 @@ let sHarvest = {
         // }
 
         // Method to quickly check to see if we are standing on one of the suckle points we have in memory
-        let isNearResource = (rat, sources) => {
-          const x = rat.pos.x, y = rat.pos.y;
-          for (let sourceKey in sources) {
-            for (let posKey in sources[sourceKey]) {
-              if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
-                return sourceKey;
-              }
-            }
-          }
-          return false;
-        }
         let isRatPresentAtLocation = (x,y) => {
           let creepAtLocation = Game.rooms[rat.room.name].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
           return creepAtLocation.length > 0
