@@ -94,6 +94,9 @@ let sHarvest = {
         if (target instanceof Tombstone && target.store[RESOURCE_OXYGEN] > 0 && rat.withdraw(target, RESOURCE_OXYGEN) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
+        if (target instanceof Tombstone && target.store[RESOURCE_GHODIUM_OXIDE] > 0 && rat.withdraw(target, RESOURCE_GHODIUM_OXIDE) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
         if (target instanceof Tombstone && target.store[RESOURCE_HYDROGEN] > 0 && rat.withdraw(target, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
