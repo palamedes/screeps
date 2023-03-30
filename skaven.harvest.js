@@ -84,7 +84,9 @@ let sHarvest = {
             rat.clearTask();
           }
         } else {
-          move.moveTo(rat, target, '#ffffff');
+          if (rat.cannotCarry() && !isNearResource(rat, target) || rat.canCarry()) {
+            move.moveTo(rat, target, '#ffffff');
+          }
         }
 
         // If the target is a pickup, then go try to pick it up
@@ -155,7 +157,6 @@ let sHarvest = {
           let creepAtLocation = Game.rooms[rat.room.name].find(FIND_CREEPS, { filter: (creep) => { return creep.pos.x === x && creep.pos.y === y; } });
           return creepAtLocation.length > 0
         }
-
         // If the target is a source find a suckle point for that source
         if (target instanceof Source && target.energy > 0) {
           let foundSucklePoint = false;
