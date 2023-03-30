@@ -25,8 +25,8 @@ let sHarvest = {
         const containers = rat.room.find(FIND_TOMBSTONES, {
           filter: tombstone => { return tombstone.store.getUsedCapacity() > 0; }
         });
-        console.log('FOUND TOMBSTONE');
         if (containers.length > 0) {
+          console.log('FOUND TOMBSTONE');
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
       }
