@@ -32,35 +32,39 @@ Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.
 Creep.prototype.takeAllFrom = function(target) {
   let results = [];
   const store = Object.keys(target.store);
-  for (let i = 0; i < store.length; i++) {
-    if (store[i] === 'energy')  results.push(this.takeFrom(target, RESOURCE_ENERGY));
-    if (store[i] === 'U')       results.push(this.takeFrom(target, RESOURCE_UTRIUM));
-    if (store[i] === 'K')       results.push(this.takeFrom(target, RESOURCE_KEANIUM));
-    if (store[i] === 'L')       results.push(this.takeFrom(target, RESOURCE_LEMERGIUM));
-    if (store[i] === 'Z')       results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM));
-    if (store[i] === 'O')       results.push(this.takeFrom(target, RESOURCE_OXYGEN));
-    if (store[i] === 'H')       results.push(this.takeFrom(target, RESOURCE_HYDROGEN));
-    if (store[i] === 'X')       results.push(this.takeFrom(target, RESOURCE_CATALYST));
-    if (store[i] === 'UH')      results.push(this.takeFrom(target, RESOURCE_UTRIUM_HYDRIDE));
-    if (store[i] === 'UO')      results.push(this.takeFrom(target, RESOURCE_UTRIUM_OXIDE));
-    if (store[i] === 'KH')      results.push(this.takeFrom(target, RESOURCE_KEANIUM_HYDRIDE));
-    if (store[i] === 'KO')      results.push(this.takeFrom(target, RESOURCE_KEANIUM_OXIDE));
-    if (store[i] === 'LH')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_HYDRIDE));
-    if (store[i] === 'LO')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_OXIDE));
-    if (store[i] === 'ZH')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_HYDRIDE));
-    if (store[i] === 'ZO')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_OXIDE));
-    if (store[i] === 'GH')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_HYDRIDE));
-    if (store[i] === 'GO')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_OXIDE));
-    if (store[i] === 'XUH2O')   results.push(this.takeFrom(target, RESOURCE_UTRIUM_ACID));
-    if (store[i] === 'XUHO2')   results.push(this.takeFrom(target, RESOURCE_UTRIUM_ALKALIDE));
-    if (store[i] === 'XKH2O')   results.push(this.takeFrom(target, RESOURCE_KEANIUM_ACID));
-    if (store[i] === 'XKHO2')   results.push(this.takeFrom(target, RESOURCE_KEANIUM_ALKALIDE));
-    if (store[i] === 'XLH2O')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ACID));
-    if (store[i] === 'XLHO2')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ALKALIDE));
-    if (store[i] === 'XZH2O')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ACID));
-    if (store[i] === 'XZHO2')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ALKALIDE));
-    if (store[i] === 'XGH2O')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ACID));
-    if (store[i] === 'XGHO2')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ALKALIDE));
+  if (store) {
+    for (let i = 0; i < store.length; i++) {
+      if (store[i] === 'energy')  results.push(this.takeFrom(target, RESOURCE_ENERGY));
+      if (store[i] === 'U')       results.push(this.takeFrom(target, RESOURCE_UTRIUM));
+      if (store[i] === 'K')       results.push(this.takeFrom(target, RESOURCE_KEANIUM));
+      if (store[i] === 'L')       results.push(this.takeFrom(target, RESOURCE_LEMERGIUM));
+      if (store[i] === 'Z')       results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM));
+      if (store[i] === 'O')       results.push(this.takeFrom(target, RESOURCE_OXYGEN));
+      if (store[i] === 'H')       results.push(this.takeFrom(target, RESOURCE_HYDROGEN));
+      if (store[i] === 'X')       results.push(this.takeFrom(target, RESOURCE_CATALYST));
+      if (store[i] === 'UH')      results.push(this.takeFrom(target, RESOURCE_UTRIUM_HYDRIDE));
+      if (store[i] === 'UO')      results.push(this.takeFrom(target, RESOURCE_UTRIUM_OXIDE));
+      if (store[i] === 'KH')      results.push(this.takeFrom(target, RESOURCE_KEANIUM_HYDRIDE));
+      if (store[i] === 'KO')      results.push(this.takeFrom(target, RESOURCE_KEANIUM_OXIDE));
+      if (store[i] === 'LH')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_HYDRIDE));
+      if (store[i] === 'LO')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_OXIDE));
+      if (store[i] === 'ZH')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_HYDRIDE));
+      if (store[i] === 'ZO')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_OXIDE));
+      if (store[i] === 'GH')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_HYDRIDE));
+      if (store[i] === 'GO')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_OXIDE));
+      if (store[i] === 'XUH2O')   results.push(this.takeFrom(target, RESOURCE_UTRIUM_ACID));
+      if (store[i] === 'XUHO2')   results.push(this.takeFrom(target, RESOURCE_UTRIUM_ALKALIDE));
+      if (store[i] === 'XKH2O')   results.push(this.takeFrom(target, RESOURCE_KEANIUM_ACID));
+      if (store[i] === 'XKHO2')   results.push(this.takeFrom(target, RESOURCE_KEANIUM_ALKALIDE));
+      if (store[i] === 'XLH2O')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ACID));
+      if (store[i] === 'XLHO2')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ALKALIDE));
+      if (store[i] === 'XZH2O')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ACID));
+      if (store[i] === 'XZHO2')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ALKALIDE));
+      if (store[i] === 'XGH2O')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ACID));
+      if (store[i] === 'XGHO2')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ALKALIDE));
+    }
+  } else {
+    results = this.takeFrom(target, 'energy');
   }
   return results;
 }
