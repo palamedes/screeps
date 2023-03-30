@@ -71,6 +71,10 @@ let sHarvest = {
         if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
+        // If the target is a pickup, then go try to pick it up
+        if (target instanceof Tombstone && target.store.getUsedCapacity() > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
         // If the target is a container, then go transfer out some energy
         if (target instanceof StructureContainer) {
           let withdraw = rat.withdraw(target, RESOURCE_ENERGY);
