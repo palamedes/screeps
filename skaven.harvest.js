@@ -73,14 +73,16 @@ let sHarvest = {
       if (target) {
         if (rat.pos.inRangeTo(target.pos, 1)) {
           const res = rat.takeAllFrom(target);
-          console.log(res);
-          // if (res === ERR_NOT_IN_RANGE) {
-          //   console.log('ERROR: Not in range?!  How....');
-          // } else if (res === ERR_INVALID_ARGS) {
-          //   console.log("ERROR: Invalid resource (we tried to pull something that doesn't exist.. check spellings)");
-          // } else if (res === ERR_NOT_OWNER || res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_FULL) {
-          //   rat.clearTarget();
-          // }
+          // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
+          if (res.includes(ERR_NOT_IN_RANGE)) {
+            console.log('ERROR: Not in range?!  How....');
+          } else if (res.includes(ERR_INVALID_ARGS)) {
+            console.log("ERROR: Invalid resource (we tried to pull something that doesn't exist.. check spellings)");
+          } else if (res.includes(ERR_NOT_ENOUGH_RESOURCES)) {
+            rat.clearTarget();
+          } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL)) {
+            rat.clearTask();
+          }
         } else {
           move.moveTo(rat, target, '#ffffff');
         }
