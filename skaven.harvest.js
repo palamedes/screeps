@@ -103,6 +103,9 @@ let sHarvest = {
         if (target instanceof Tombstone && target.store[RESOURCE_ZYNTHIUM_HYDRIDE] > 0 && rat.withdraw(target, RESOURCE_ZYNTHIUM_HYDRIDE) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
+        if (target instanceof Tombstone && target.store[RESOURCE_UTRIUM_HYDRIDE] > 0 && rat.withdraw(target, RESOURCE_UTRIUM_HYDRIDE) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
         if (target instanceof Tombstone && target.store[RESOURCE_HYDROGEN] > 0 && rat.withdraw(target, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
