@@ -64,7 +64,7 @@ Creep.prototype.takeAllFrom = function(target) {
       if (store[i] === 'XGHO2')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ALKALIDE));
     }
   } else {
-    results = this.takeFrom(target, 'energy');
+    results = [this.takeFrom(target, 'energy')];
   }
   return results;
 }
