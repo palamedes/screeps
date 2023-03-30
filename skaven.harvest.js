@@ -68,11 +68,11 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         // If the target is a pickup, then go try to pick it up
-        if (target instanceof Resource && target.energy > 0 && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a tombstone, then go try to withdraw
-        if (target instanceof Tombstone && rat.pickup(target) === ERR_NOT_IN_RANGE) {
+        if (target instanceof Tombstone && rat.withdraw(target, ENERGY_RESOURCE) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a container, then go transfer out some energy
