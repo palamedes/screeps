@@ -8,8 +8,6 @@ let sHarvest = {
     // Can this rat carry? - So not harvesters
     if (rat.canCarry()) {
 
-
-
       // Try to get energy from a container first.. But only if they can work.
       if (!rat.memory.myTargetId && rat.canWork()) {
         const containers = rat.room.find(FIND_STRUCTURES, {
@@ -20,10 +18,15 @@ let sHarvest = {
         }
       }
 
-      // Hauler sees a tombstone
+      // Hauler sees a tombstone with possible goodies...
       if (!rat.memory.myTargetId && rat.cannotWork()) {
         const containers = rat.room.find(FIND_TOMBSTONES, {
-          filter: tombstone => { return tombstone.store[RESOURCE_ENERGY] > 0; }
+          filter: tombstone => { return tombstone.store[RESOURCE_ENERGY] > 0 ||
+            tombstone.store[RESOURCE_UTRIUM] > 0    || tombstone.store[RESOURCE_KEANIUM] > 0 ||
+            tombstone.store[RESOURCE_LEMERGIUM] > 0 || tombstone.store[RESOURCE_ZYNTHIUM] > 0 ||
+            tombstone.store[RESOURCE_OXYGEN] > 0    || tombstone.store[RESOURCE_HYDROGEN] > 0 ||
+            tombstone.store[RESOURCE_CATALYST] > 0
+          }
         });
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
@@ -31,6 +34,7 @@ let sHarvest = {
       }
 
       // Try to get energy that is dropped.. Anyone.
+      // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
       if (!rat.memory.myTargetId) {
         // Try to pickup dropped energy first
         let droppedEnergy = Game.rooms[rat.room.name].find(FIND_DROPPED_RESOURCES, {
@@ -71,8 +75,29 @@ let sHarvest = {
         if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
-        // If the target is a tombstonex, then go try to withdraw
+        // If the target is a tombstone, then go try to withdraw
         if (target instanceof Tombstone && target.store[RESOURCE_ENERGY] > 0 && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_UTRIUM] > 0 && rat.withdraw(target, RESOURCE_UTRIUM) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_KEANIUM] > 0 && rat.withdraw(target, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_LEMERGIUM] > 0 && rat.withdraw(target, RESOURCE_LEMERGIUM) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_ZYNTHIUM] > 0 && rat.withdraw(target, RESOURCE_ZYNTHIUM) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_OXYGEN] > 0 && rat.withdraw(target, RESOURCE_OXYGEN) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_HYDROGEN] > 0 && rat.withdraw(target, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
+          move.moveTo(rat, target, '#ffaa00');
+        }
+        if (target instanceof Tombstone && target.store[RESOURCE_CATALYST] > 0 && rat.withdraw(target, RESOURCE_CATALYST) === ERR_NOT_IN_RANGE) {
           move.moveTo(rat, target, '#ffaa00');
         }
         // If the target is a container, then go transfer out some energy

@@ -41,6 +41,7 @@ let sStore = {
     // If there are any targets store in order above..
     else if (target) {
       const results = rat.transfer(target, RESOURCE_ENERGY);
+      // @TODO Transfer RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_OXYGEN, RESOURCE_HYDROGEN, RESOURCE_CATALYST
       if (results === ERR_NOT_IN_RANGE)   { move.moveTo(rat, target, '#aaaaaa');}
       else if (results === ERR_FULL)      { rat.clearTarget(); }
       return true;
