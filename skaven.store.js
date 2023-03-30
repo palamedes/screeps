@@ -43,7 +43,6 @@ let sStore = {
       const resources = Object.keys(rat.store);
       let results = ERR_NOT_IN_RANGE;
       let transfer_item = null;
-      console.log('test', rat.store[resources[0]]);
 
       if (resources.length > 0) {
 
@@ -54,6 +53,7 @@ let sStore = {
         if (resources[0] === 'KO') transfer_item = RESOURCE_KEANIUM_OXIDE;
 
         results = rat.transfer(target, transfer_item);
+        console.log(results);
       }
       // for (let i = 0; i < resources.length; i++) {
       //   const results = rat.transfer(target, RESOURCE_ENERGY);
