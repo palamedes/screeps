@@ -23,7 +23,7 @@ let sHarvest = {
       // Hauler sees a tombstone
       if (!rat.memory.myTargetId && rat.cannotWork()) {
         const containers = rat.room.find(FIND_TOMBSTONES, {
-          filter: tombstone => { return tombstone.store.getUsedCapacity() > 0; }
+          filter: tombstone => { return target.store[RESOURCE_ENERGY] > 0; }
         });
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
