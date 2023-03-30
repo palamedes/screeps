@@ -46,9 +46,14 @@ let sStore = {
       console.log('test', rat.store[resources[0]]);
 
       if (resources.length > 0) {
-        if (resources[0] === 'GO') transfer_item = RESOURCE_GHODIUM_OXIDE;
 
-        results = rat.transfer(target, resources[0]);
+        if (resources[0] === 'energy') transfer_item = RESOURCE_ENERGY;
+        if (resources[0] === 'GO') transfer_item = RESOURCE_GHODIUM_OXIDE;
+        if (resources[0] === 'ZH') transfer_item = RESOURCE_ZYNTHIUM_HYDRIDE;
+        if (resources[0] === 'UH') transfer_item = RESOURCE_UTRIUM_HYDRIDE;
+        if (resources[0] === 'KO') transfer_item = RESOURCE_KEANIUM_OXIDE;
+
+        results = rat.transfer(target, transfer_item);
       }
       // for (let i = 0; i < resources.length; i++) {
       //   const results = rat.transfer(target, RESOURCE_ENERGY);
