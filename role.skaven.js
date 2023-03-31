@@ -2,11 +2,11 @@ const $actions = require('actions');
 
 /** Skaven! */
 var roleSkaven = {
-
+  // Skitter!  As all good rats do...
   skitter: rat => {
-
+    // If we are a slave, and we have been spawned...
     if (rat.memory.role === 'slave' && !rat.spawning) {
-
+      // Get our list of slaves
       let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
       // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
       if (rat.ticksToLive <= 50 && rat.memory.task !== 'renew' && rat.room.controller.level >= 4 && rat.memory.renews > 0) {
