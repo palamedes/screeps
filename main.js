@@ -52,18 +52,18 @@ module.exports.loop = function () {
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
-      statusUpdate += roleSkaven.summonSlave(room, { homeRoom: room.name, version: room.controller.level });
+      statusUpdate += skaven.summonSlave(room, { homeRoom: room.name, version: room.controller.level });
     }
     // Spawn a rat ogre
     // if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= Memory.rooms[room.name].maxEnergy) {
-    //   statusUpdate += roleSkaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
+    //   statusUpdate += skaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
     // }
     // Based on the status of the room
     rooms.run(room);
   }
 
   // Work the rats!
-  for(let name in Game.creeps) { roleSkaven.skitter(Game.creeps[name]); }
+  for(let name in Game.creeps) { skaven.skitter(Game.creeps[name]); }
 
   // Report what's up..
   // console.log(statusUpdate);
