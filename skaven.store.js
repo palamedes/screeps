@@ -44,6 +44,7 @@ let sStore = {
     if (rat.store.getUsedCapacity() === 0 && !rat.carryingNonEnergyResource()) { rat.clearTask(); }
     // If there are any targets store in order above..
     else if (target) {
+      console.log('target', rat.name, target);
       if (rat.pos.inRangeTo(target.pos, 1)) {
         let res = rat.giveAllTo(target);
         if (res.includes(ERR_NOT_IN_RANGE)) {
