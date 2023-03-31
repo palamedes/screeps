@@ -23,7 +23,6 @@ let sHarvest = {
         const containers = rat.room.find(FIND_TOMBSTONES, {
           filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
         });
-        console.log('me', tombstone, tomestone.store)
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
@@ -171,6 +170,7 @@ let sHarvest = {
             if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
               // Waiting for power to respawn most likely
             }
+            console.log(rat.name, rat.harvest(target))
             // ...otherwise find us a suckle point that is open and move to it.
           } else {
             for (let id in Memory.rooms[rat.room.name].sources) {
