@@ -1,4 +1,4 @@
-const move = require("./skaven.move");
+const move = require("skaven.move");
 let sStore = {
   // Go store the energy
   using: rat => {
