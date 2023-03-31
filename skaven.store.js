@@ -41,7 +41,7 @@ let sStore = {
     // If there are any targets store in order above..
     else if (target) {
       if (rat.pos.inRangeTo(target.pos, 1)) {
-        let results = rat.giveAllTo(target);
+        let res = rat.giveAllTo(target);
         if (res.includes(ERR_NOT_IN_RANGE)) {
           console.log('ERROR: Not in range?!  How....');
         } else if (res.includes(ERR_INVALID_TARGET)) {
