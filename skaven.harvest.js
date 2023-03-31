@@ -23,6 +23,7 @@ let sHarvest = {
         const containers = rat.room.find(FIND_TOMBSTONES, {
           filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
         });
+        console.log('me', tombstone, tomestone.store)
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
         }
