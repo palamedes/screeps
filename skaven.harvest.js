@@ -20,11 +20,8 @@ let sHarvest = {
 
       // Hauler sees a tombstone with possible goodies...
       if (!rat.memory.myTargetId && rat.cannotWork()) {
-        const containers = creep.room.find(FIND_TOMBSTONES, {
-          filter: tombstone => {
-            const totalResources = _.sum(tombstone.store);
-            return totalResources > 0;
-          }
+        const containers = rat.room.find(FIND_TOMBSTONES, {
+          filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
         });
         if (containers.length > 0) {
           rat.memory.myTargetId = rat.pos.findClosestByRange(containers).id;
