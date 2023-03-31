@@ -66,7 +66,7 @@ let sHarvest = {
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
-        const inPosition = rat.pos.inRangeTo(target.pos, (rat.cannotCarry()? 2 : 1));
+        const inPosition = rat.pos.inRangeTo(target.pos, 2);
         console.log(rat.name + ' in pos', rat.spawning);
         if (inPosition) {
           let res = null;
