@@ -86,7 +86,7 @@ let sHarvest = {
             console.log("ERROR: Invalid resource (we tried to pull something that doesn't exist.. check spellings)");
           } else if (res.includes(ERR_NOT_ENOUGH_RESOURCES)) {
             rat.clearTarget();
-          } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL)) {
+          } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL) || res.includes(null)) {
             rat.clearTask();
           }
         } else {
