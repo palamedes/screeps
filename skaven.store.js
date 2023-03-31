@@ -40,34 +40,18 @@ let sStore = {
     if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
     // If there are any targets store in order above..
     else if (target) {
-      const resources = Object.keys(rat.store);
-      let results = ERR_NOT_IN_RANGE;
-      let transfer_item = null;
-
-      if (resources.length > 0) {
-
-        if (resources[0] === 'energy') transfer_item = RESOURCE_ENERGY;
-        if (resources[0] === 'GO') transfer_item = RESOURCE_GHODIUM_OXIDE;
-        if (resources[0] === 'ZH') transfer_item = RESOURCE_ZYNTHIUM_HYDRIDE;
-        if (resources[0] === 'UH') transfer_item = RESOURCE_UTRIUM_HYDRIDE;
-        if (resources[0] === 'KO') transfer_item = RESOURCE_KEANIUM_OXIDE;
-
-        results = rat.transfer(target, transfer_item);
-        console.log(target, results);
+      if (rat.pos.inRangeTo(target.pos, 1)) {
+        let results = rat.giveAllTo(target);
+        if (res.includes(ERR_NOT_IN_RANGE)) {
+          console.log('ERROR: Not in range?!  How....');
+        } else if (res.includes(ERR_INVALID_TARGET)) {
+          rat.clearTask();
+        } else if (res.includes(ERR_FULL)) {
+          rat.clearTarget();
+        }
+      } else {
+        move.moveTo(rat, target, '#ffffff');
       }
-      // for (let i = 0; i < resources.length; i++) {
-      //   const results = rat.transfer(target, RESOURCE_ENERGY);
-      //   const resourceType = resources[i];
-      //   const amount = container.store[resourceType];
-      //   console.log(`${resourceType}: ${amount}`);
-      // }
-      //
-      //
-      // const results = rat.transfer(target, RESOURCE_ENERGY);
-      // @TODO Transfer RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_OXYGEN, RESOURCE_HYDROGEN, RESOURCE_CATALYST
-      if (results === ERR_NOT_IN_RANGE)         { move.moveTo(rat, target, '#aaaaaa');}
-      else if (results === ERR_FULL)            { rat.clearTarget(); }
-      else if (results === ERR_INVALID_TARGET)  { rat.clearTask(); }
       return true;
     }
     return false;
