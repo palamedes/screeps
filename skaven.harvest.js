@@ -65,7 +65,7 @@ let sHarvest = {
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
-      if (target) {
+      if (target && !(target instanceof Source)) {
         // Is our rat within range of the target?
         if (rat.pos.inRangeTo(target.pos, 1)) {
           // Try to take resources from target
@@ -106,7 +106,6 @@ let sHarvest = {
       if (target && target instanceof Source && target.energy > 0) {
         let foundSucklePoint = false;
         let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
-        console.log('!Harvester: ' + rat.name, sucklePointSourceId);
         // ...and we are at one of the known suckle points, harvest.
         if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
