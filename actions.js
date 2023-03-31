@@ -50,8 +50,6 @@ let $actions = {
     const ratSpawn = room.find(FIND_MY_SPAWNS)[0];
 
     let renews = 0;
-    const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
-
     let energy = room.energyAvailable;
     let percentWork = 0.5, percentCarry = 0.50;
 
@@ -68,6 +66,8 @@ let $actions = {
       renews = (energy - 200) / (1500 - 200) * 20;
     }
 
+    // Setup the rat brain
+    const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
     // Calculate the number of body parts based on energySize
     const numWork  = Math.floor(energy * percentWork / 100); // 50% of the energy to work
     energy = energy - numWork * 100;
