@@ -1,4 +1,3 @@
-const move = require("skaven.move");
 
 Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
