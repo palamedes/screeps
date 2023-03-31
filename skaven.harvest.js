@@ -86,7 +86,9 @@ let sHarvest = {
             rat.clearTask();
           }
         } else {
-          move.moveTo(rat, target, '#ffffff');
+          if (!rat.isHarvester()) {
+            move.moveTo(rat, target, '#ffffff');
+          }
         }
 
         // Method to quickly check to see if we are standing on one of the suckle points we have in memory
