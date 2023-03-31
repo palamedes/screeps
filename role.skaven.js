@@ -74,7 +74,7 @@ var roleSkaven = {
   // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
   shouldWeUpgrade: (rat, slaves) => {
     const upgradeTarget = rat.room.controller;
-    if (upgradeTarget && rat.canCarry() && rat.canWork()) {
+    if (upgradeTarget && rat.canCarry() && rat.canWork() && !rat.carryingNonEnergyResource()) {
       // if the rat has been sleeping on the job, go make him upgrade..
       if (rat.memory.slept > 2) return true;
       // Do we have 80% of max slaves?
