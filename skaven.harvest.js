@@ -104,9 +104,9 @@ let sHarvest = {
       }
       // If the target is a source find a suckle point for that source
       if (target && target instanceof Source && target.energy > 0) {
-        console.log('Harvester: ' + rat.name, target);
         let foundSucklePoint = false;
         let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
+        console.log('!Harvester: ' + rat.name, sucklePointSourceId);
         // ...and we are at one of the known suckle points, harvest.
         if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
