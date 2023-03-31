@@ -8,36 +8,36 @@ let sStore = {
     if (rat.cannotWork()) {
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        target = targets.sort((a, b) => a.store.getFreeCapacity(RESOURCE_ENERGY) - b.store.getFreeCapacity(RESOURCE_ENERGY))[0];
+        if (targets.length > 0) target = targets.sort((a, b) => a.store.getFreeCapacity(RESOURCE_ENERGY) - b.store.getFreeCapacity(RESOURCE_ENERGY))[0];
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        target = rat.pos.findClosestByRange(targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity() > 0 });
-        target = rat.pos.findClosestByRange(targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
     }
 
     // all other rats, probably a slave, store it somewhere else.
     if (rat.canWork()) {
+      // If we are a worker and have picked up a non energy resource
       if (rat.carryingNonEnergyResource()) { targets = rat.room.find(FIND_STRUCTURES, {
           filter: (structure) => structure.structureType === STRUCTURE_CONTAINER    && structure.store.getFreeCapacity() > 0 });
-        target = rat.pos.findClosestByRange(targets);
-        console.log('FOUND ANYTHING', rat.name, targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        target = rat.pos.findClosestByRange(targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_SPAWN      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        target = rat.pos.findClosestByRange(targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-        target = rat.pos.findClosestByRange(targets);
+        if (targets.length > 0) target = rat.pos.findClosestByRange(targets);
       }
     }
 
