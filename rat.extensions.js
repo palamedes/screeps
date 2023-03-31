@@ -51,8 +51,8 @@ Creep.prototype.takeAllFrom = function(target) {
       if (store[i] === 'KO')      results.push(this.takeFrom(target, RESOURCE_KEANIUM_OXIDE));
       if (store[i] === 'LH')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_HYDRIDE));
       if (store[i] === 'LO')      results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_OXIDE));
-      if (store[i] === 'ZH')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_HYDRIDE));
-      if (store[i] === 'ZO')      results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_OXIDE));
+      if (store[i] === 'ZH')      results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM_HYDRIDE));
+      if (store[i] === 'ZO')      results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM_OXIDE));
       if (store[i] === 'GH')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_HYDRIDE));
       if (store[i] === 'GO')      results.push(this.takeFrom(target, RESOURCE_GHODIUM_OXIDE));
       if (store[i] === 'XUH2O')   results.push(this.takeFrom(target, RESOURCE_UTRIUM_ACID));
@@ -61,8 +61,8 @@ Creep.prototype.takeAllFrom = function(target) {
       if (store[i] === 'XKHO2')   results.push(this.takeFrom(target, RESOURCE_KEANIUM_ALKALIDE));
       if (store[i] === 'XLH2O')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ACID));
       if (store[i] === 'XLHO2')   results.push(this.takeFrom(target, RESOURCE_LEMERGIUM_ALKALIDE));
-      if (store[i] === 'XZH2O')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ACID));
-      if (store[i] === 'XZHO2')   results.push(this.takeFrom(target, RESOURCE_ZYTHNIUM_ALKALIDE));
+      if (store[i] === 'XZH2O')   results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM_ACID));
+      if (store[i] === 'XZHO2')   results.push(this.takeFrom(target, RESOURCE_ZYNTHIUM_ALKALIDE));
       if (store[i] === 'XGH2O')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ACID));
       if (store[i] === 'XGHO2')   results.push(this.takeFrom(target, RESOURCE_GHODIUM_ALKALIDE));
     }
@@ -97,8 +97,8 @@ Creep.prototype.giveAllTo = function(target) {
     if (store.includes('KO'))     results.push(this.giveTo(target, RESOURCE_KEANIUM_OXIDE));
     if (store.includes('LH'))     results.push(this.giveTo(target, RESOURCE_LEMERGIUM_HYDRIDE));
     if (store.includes('LO'))     results.push(this.giveTo(target, RESOURCE_LEMERGIUM_OXIDE));
-    if (store.includes('ZH'))     results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_HYDRIDE));
-    if (store.includes('ZO'))     results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_OXIDE));
+    if (store.includes('ZH'))     results.push(this.giveTo(target, RESOURCE_ZYNTHIUM_HYDRIDE));
+    if (store.includes('ZO'))     results.push(this.giveTo(target, RESOURCE_ZYNTHIUM_OXIDE));
     if (store.includes('GH'))     results.push(this.giveTo(target, RESOURCE_GHODIUM_HYDRIDE));
     if (store.includes('GO'))     results.push(this.giveTo(target, RESOURCE_GHODIUM_OXIDE));
     if (store.includes('XUH2O'))  results.push(this.giveTo(target, RESOURCE_UTRIUM_ACID));
@@ -107,8 +107,8 @@ Creep.prototype.giveAllTo = function(target) {
     if (store.includes('XKHO2'))  results.push(this.giveTo(target, RESOURCE_KEANIUM_ALKALIDE));
     if (store.includes('XLH2O'))  results.push(this.giveTo(target, RESOURCE_LEMERGIUM_ACID));
     if (store.includes('XLHO2'))  results.push(this.giveTo(target, RESOURCE_LEMERGIUM_ALKALIDE));
-    if (store.includes('XZH2O'))  results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_ACID));
-    if (store.includes('XZHO2'))  results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_ALKALIDE));
+    if (store.includes('XZH2O'))  results.push(this.giveTo(target, RESOURCE_ZYNTHIUM_ACID));
+    if (store.includes('XZHO2'))  results.push(this.giveTo(target, RESOURCE_ZYNTHIUM_ALKALIDE));
     if (store.includes('XGH2O'))  results.push(this.giveTo(target, RESOURCE_GHODIUM_ACID));
     if (store.includes('XGHO2'))  results.push(this.giveTo(target, RESOURCE_GHODIUM_ALKALIDE));
   }
