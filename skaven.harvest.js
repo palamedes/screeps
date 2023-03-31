@@ -67,9 +67,7 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         // Is our rat within range of the target?
-        // const inPosition = rat.pos.inRangeTo(target.pos, (rat.cannotCarry()? 2 : 1));
-        const inPosition = rat.pos.inRangeTo(target.pos, 2);
-        console.log(rat.name + ' in pos', inPosition);
+        const inPosition = rat.pos.inRangeTo(target.pos, (rat.cannotCarry()? 2 : 1));
         if (inPosition) {
           let res = null;
           if (rat.canWork()) {
