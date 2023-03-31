@@ -84,7 +84,6 @@ let sHarvest = {
           // If not in position and we aren't a harvester standing on a suckle point, lets move towards the target.
           if (!rat.isHarvester()) { move.moveTo(rat, target, '#ffffff'); }
         }
-        console.log('who got here', rat.name);
       }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
@@ -135,7 +134,7 @@ let sHarvest = {
       }
       // If the rat is full, or the target is empty then find something else to do.
       if (target != null && (rat.store.getFreeCapacity() === 0 || target.energy === 0)) { rat.clearTask(); }
-
+console.log(rat.name, target);
     }
   },
 }
