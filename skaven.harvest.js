@@ -71,6 +71,7 @@ let sHarvest = {
           if (rat.canWork()) {
             res = [rat.takeFrom(target, 'energy')];
           } else {
+            console.log(rat.name, 'takeall?')
             res = rat.takeAllFrom(target);
           }
 
@@ -83,7 +84,6 @@ let sHarvest = {
             rat.clearTarget();
           } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL) || res.includes(null)) {
             rat.clearTask();
-            console.log(rat.name, 'clearing task?')
           }
         } else {
           move.moveTo(rat, target, '#ffffff');
