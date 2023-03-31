@@ -73,6 +73,8 @@ let sHarvest = {
           } else {
             res = rat.takeAllFrom(target);
           }
+
+          console.log(rat.name, res);
           // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
           if (res.includes(ERR_NOT_IN_RANGE)) {
             console.log('ERROR: Not in range?!  How....');
@@ -86,58 +88,6 @@ let sHarvest = {
         } else {
           move.moveTo(rat, target, '#ffffff');
         }
-
-        // If the target is a pickup, then go try to pick it up
-        // if (target instanceof Resource && target.energy > 0 && rat.pickup(target) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // If the target is a tombstone, then go try to withdraw
-        // if (target instanceof Tombstone && target.store[RESOURCE_ENERGY] > 0 && rat.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_UTRIUM] > 0 && rat.withdraw(target, RESOURCE_UTRIUM) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_KEANIUM] > 0 && rat.withdraw(target, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_LEMERGIUM] > 0 && rat.withdraw(target, RESOURCE_LEMERGIUM) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_ZYNTHIUM] > 0 && rat.withdraw(target, RESOURCE_ZYNTHIUM) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_OXYGEN] > 0 && rat.withdraw(target, RESOURCE_OXYGEN) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_GHODIUM_OXIDE] > 0 && rat.withdraw(target, RESOURCE_GHODIUM_OXIDE) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_KEANIUM_OXIDE] > 0 && rat.withdraw(target, RESOURCE_KEANIUM_OXIDE) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_ZYNTHIUM_HYDRIDE] > 0 && rat.withdraw(target, RESOURCE_ZYNTHIUM_HYDRIDE) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_UTRIUM_HYDRIDE] > 0 && rat.withdraw(target, RESOURCE_UTRIUM_HYDRIDE) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_HYDROGEN] > 0 && rat.withdraw(target, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // if (target instanceof Tombstone && target.store[RESOURCE_CATALYST] > 0 && rat.withdraw(target, RESOURCE_CATALYST) === ERR_NOT_IN_RANGE) {
-        //   move.moveTo(rat, target, '#ffaa00');
-        // }
-        // // If the target is a container, then go transfer out some energy
-        // if (target instanceof StructureContainer) {
-        //   let withdraw = rat.withdraw(target, RESOURCE_ENERGY);
-        //   if (withdraw === ERR_NOT_IN_RANGE) {
-        //     move.moveTo(rat, target, '#ffaa00');
-        //   } else if (!withdraw || withdraw === ERR_NOT_ENOUGH_RESOURCES) {
-        //     rat.memory.myTargetId = null;
-        //     rat.memory.task = null;
-        //   }
-        // }
 
         // Method to quickly check to see if we are standing on one of the suckle points we have in memory
         let isNearResource = (rat, sources) => {
@@ -170,7 +120,6 @@ let sHarvest = {
             if (rat.harvest(target) === ERR_NOT_IN_RANGE) {
               // Waiting for power to respawn most likely
             }
-            console.log(rat.name, rat.harvest(target))
             // ...otherwise find us a suckle point that is open and move to it.
           } else {
             for (let id in Memory.rooms[rat.room.name].sources) {
