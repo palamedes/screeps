@@ -67,15 +67,10 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         // Is our rat within range of the target?
-        const inPosition = rat.pos.inRangeTo(target.pos, 1);
-        if (inPosition) {
-          let res = null;
-          if (rat.canWork()) {
-            res = [rat.takeFrom(target, 'energy')];
-          } else {
-            res = rat.takeAllFrom(target);
-          }
-          // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
+        if (rat.pos.inRangeTo(target.pos, 1)) {
+          // Try to take resources from target
+          let res = rat.canWork() ? [rat.takeFrom(target, 'energy')] : rat.takeAllFrom(target);
+          // Respond to the attempt
           if (res.includes(ERR_NOT_IN_RANGE)) {
             console.log('ERROR: Not in range?!  How....');
           } else if (res.includes(ERR_INVALID_ARGS)) {
@@ -86,9 +81,8 @@ let sHarvest = {
             rat.clearTask();
           }
         } else {
-          if (!rat.isHarvester()) {
-            move.moveTo(rat, target, '#ffffff');
-          }
+          // If not in position and we aren't a harvester standing on a suckle point, lets move towards the target.
+          if (!rat.isHarvester()) { move.moveTo(rat, target, '#ffffff'); }
         }
 
         // Method to quickly check to see if we are standing on one of the suckle points we have in memory
