@@ -7,6 +7,10 @@ Creep.prototype.getAvailableSpawn = function() {
   return spawns.length > 0 ? this.pos.findClosestByRange(spawns) : false;
 };
 
+Creep.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
+Creep.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
+Creep.prototype.isWorker = function() { return this.canCarry() && this.canWork(); }
+
 Creep.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
 Creep.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
 Creep.prototype.carryingNonEnergyResource = function() {
