@@ -66,5 +66,5 @@ module.exports.loop = function () {
   for(let name in Game.creeps) { roleSkaven.skitter(Game.creeps[name]); }
 
   // Report what's up..
-  console.log(statusUpdate);
+  // console.log(statusUpdate);
 }
