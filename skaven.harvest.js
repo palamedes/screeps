@@ -71,7 +71,6 @@ let sHarvest = {
           if (rat.canWork()) {
             res = [rat.takeFrom(target, 'energy')];
           } else {
-            console.log(rat.name, 'takeall?')
             res = rat.takeAllFrom(target);
           }
 
