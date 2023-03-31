@@ -41,7 +41,10 @@ let sStore = {
     }
 
     // If the rat is empty then unset all the things.
-    if (rat.store.getUsedCapacity() === 0 && !rat.carryingNonEnergyResource()) { rat.clearTask(); }
+    if (rat.store.getUsedCapacity() === 0 && !rat.carryingNonEnergyResource()) {
+      console.log('clear', rat.name, target);
+      rat.clearTask();
+    }
     // If there are any targets store in order above..
     else if (target) {
       console.log('target', rat.name, target);
