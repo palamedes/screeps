@@ -9,6 +9,9 @@ Creep.prototype.getAvailableSpawn = function() {
 
 Creep.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
 Creep.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
+Creep.prototype.carryingNonEnergyResource = function() {
+  for (let rT in this.store) { if (rT !== RESOURCE_ENERGY && this.store[rT] > 0) return true; } return false;
+};
 
 Creep.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
 Creep.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
