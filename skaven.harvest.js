@@ -20,12 +20,10 @@ let sHarvest = {
 
       // Hauler sees a tombstone with possible goodies...
       if (!rat.memory.myTargetId && rat.cannotWork()) {
-        const containers = rat.room.find(FIND_TOMBSTONES, {
-          filter: tombstone => { return tombstone.store[RESOURCE_ENERGY] > 0 ||
-            tombstone.store[RESOURCE_UTRIUM] > 0    || tombstone.store[RESOURCE_KEANIUM] > 0 ||
-            tombstone.store[RESOURCE_LEMERGIUM] > 0 || tombstone.store[RESOURCE_ZYNTHIUM] > 0 ||
-            tombstone.store[RESOURCE_OXYGEN] > 0    || tombstone.store[RESOURCE_HYDROGEN] > 0 ||
-            tombstone.store[RESOURCE_CATALYST] > 0
+        const containers = creep.room.find(FIND_TOMBSTONES, {
+          filter: tombstone => {
+            const totalResources = _.sum(tombstone.store);
+            return totalResources > 0;
           }
         });
         if (containers.length > 0) {
