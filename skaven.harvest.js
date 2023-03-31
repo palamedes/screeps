@@ -66,7 +66,9 @@ let sHarvest = {
     if (rat.memory.myTargetId) {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
-        if (rat.pos.inRangeTo(target.pos, 1)) {
+        const inPosition = rat.pos.inRangeTo(target.pos, 1);
+        console.log(rat.name, inPosition);
+        if (inPosition) {
           let res = null;
           if (rat.canWork()) {
             res = [rat.takeFrom(target, 'energy')];
