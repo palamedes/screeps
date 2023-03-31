@@ -73,7 +73,7 @@ let sHarvest = {
           } else {
             res = rat.takeAllFrom(target);
           }
-
+          console.log(res);
           // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
           if (res.includes(ERR_NOT_IN_RANGE)) {
             console.log('ERROR: Not in range?!  How....');
@@ -83,7 +83,6 @@ let sHarvest = {
             rat.clearTarget();
           } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL) || res.includes(null)) {
             rat.clearTask();
-            console.log(rat.name, res);
           }
         } else {
           move.moveTo(rat, target, '#ffffff');
