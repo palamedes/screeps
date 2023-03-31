@@ -25,7 +25,6 @@ let sStore = {
       if (rat.carryingNonEnergyResource()) { targets = rat.room.find(FIND_STRUCTURES, {
           filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
         target = rat.pos.findClosestByRange(targets);
-        console.log(rat.name);
       }
       if (targets.length === 0) { targets = rat.room.find(FIND_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
@@ -42,7 +41,7 @@ let sStore = {
     }
 
     // If the rat is empty then unset all the things.
-    if (rat.store.getUsedCapacity() === 0) { rat.clearTask(); }
+    if (rat.store.getUsedCapacity() === 0) { rat.clearTask();         console.log('here', rat.name); }
     // If there are any targets store in order above..
     else if (target) {
       if (rat.pos.inRangeTo(target.pos, 1)) {
