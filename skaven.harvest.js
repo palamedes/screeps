@@ -84,7 +84,7 @@ let sHarvest = {
           // If not in position and we aren't a harvester standing on a suckle point, lets move towards the target.
           if (!rat.isHarvester()) { move.moveTo(rat, target, '#ffffff'); }
         }
-      } else { rat.clearTask(); }
+      }
 
       // Method to quickly check to see if we are standing on one of the suckle points we have in memory
       let isNearResource = (rat, sources) => {
