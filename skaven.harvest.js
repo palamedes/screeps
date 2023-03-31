@@ -133,7 +133,7 @@ let sHarvest = {
         if (!foundSucklePoint) { rat.clearTask(); }
       }
       // If the rat is full, or the target is empty then find something else to do.
-      if (rat.store.getFreeCapacity() === 0 || target.energy === 0) { rat.clearTask(); }
+      if (target != null && (rat.store.getFreeCapacity() === 0 || target.energy === 0)) { rat.clearTask(); }
 
     }
   },
