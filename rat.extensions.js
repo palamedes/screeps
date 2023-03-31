@@ -1,4 +1,4 @@
-const move = require("./skaven.move");
+const move = require("skaven.move");
 
 Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
@@ -73,4 +73,43 @@ Creep.prototype.takeFrom = function(target, resource) {
   if (target instanceof Resource && target.energy > 0) { results = this.pickup(target); }
   if (target instanceof StructureContainer && target.store[resource] > 0) { results = this.withdraw(target, resource); }
   return results;
+}
+
+Creep.prototype.giveAllTo = function(target) {
+  let results = [];
+  const store = Object.keys(this.store);
+  if (store.length > 0) {
+    if (store.includes('energy')) results.push(this.giveTo(target, RESOURCE_ENERGY));
+    if (store.includes('U'))      results.push(this.giveTo(target, RESOURCE_UTRIUM));
+    if (store.includes('K'))      results.push(this.giveTo(target, RESOURCE_KEANIUM));
+    if (store.includes('L'))      results.push(this.giveTo(target, RESOURCE_LEMERGIUM));
+    if (store.includes('Z'))      results.push(this.giveTo(target, RESOURCE_ZYNTHIUM));
+    if (store.includes('O'))      results.push(this.giveTo(target, RESOURCE_OXYGEN));
+    if (store.includes('H'))      results.push(this.giveTo(target, RESOURCE_HYDROGEN));
+    if (store.includes('X'))      results.push(this.giveTo(target, RESOURCE_CATALYST));
+    if (store.includes('UH'))     results.push(this.giveTo(target, RESOURCE_UTRIUM_HYDRIDE));
+    if (store.includes('UO'))     results.push(this.giveTo(target, RESOURCE_UTRIUM_OXIDE));
+    if (store.includes('KH'))     results.push(this.giveTo(target, RESOURCE_KEANIUM_HYDRIDE));
+    if (store.includes('KO'))     results.push(this.giveTo(target, RESOURCE_KEANIUM_OXIDE));
+    if (store.includes('LH'))     results.push(this.giveTo(target, RESOURCE_LEMERGIUM_HYDRIDE));
+    if (store.includes('LO'))     results.push(this.giveTo(target, RESOURCE_LEMERGIUM_OXIDE));
+    if (store.includes('ZH'))     results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_HYDRIDE));
+    if (store.includes('ZO'))     results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_OXIDE));
+    if (store.includes('GH'))     results.push(this.giveTo(target, RESOURCE_GHODIUM_HYDRIDE));
+    if (store.includes('GO'))     results.push(this.giveTo(target, RESOURCE_GHODIUM_OXIDE));
+    if (store.includes('XUH2O'))  results.push(this.giveTo(target, RESOURCE_UTRIUM_ACID));
+    if (store.includes('XUHO2'))  results.push(this.giveTo(target, RESOURCE_UTRIUM_ALKALIDE));
+    if (store.includes('XKH2O'))  results.push(this.giveTo(target, RESOURCE_KEANIUM_ACID));
+    if (store.includes('XKHO2'))  results.push(this.giveTo(target, RESOURCE_KEANIUM_ALKALIDE));
+    if (store.includes('XLH2O'))  results.push(this.giveTo(target, RESOURCE_LEMERGIUM_ACID));
+    if (store.includes('XLHO2'))  results.push(this.giveTo(target, RESOURCE_LEMERGIUM_ALKALIDE));
+    if (store.includes('XZH2O'))  results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_ACID));
+    if (store.includes('XZHO2'))  results.push(this.giveTo(target, RESOURCE_ZYTHNIUM_ALKALIDE));
+    if (store.includes('XGH2O'))  results.push(this.giveTo(target, RESOURCE_GHODIUM_ACID));
+    if (store.includes('XGHO2'))  results.push(this.giveTo(target, RESOURCE_GHODIUM_ALKALIDE));
+  }
+  return results;
+}
+Creep.prototype.giveTo = function(target, resource) {
+  return this.transfer(target, resource);
 }
