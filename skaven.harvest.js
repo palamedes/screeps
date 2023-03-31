@@ -75,14 +75,12 @@ let sHarvest = {
           } else {
             res = rat.takeAllFrom(target);
           }
-          console.log(rat.name + ' res', res);
           // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
           if (res.includes(ERR_NOT_IN_RANGE)) {
             console.log('ERROR: Not in range?!  How....');
           } else if (res.includes(ERR_INVALID_ARGS)) {
             console.log("ERROR: Invalid resource (we tried to pull something that doesn't exist.. check spellings)");
           } else if (res.includes(ERR_NOT_ENOUGH_RESOURCES)) {
-            console.log(rat.name);
             rat.clearTarget();
           } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL) || res.includes(null) || res.length === 0) {
             rat.clearTask();
