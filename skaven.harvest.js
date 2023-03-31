@@ -130,7 +130,10 @@ let sHarvest = {
           }
         }
         // If we didn't find a suckle point, then ask for something else to do..
-        if (!foundSucklePoint) { rat.clearTask(); }
+        if (!foundSucklePoint) {
+          console.log('this?');
+          rat.clearTask();
+        }
       }
       // If the rat is full, or the target is empty then find something else to do.
       if (target != null && (rat.store.getFreeCapacity() === 0 || target.energy === 0)) { rat.clearTask(); }
