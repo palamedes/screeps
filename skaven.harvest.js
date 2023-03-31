@@ -74,7 +74,7 @@ let sHarvest = {
         if (rat.pos.inRangeTo(target.pos, 1)) {
           let res = null;
           if (rat.canWork()) {
-            res = rat.takeFrom(target, 'energy');
+            res = [rat.takeFrom(target, 'energy')];
           } else {
             res = rat.takeAllFrom(target);
           }
