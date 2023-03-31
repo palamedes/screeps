@@ -67,7 +67,7 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         // Is our rat within range of the target?
-        const inPosition = rat.pos.inRangeTo(target.pos, (rat.cannotCarry()? 2 : 1));
+        const inPosition = rat.pos.inRangeTo(target.pos, 1);
         if (inPosition) {
           let res = null;
           if (rat.canWork()) {
@@ -81,7 +81,7 @@ let sHarvest = {
             console.log('ERROR: Not in range?!  How....');
           } else if (res.includes(ERR_INVALID_ARGS)) {
             console.log("ERROR: Invalid resource (we tried to pull something that doesn't exist.. check spellings)");
-          } else if (res.includes(ERR_NOT_ENOUGH_RESOURCES)) {
+          } else if (res.includes(ERR_NOT_ENOUGH_RESOURCES) && !rat.cannotCarry()) {
             rat.clearTarget();
           } else if (res.includes(ERR_NOT_OWNER) || res.includes(ERR_FULL) || res.includes(null) || res.length === 0) {
             rat.clearTask();
