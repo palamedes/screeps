@@ -13,7 +13,6 @@ var roleSkaven = {
         if (Game.rooms[rat.memory.homeRoom].energyAvailable > 100) { rat.setTask('renew'); }
       }
 
-
       // Rat needs to decide what it should be doing..
       if (!rat.memory.task) {
         // Harvester: if this rat can't carry, then he's a harvester.. go do that.
@@ -33,7 +32,7 @@ var roleSkaven = {
           // Repair
           else if (roleSkaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
           else {
-            if (roleSkaven.shouldWeUpgradeAnyway(rat)) {
+            if (roleSkaven.shouldWeUpgradeAnyway(rat) && !rat.carryingNonEnergyResource()) {
               rat.setTask('upgrade');
             } else {
               rat.setTask('store');
@@ -74,7 +73,7 @@ var roleSkaven = {
   // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
   shouldWeUpgrade: (rat, slaves) => {
     const upgradeTarget = rat.room.controller;
-    if (upgradeTarget && rat.canCarry() && rat.canWork() && !rat.carryingNonEnergyResource()) {
+    if (upgradeTarget && rat.canCarry() && rat.canWork()) {
       // if the rat has been sleeping on the job, go make him upgrade..
       if (rat.memory.slept > 2) return true;
       // Do we have 80% of max slaves?
