@@ -72,7 +72,12 @@ let sHarvest = {
       let target = Game.getObjectById(rat.memory.myTargetId);
       if (target) {
         if (rat.pos.inRangeTo(target.pos, 1)) {
-          const res = rat.takeAllFrom(target);
+          if (rat.canWork()) {
+            const res = rat.takeFrom(target, 'energy');
+          } else {
+            const res = rat.takeAllFrom(target);
+          }
+
           // res == NULL if it's just being dropped to the ground (Harvester) Ignore it.
           if (res.includes(ERR_NOT_IN_RANGE)) {
             console.log('ERROR: Not in range?!  How....');
