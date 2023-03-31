@@ -1,5 +1,5 @@
 require('rat.extensions');
-const roleSkaven = require('role.skaven');
+const skaven = require('skaven');
 const rooms = require('rooms');
 
 // let startCPU = Game.cpu.getUsed();

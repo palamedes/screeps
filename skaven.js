@@ -1,7 +1,7 @@
 const $actions = require('actions');
 
 /** Skaven! */
-var roleSkaven = {
+var skaven = {
   // Skitter!  As all good rats do...
   skitter: rat => {
     // If we are a slave, and we have been spawned...
@@ -26,13 +26,13 @@ var roleSkaven = {
         // If rat has less than 80% free capacity ( at least 20% energy ) then go do some work.. Else harvest.
         else if (rat.canWork() && rat.canCarry() && (rat.store.getFreeCapacity() / rat.store.getCapacity()) < 0.8) {
           // Upgrade Controller
-          if (roleSkaven.shouldWeUpgrade(rat, slaves)) { rat.setTask('upgrade'); }
+          if (skaven.shouldWeUpgrade(rat, slaves)) { rat.setTask('upgrade'); }
           // Construction
-          else if (roleSkaven.shouldWeBuild(rat, slaves)) { rat.setTask('build'); }
+          else if (skaven.shouldWeBuild(rat, slaves)) { rat.setTask('build'); }
           // Repair
-          else if (roleSkaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
+          else if (skaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
           else {
-            if (roleSkaven.shouldWeUpgradeAnyway(rat) && !rat.carryingNonEnergyResource()) {
+            if (skaven.shouldWeUpgradeAnyway(rat) && !rat.carryingNonEnergyResource()) {
               rat.setTask('upgrade');
             } else {
               rat.setTask('store');
@@ -129,4 +129,4 @@ var roleSkaven = {
   // },
 
 }
-module.exports = roleSkaven;
+module.exports = skaven;
