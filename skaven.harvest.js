@@ -104,6 +104,7 @@ let sHarvest = {
       }
       // If the target is a source find a suckle point for that source
       if (target && target instanceof Source && target.energy > 0) {
+        console.log('Harvester: ' + rat.name, target);
         let foundSucklePoint = false;
         let sucklePointSourceId = isNearResource(rat, Memory.rooms[rat.room.name].sources)
         // ...and we are at one of the known suckle points, harvest.
@@ -130,10 +131,7 @@ let sHarvest = {
           }
         }
         // If we didn't find a suckle point, then ask for something else to do..
-        if (!foundSucklePoint) {
-          console.log('this?');
-          rat.clearTask();
-        }
+        if (!foundSucklePoint) { rat.clearTask(); }
       }
       // If the rat is full, or the target is empty then find something else to do.
       if (target != null && (rat.store.getFreeCapacity() === 0 || target.energy === 0)) { rat.clearTask(); }
