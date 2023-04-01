@@ -234,23 +234,23 @@ let structures = {
   // c = RESOURCE_CONTAINER, L = LINK, S = Storage, w = Wall
   baseStamp: () => {
     const stamp = [];
-    stamp[0]  = ", , , w w w w w w w w w w w , , ,".replace(/ /g, '');
-    stamp[1]  = ", , w # # # # # # # # # # # w , ,".replace(/ /g, '');
-    stamp[2]  = ", w # · · · · · # · · · · · # w ,".replace(/ /g, '');
+    stamp[0]  = ", , w w w w w w % w w w w w w , ,".replace(/ /g, '');
+    stamp[1]  = ", % w # # # # # # # # # # # w % ,".replace(/ /g, '');
+    stamp[2]  = "w w # · · · · · # · · · · · # w w".replace(/ /g, '');
     stamp[3]  = "w # · # · # · e # e · # · # · # w".replace(/ /g, '');
     stamp[4]  = "w # · · # · e e % e e · # · · # w".replace(/ /g, '');
     stamp[5]  = "w # · # · # e % T % e # · # · # w".replace(/ /g, '');
     stamp[6]  = "w # · · e e % e # e % e e · · # w".replace(/ /g, '');
     stamp[7]  = "w # · e e % c # # # c % e e · # w".replace(/ /g, '');
-    stamp[8]  = "w # # # % S · T * T L c % # # # w".replace(/ /g, '');
+    stamp[8]  = "% # # # % S · T * T L c % # # # %".replace(/ /g, '');
     stamp[9]  = "w # · e e % c # # # c % e e · # w".replace(/ /g, '');
     stamp[10] = "w # · · e e % e # e % e e · · # w".replace(/ /g, '');
     stamp[11] = "w # · # · # e % T % e # · # · # w".replace(/ /g, '');
     stamp[12] = "w # · · # · e e % e e · # · · # w".replace(/ /g, '');
     stamp[13] = "w # · # · # · e # e · # · # · # w".replace(/ /g, '');
-    stamp[14] = ", w # · · · · · # · · · · · # w ,".replace(/ /g, '');
-    stamp[15] = ", , w # # # # # # # # # # # w , ,".replace(/ /g, '');
-    stamp[16] = ", , , w w w w w w w w w w w , , ,".replace(/ /g, '');
+    stamp[14] = "w w # · · · · · # · · · · · # w w".replace(/ /g, '');
+    stamp[15] = ", % w # # # # # # # # # # # w % ,".replace(/ /g, '');
+    stamp[16] = ", , w w w w w w % w w w w w w , ,".replace(/ /g, '');
     return stamp;
   }
 }
