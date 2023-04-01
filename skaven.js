@@ -119,7 +119,7 @@ var skaven = {
   // Spawn us a rat ~ Standard Skaven Slave worker rat
   summonSlave: (room, memory) => {
     if (room.energyAvailable >= 300) {
-      $actions.summonSkavenSlave(room, memory);
+      room.summonSlave(memory);
       return ' ~ Spawning new Slave ('+room.energyAvailable+')'
     } else { return ''; }
   },
