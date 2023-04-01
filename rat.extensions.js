@@ -5,6 +5,10 @@ const sRepair   = require('skaven.repair');
 const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
 
+Creep.prototype.numActive = task => {
+  return _.filter(Game.creeps, rat => rat.memory.task === task).length;
+}
+
 Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
