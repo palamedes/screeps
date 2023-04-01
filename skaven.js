@@ -29,7 +29,7 @@ var skaven = {
           // Construction
           else if (rat.shouldWeBuild(slaves)) { rat.setTask('build'); }
           // Repair
-          else if (skaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
+          else if (rat.shouldWeRepair(slaves)) { rat.setTask('repair'); }
           else {
             if (rat.shouldWeUpgradeAnyway() && !rat.carryingNonEnergyResource()) {
               rat.setTask('upgrade');
@@ -96,20 +96,20 @@ var skaven = {
 
   // Should we repair something?
   // If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
-  shouldWeRepair: (rat, slaves) => {
-    const repairTargets = rat.getRepairTargets(rat);
-    if (repairTargets && repairTargets.length > 0 && rat.canCarry() && rat.canWork()) {
-      // Do we have 50% or more rats?
-      const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
-      // Are less than 25% doing the work?
-      const notEnoughActive = Creep.numActive('repair') <= (Memory.rooms[rat.room.name].maxSlaves*0.25)
-      // Are there no towers repairing?
-      const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
-      // Decide
-      if (enoughSlaves && notEnoughActive && noTowers) return true;
-    }
-    return false;
-  },
+  // shouldWeRepair: (rat, slaves) => {
+  //   const repairTargets = rat.getRepairTargets(rat);
+  //   if (repairTargets && repairTargets.length > 0 && rat.canCarry() && rat.canWork()) {
+  //     // Do we have 50% or more rats?
+  //     const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
+  //     // Are less than 25% doing the work?
+  //     const notEnoughActive = Creep.numActive('repair') <= (Memory.rooms[rat.room.name].maxSlaves*0.25)
+  //     // Are there no towers repairing?
+  //     const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
+  //     // Decide
+  //     if (enoughSlaves && notEnoughActive && noTowers) return true;
+  //   }
+  //   return false;
+  // },
 
   // Should we renew?
   // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn

@@ -41,3 +41,20 @@ Creep.prototype.shouldWeUpgradeAnyway = function() {
   const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy;
   return fullEnergy && this.canWork();
 }
+
+// Should we repair something?
+// If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
+Creep.prototype.shouldWeRepair = function(slaves) {
+  const repairTargets = this.getRepairTargets(rat);
+  if (repairTargets && repairTargets.length > 0 && this.canCarry() && this.canWork()) {
+    // Do we have 50% or more rats?
+    const enoughSlaves = slaves.length >= (Memory.rooms[this.room.name].maxSlaves/2);
+    // Are less than 25% doing the work?
+    const notEnoughActive = Creep.numActive('repair') <= (Memory.rooms[this.room.name].maxSlaves*0.25)
+    // Are there no towers repairing?
+    const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
+    // Decide
+    if (enoughSlaves && notEnoughActive && noTowers) return true;
+  }
+  return false;
+}
