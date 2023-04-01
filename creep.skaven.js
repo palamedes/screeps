@@ -1,6 +1,5 @@
 const sHarvest  = require("skaven.harvest");
 const sStore    = require("skaven.store");
-const sUpgrade  = require("skaven.upgrade");
 
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
@@ -51,12 +50,12 @@ Creep.prototype.run = function() {
 // Run an individual rat
 Creep.prototype.skitter = function() {
   if (this.getTask() === 'harvest')         { sHarvest.using(this); }
-  if (this.getTask() === 'store')           { if (!sStore.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'store')           { if (!sStore.using(this)) { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
-  if (this.getTask() === 'renew')           { if (!this.renewTask())     { this.sleep(); } }
-  if (this.getTask() === 'upgrade')         { if (!sUpgrade.using(this)) { this.sleep(); } }
-  if (this.getTask() === 'build')           { if (!this.buildTask())     { this.sleep(); } }
-  if (this.getTask() === 'repair')          { if (!this.repairTask())    { this.sleep(); } }
+  if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
+  if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
+  if (this.getTask() === 'build')           { if (!this.buildTask())   { this.sleep(); } }
+  if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
 }
 
 // DECISIONS
@@ -160,4 +159,15 @@ Creep.prototype.renewTask = function() {
     doneRenewing = true
   }
   return !doneRenewing;
+}
+// Go upgrade the room controller. (Note; if a rat is bored it will also do this task without the task being set)
+Creep.prototype.upgradeTask = function() {
+  var target = this.room.controller;
+  if (this.room.controller && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
+    if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(this.room.controller, '#00ff00');
+    }
+    return true;
+  }
+  return false;
 }
