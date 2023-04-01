@@ -99,7 +99,7 @@ var skaven = {
   // Should we repair something?
   // If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
   shouldWeRepair: (rat, slaves) => {
-    const repairTargets = Memory.tickCount % 10 ? $actions.repair.getRepairTargets(rat) : null;
+    const repairTargets = rat.getRepairTargets(rat);
     if (repairTargets && repairTargets.length > 0 && rat.canCarry() && rat.canWork()) {
       // Do we have 50% or more rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
