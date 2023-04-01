@@ -27,7 +27,7 @@ var skaven = {
           // Upgrade Controller
           if (skaven.shouldWeUpgrade(rat, slaves)) { rat.setTask('upgrade'); }
           // Construction
-          else if (skaven.shouldWeBuild(rat, slaves)) { rat.setTask('build'); }
+          else if (rat.shouldWeBuild(slaves)) { rat.setTask('build'); }
           // Repair
           else if (skaven.shouldWeRepair(rat, slaves)) { rat.setTask('repair'); }
           else {
@@ -53,20 +53,20 @@ var skaven = {
 
   // Should we build something?
   // If we have 50% or more rats, and we don't have more than 50% doing the work
-  shouldWeBuild: (rat, slaves) => {
-    const constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
-    if (constructionTargets && constructionTargets.length > 0 && rat.canCarry() && rat.canWork()) {
-      // Do we have 50% or more max rats?
-      const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
-      // Are less than 50% of them doing the work?
-      const notEnoughActive = Creep.numActive('build') <= (Memory.rooms[rat.room.name].maxSlaves*0.5);
-      // Are we full energy?
-      const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
-      // Decide
-      if (enoughSlaves && notEnoughActive && fullEnergy) return true;
-    }
-    return false;
-  },
+  // shouldWeBuild: (rat, slaves) => {
+  //   const constructionTargets = Memory.tickCount % 5 ? rat.room.find(FIND_CONSTRUCTION_SITES) : null;
+  //   if (constructionTargets && constructionTargets.length > 0 && rat.canCarry() && rat.canWork()) {
+  //     // Do we have 50% or more max rats?
+  //     const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
+  //     // Are less than 50% of them doing the work?
+  //     const notEnoughActive = Creep.numActive('build') <= (Memory.rooms[rat.room.name].maxSlaves*0.5);
+  //     // Are we full energy?
+  //     const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
+  //     // Decide
+  //     if (enoughSlaves && notEnoughActive && fullEnergy) return true;
+  //   }
+  //   return false;
+  // },
 
   // Should we upgrade the controller?
   // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
