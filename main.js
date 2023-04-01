@@ -65,7 +65,7 @@ module.exports.loop = function () {
 
   // Work the rats!
   for(let name in Game.creeps) {
-    Game.creeps[name].skitter();
+    Game.creeps[name].run();
   }
 
   // Report what's up..

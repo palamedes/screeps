@@ -1,6 +1,12 @@
+const sHarvest  = require("skaven.harvest");
+const sStore    = require("skaven.store");
+const sRenew    = require("skaven.renew");
+const sUpgrade  = require("skaven.upgrade");
+const sBuild    = require("skaven.build");
+const sRepair   = require("skaven.repair");
 
 // Run the Skaven (Slaves of all types)
-Creep.prototype.skitter = function(slaves) {
+Creep.prototype.run = function() {
   // If we are a slave, and we have been spawned...
   if (this.memory.role === 'slave' && !this.spawning) {
     // Get our list of slaves
@@ -40,11 +46,22 @@ Creep.prototype.skitter = function(slaves) {
         this.setTask('harvest');
       }
     }
-    // Okay this... Do something..
-    this.run();
+    // Okay, with this individual rat.. Run him..
+    this.skitter();
   }
 }
-  
+
+// Run an individual rat
+Creep.prototype.skitter = function() {
+  if (this.getTask() === 'harvest')  { sHarvest.using(this); }
+  if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
+  if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
+  if (this.getTask() === 'build')    { if (!sBuild.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'repair')   { if (!sRepair.using(this))  { this.sleep(); } }
+}
+
 // Should we build something?
 // If we have 50% or more rats, and we don't have more than 50% doing the work
 Creep.prototype.shouldWeBuild = function(slaves) {

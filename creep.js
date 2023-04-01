@@ -1,9 +1,3 @@
-const sHarvest  = require('skaven.harvest');
-const sBuild    = require('skaven.build');
-const sStore    = require('skaven.store');
-const sRepair   = require('skaven.repair');
-const sUpgrade  = require('skaven.upgrade');
-const sRenew    = require('skaven.renew');
 const structureTower = require("structure.tower");
 
 Creep.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
@@ -172,12 +166,3 @@ Creep.prototype.trackTileVisits = function() {
   return ++Memory.tileVisits[this.pos.x][this.pos.y];
 }
 
-Creep.prototype.run = function() {
-  if (this.getTask() === 'harvest')  { sHarvest.using(this); }
-  if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
-  if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
-  if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
-  if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
-  if (this.getTask() === 'build')    { if (!sBuild.using(this))   { this.sleep(); } }
-  if (this.getTask() === 'repair')   { if (!sRepair.using(this))  { this.sleep(); } }
-}
