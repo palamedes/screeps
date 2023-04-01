@@ -1,6 +1,5 @@
 const sHarvest  = require("skaven.harvest");
 const sStore    = require("skaven.store");
-const sRenew    = require("skaven.renew");
 const sUpgrade  = require("skaven.upgrade");
 
 // Run the Skaven (Slaves of all types)
@@ -51,13 +50,13 @@ Creep.prototype.run = function() {
 
 // Run an individual rat
 Creep.prototype.skitter = function() {
-  if (this.getTask() === 'harvest')  { sHarvest.using(this); }
-  if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'harvest')         { sHarvest.using(this); }
+  if (this.getTask() === 'store')           { if (!sStore.using(this))   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
-  if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
-  if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
-  if (this.getTask() === 'build')    { if (!this.buildTask())     { this.sleep(); } }
-  if (this.getTask() === 'repair')   { if (!this.repairTask())    { this.sleep(); } }
+  if (this.getTask() === 'renew')           { if (!this.renewTask())     { this.sleep(); } }
+  if (this.getTask() === 'upgrade')         { if (!sUpgrade.using(this)) { this.sleep(); } }
+  if (this.getTask() === 'build')           { if (!this.buildTask())     { this.sleep(); } }
+  if (this.getTask() === 'repair')          { if (!this.repairTask())    { this.sleep(); } }
 }
 
 // DECISIONS
@@ -142,4 +141,23 @@ Creep.prototype.repairTask = function() {
   }
   return false;
 }
-
+// Go find the nearest spawn and renew at it
+Creep.prototype.renewTask = function() {
+  let doneRenewing = false;
+  const spawns = this.room.find(FIND_MY_STRUCTURES, {
+    filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
+  });
+  let closestSpawn = this.pos.findClosestByPath(spawns);
+  if (closestSpawn) {
+    if (this.pos.isNearTo(closestSpawn)) {
+      let result = closestSpawn.renewCreep(rat);
+      doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
+    } else {
+      this.moveCreepTo(closestSpawn, '#00ffff');
+      doneRenewing = false
+    }
+  } else {
+    doneRenewing = true
+  }
+  return !doneRenewing;
+}
