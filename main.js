@@ -1,8 +1,8 @@
+console.log('Code Reloaded!');
 require('creep');
 require('creep.move');
-require('creep.skaven.slave');
-
 require('creep.skaven');
+require('creep.skaven.slave');
 
 require('room');
 require('room.summon.slave');
