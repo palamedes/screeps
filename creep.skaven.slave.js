@@ -44,7 +44,7 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
   if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
-  if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
+  if (this.getTask() === 'upgrade')         { this.taskUpgradeController(); }
   if (this.getTask() === 'build')           { this.taskBuildAnything(); }
   if (this.getTask() === 'buildTarget')     { this.taskBuildTarget(); }
   if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
@@ -114,6 +114,18 @@ Creep.prototype.skaven.slave.shouldWeRepair = function(slaves) {
       // Decide
       if (enoughSlaves && notEnoughActive && noTowers) return true;
     }
+  }
+  return false;
+}
+// Should we store?
+// If a Turret is empty, go fill it.
+Creep.prototype.skaven.slave.shouldWeStore = function(salves) {
+  if (!this.getTask()) {
+    const anyLowTowers = this.room.find(FIND_MY_STRUCTURES, { filter: (structure) => {
+      return structure.structureType === STRUCTURE_TOWER && structure.store.getUsedCapacity(RESOURCE_ENERGY) / structure.store.getCapacity(RESOURCE_ENERGY) < 0.8; }
+    });
+
+    if (anyLowTowers) return true;
   }
   return false;
 }

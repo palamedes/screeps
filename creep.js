@@ -175,14 +175,13 @@ Creep.prototype.trackTileVisits = function() {
 
 // TASKS
 
-// Move to target and build it until its completed.
-// Return true on completion, false if we aren't done yet.
+// Move to target and build it until its completed -- Return true on completion, false if we aren't done yet.
 Creep.prototype.taskBuildTarget = function() {
   let target = this.getTarget();
-  if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+  if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
     const res = this.build(target);
     if (res === OK) {
-      // Do nothing -- we made on tick worth of build
+      // Do nothing -- we made a successful tick worth of build
     } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET ||
       res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_BUSY || res === ERR_NO_BODYPART) {
       this.clearTask();
@@ -198,5 +197,22 @@ Creep.prototype.taskBuildAnything = function() {
   if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
     this.setTarget(targets[0]);
     this.task = 'buildTarget';
+  }
+}
+// Move to the room controller and upgrade it
+Creep.prototype.taskUpgradeController = function() {
+  var target = this.room.controller;
+  if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
+    const res = this.upgradeController(this.room.controller);
+    if (res === OK) {
+      // Do nothing -- we made a successful tick worth of upgrade
+    } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET ||
+      res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_BUSY || res === ERR_NO_BODYPART) {
+      this.clearTask();
+    } else if (res === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(this.room.controller, '#00ff00');
+    }
+  } else {
+    this.clearTask();
   }
 }
