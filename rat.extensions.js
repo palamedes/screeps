@@ -7,6 +7,21 @@ const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
 
 Rat.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
+Rat.getMostVisitedTile = () => {
+  let mostVisited = {x: null, y: null, count: 0};
+  for (let x in Memory.tileVisits) {
+    for (let y in Memory.tileVisits[x]) {
+      let count = Memory.tileVisits[x][y];
+      if (count > mostVisited.count) {
+        mostVisited.x = x;
+        mostVisited.y = y;
+        mostVisited.count = count;
+      }
+    }
+  }
+  return mostVisited;
+}
+
 
 Rat.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
@@ -129,6 +144,13 @@ Rat.prototype.giveAllTo = function(target) {
 }
 Rat.prototype.giveTo = function(target, resource) {
   return this.transfer(target, resource);
+}
+
+Rat.prototype.trackTileVisits = function() {
+  if (!Memory.tileVisits) { Memory.tileVisits = {}; }
+  if (!Memory.tileVisits[this.pos.x]) { Memory.tileVisits[this.pos.x] = {}; }
+  if (!Memory.tileVisits[this.pos.x][this.pos.y]) { Memory.tileVisits[this.pos.x][this.pos.y] = 0; }
+  return ++Memory.tileVisits[this.pos.x][this.pos.y];
 }
 
 Rat.prototype.skitter = function() {

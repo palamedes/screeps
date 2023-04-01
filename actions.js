@@ -17,26 +17,26 @@ let $actions = {
   upgrade:  sUpgrade,
   renew:    sRenew,
 
-  // What ever we have decided to do.. go do that.
-  skitter: rat => {
-    if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
-    if (rat.memory.task === 'store')    { if (!$actions.store.using(rat))   { rat.sleep(); } }
-    if (rat.memory.task === 'storeUntilEmpty') { $actions.store.using(rat); }
-    if (rat.memory.task === 'renew')    { if (!$actions.renew.using(rat))   { rat.sleep(); } }
-    if (rat.memory.task === 'upgrade')  { if (!$actions.upgrade.using(rat)) { rat.sleep(); } }
-    if (rat.memory.task === 'build')    { if (!$actions.build.using(rat))   { rat.sleep(); } }
-    if (rat.memory.task === 'repair')   { if (!$actions.repair.using(rat))  { rat.sleep(); } }
-  },
+  // // What ever we have decided to do.. go do that.
+  // skitter: rat => {
+  //   if (rat.memory.task === 'harvest')  { $actions.harvest.using(rat); }
+  //   if (rat.memory.task === 'store')    { if (!$actions.store.using(rat))   { rat.sleep(); } }
+  //   if (rat.memory.task === 'storeUntilEmpty') { $actions.store.using(rat); }
+  //   if (rat.memory.task === 'renew')    { if (!$actions.renew.using(rat))   { rat.sleep(); } }
+  //   if (rat.memory.task === 'upgrade')  { if (!$actions.upgrade.using(rat)) { rat.sleep(); } }
+  //   if (rat.memory.task === 'build')    { if (!$actions.build.using(rat))   { rat.sleep(); } }
+  //   if (rat.memory.task === 'repair')   { if (!$actions.repair.using(rat))  { rat.sleep(); } }
+  // },
 
   // Number of rats actively doing a give task
-  numActive: task => {
-    return _.filter(Game.creeps, rat => rat.memory.task === task).length;
-  },
+  // numActive: task => {
+  //   return _.filter(Game.creeps, rat => rat.memory.task === task).length;
+  // },
 
   // Commonly used memory items for Skaven
-  defaultMemory: () => {
-    return { task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 }
-  },
+  // defaultMemory: () => {
+  //   return { task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 }
+  // },
 
   // Spawn us a skaven slave ~ Slaves are "do it all" workers, move, carry, work.. But they are dynamic in that
   // if we have more than 2 we summon specialized harvesters with no carry capacity to just stand and suckle.
@@ -67,7 +67,7 @@ let $actions = {
     }
 
     // Setup the rat brain
-    const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, ...$actions.defaultMemory(), ...memory } };
+    const ratBrain = { memory: { role: 'slave', renews: renews, spawn: { id: ratSpawn.id, name: ratSpawn.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0, ...memory } };
     // Calculate the number of body parts based on energySize
     const numWork  = Math.floor(energy * percentWork / 100); // 50% of the energy to work
     energy = energy - numWork * 100;
@@ -106,36 +106,36 @@ let $actions = {
   // },
 
   // Track tile visits by rats, so we can determine how frequently they go there.
-  trackTileVisits: rat => {
-    if (!Memory.tileVisits) { Memory.tileVisits = {}; }
-    if (!Memory.tileVisits[rat.pos.x]) { Memory.tileVisits[rat.pos.x] = {}; }
-    if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
-    Memory.tileVisits[rat.pos.x][rat.pos.y]++;
-  },
+  // trackTileVisits: rat => {
+  //   if (!Memory.tileVisits) { Memory.tileVisits = {}; }
+  //   if (!Memory.tileVisits[rat.pos.x]) { Memory.tileVisits[rat.pos.x] = {}; }
+  //   if (!Memory.tileVisits[rat.pos.x][rat.pos.y]) { Memory.tileVisits[rat.pos.x][rat.pos.y] = 0; }
+  //   Memory.tileVisits[rat.pos.x][rat.pos.y]++;
+  // },
 
   // Get the most visited tile
-  getMostVisitedTile: () => {
-    let mostVisited = {x: null, y: null, count: 0};
-    for (let x in Memory.tileVisits) {
-      for (let y in Memory.tileVisits[x]) {
-        let count = Memory.tileVisits[x][y];
-        if (count > mostVisited.count) {
-          mostVisited.x = x;
-          mostVisited.y = y;
-          mostVisited.count = count;
-        }
-      }
-    }
-    return mostVisited;
-  },
+  // getMostVisitedTile: () => {
+  //   let mostVisited = {x: null, y: null, count: 0};
+  //   for (let x in Memory.tileVisits) {
+  //     for (let y in Memory.tileVisits[x]) {
+  //       let count = Memory.tileVisits[x][y];
+  //       if (count > mostVisited.count) {
+  //         mostVisited.x = x;
+  //         mostVisited.y = y;
+  //         mostVisited.count = count;
+  //       }
+  //     }
+  //   }
+  //   return mostVisited;
+  // },
 
   // Find us the nearest available spawn for the room this rat is in
-  getAvailableSpawn: rat => {
-    const spawns = rat.room.find(FIND_MY_STRUCTURES, {
-      filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
-    });
-    return spawns.length > 0 ? rat.pos.findClosestByRange(spawns) : false;
-  }
+  // getAvailableSpawn: rat => {
+  //   const spawns = rat.room.find(FIND_MY_STRUCTURES, {
+  //     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
+  //   });
+  //   return spawns.length > 0 ? rat.pos.findClosestByRange(spawns) : false;
+  // }
 
 };
 
