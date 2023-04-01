@@ -1,5 +1,7 @@
 require('creep');
 require('creep.move');
+require('creep.skaven.slave');
+
 require('creep.skaven');
 
 require('room');
