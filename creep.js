@@ -1,5 +1,11 @@
 const structureTower = require("structure.tower");
 
+/** Creep extensions
+ * The purpose of this file is to store common methods used across all the various Creep types. (which I often call "rats")
+ * Most of the methods below are small enough and simple enough to live in this one file, but there may bre some that get
+ * complex and get moved out into their own file for "reasons".
+ */
+
 Creep.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
 Creep.getMostVisitedTile = () => {
   let mostVisited = {x: null, y: null, count: 0};

@@ -1,3 +1,17 @@
+/** Creep.skaven extensions
+ * The purpose of this file is to give us a place to put all those "brain and logic" decision making methods for "Skaven".
+ * The idea being we might later implement other "races" of Creeps that do things very differently. (think code optimization)
+ * It also allows us to further namespace out code segements for caste members of each individual race.
+ * example:
+ *   Creep.skaven.slave.{method}();
+ *   vs
+ *   Creep.skaven.ogre.{method}();
+ * Could be the same method, but the slave would do it differently than the ogre.. etc.
+ * The parent namespace runs all the children, where as the child runs all of that type.
+ */
+
+Creep.prototype.skaven = { slave: {}};
+
 
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
@@ -47,6 +61,7 @@ Creep.prototype.run = function() {
 
 // Run an individual rat
 Creep.prototype.skitter = function() {
+  this.slave.sayHello();
   if (this.getTask() === 'harvest')         { this.harvestTask(); }
   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
