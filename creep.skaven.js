@@ -41,7 +41,7 @@ Creep.prototype.skitter = function(slaves) {
       }
     }
     // Okay this... Do something..
-    this.skitter();
+    this.run();
   }
 }
   

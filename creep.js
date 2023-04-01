@@ -172,7 +172,7 @@ Creep.prototype.trackTileVisits = function() {
   return ++Memory.tileVisits[this.pos.x][this.pos.y];
 }
 
-Creep.prototype.skitter = function() {
+Creep.prototype.run = function() {
   if (this.getTask() === 'harvest')  { sHarvest.using(this); }
   if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
