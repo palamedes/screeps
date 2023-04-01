@@ -58,7 +58,7 @@ Creep.prototype.skitter = function() {
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
   if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
   if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
-  if (this.getTask() === 'build')    { if (!sBuild.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'build')    { if (!this.buildTask())     { this.sleep(); } }
   if (this.getTask() === 'repair')   { if (!sRepair.using(this))  { this.sleep(); } }
 }
 
@@ -118,6 +118,18 @@ Creep.prototype.shouldWeRepair = function(slaves) {
     const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
     // Decide
     if (enoughSlaves && notEnoughActive && noTowers) return true;
+  }
+  return false;
+}
+
+// Find something to build and go build it, if there is nothing or we have finished building something, reset.
+Creep.prototype.buildTask = function() {
+  var targets = this.room.find(FIND_CONSTRUCTION_SITES);
+  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+    if(this.build(targets[0]) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(targets[0], '#0000ff');
+    }
+    return true;
   }
   return false;
 }
