@@ -23,7 +23,9 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
       // Upgrade Controller
       if (this.skaven.slave.shouldWeUpgrade.bind(this)(slaves)) { this.setTask('upgrade'); }
       // Construction
-      else if (this.skaven.slave.shouldWeBuild.bind(this)(slaves)) { this.setTask('build'); }
+      else if (this.skaven.slave.shouldWeBuild.bind(this)(slaves)) {
+        this.setTask('buildTarget');
+      }
       // Repair
       else if (this.skaven.slave.shouldWeRepair.bind(this)(slaves)) { this.setTask('repair'); }
       // Store (or Upgrade anyway if bored)
@@ -63,7 +65,10 @@ Creep.prototype.skaven.slave.shouldWeBuild = function(slaves) {
     // Are we full energy?
     const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy
     // Decide
-    if (enoughSlaves && notEnoughActive && fullEnergy) return true;
+    if (enoughSlaves && notEnoughActive && fullEnergy) {
+      this.memory.myTargetId = constructionTargets[0].id;
+      return true;
+    }
   }
   return false;
 }
