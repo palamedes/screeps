@@ -276,7 +276,7 @@ Creep.prototype.harvestTask = function() {
       // If the target is a source find a suckle point for that source
       if (target && target instanceof Source && target.energy > 0) {
         let foundSucklePoint = false;
-        let sucklePointSourceId = isNearResource(rat, Memory.rooms[this.room.name].sources)
+        let sucklePointSourceId = isNearResource(this, Memory.rooms[this.room.name].sources)
         // ...and we are at one of the known suckle points, harvest.
         if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
