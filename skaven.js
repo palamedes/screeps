@@ -43,7 +43,8 @@ var skaven = {
         }
       }
       // Okay rat... Do something..
-      $actions.skitter(rat);
+      rat.skitter();
+      // $actions.skitter(rat);
     }
   },
 

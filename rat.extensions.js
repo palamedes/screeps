@@ -1,3 +1,9 @@
+const sHarvest  = require('skaven.harvest');
+const sBuild    = require('skaven.build');
+const sStore    = require('skaven.store');
+const sRepair   = require('skaven.repair');
+const sUpgrade  = require('skaven.upgrade');
+const sRenew    = require('skaven.renew');
 
 Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
@@ -34,6 +40,7 @@ Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.
   if (task === 'renew')   { this.say('⌛'); this.memory.renews--; }
   if (task === 'harvest') { this.say('⚡'); this.setTarget(null); }
 }
+Creep.prototype.getTask = function() { return this.memory.task; }
 
 Creep.prototype.takeAllFrom = function(target) {
   let results = [];
@@ -119,4 +126,14 @@ Creep.prototype.giveAllTo = function(target) {
 }
 Creep.prototype.giveTo = function(target, resource) {
   return this.transfer(target, resource);
+}
+
+Creep.prototype.skitter = function() {
+  if (this.getTask() === 'harvest')  { sHarvest.using(this); }
+  if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
+  if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
+  if (this.getTask() === 'build')    { if (!sBuild.using(this))   { this.sleep(); } }
+  if (this.getTask() === 'repair')   { if (!sRepair.using(this))  { this.sleep(); } }
 }
