@@ -1,4 +1,4 @@
-
+Creep.prototype.skaven = { slave: {}};
 Creep.prototype.skaven.slave = {
 
   sayHello: () => {
