@@ -1,7 +1,7 @@
 const structureTower = require("structure.tower");
 
 /** Creep extensions
- * The purpose of this file is to store common methods used across all the various Creep types. (which I often call "rats")
+ * The purpose of this file is to store common methods used across all the various Creep types and roles.
  * Most of the methods below are small enough and simple enough to live in this one file, but there may bre some that get
  * complex and get moved out into their own file for "reasons".
  */
