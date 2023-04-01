@@ -61,7 +61,7 @@ var skaven = {
       // Do we have 50% or more max rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
       // Are less than 50% of them doing the work?
-      const notEnoughActive = $actions.numActive('build') <= (Memory.rooms[rat.room.name].maxSlaves*0.5);
+      const notEnoughActive = Rat.numActive('build') <= (Memory.rooms[rat.room.name].maxSlaves*0.5);
       // Are we full energy?
       const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
@@ -80,9 +80,9 @@ var skaven = {
       // Do we have 80% of max slaves?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves*0.8);
       // Are less than 25% doing the work?
-      const notEnoughActive = $actions.numActive('upgrade') < (Memory.rooms[rat.room.name].maxSlaves * 0.25);
+      const notEnoughActive = Rat.numActive('upgrade') < (Memory.rooms[rat.room.name].maxSlaves * 0.25);
       // Is No one upgrading?!
-      const noSlavesUpgrading = $actions.numActive('upgrade') === 0;
+      const noSlavesUpgrading = Rat.numActive('upgrade') === 0;
       // Are we full energy?
       const fullEnergy = rat.room.energyAvailable === Memory.rooms[rat.room.name].maxEnergy
       // Decide
@@ -104,7 +104,7 @@ var skaven = {
       // Do we have 50% or more rats?
       const enoughSlaves = slaves.length >= (Memory.rooms[rat.room.name].maxSlaves/2);
       // Are less than 25% doing the work?
-      const notEnoughActive = $actions.numActive('repair') <= (Memory.rooms[rat.room.name].maxSlaves*0.25)
+      const notEnoughActive = Rat.numActive('repair') <= (Memory.rooms[rat.room.name].maxSlaves*0.25)
       // Are there no towers repairing?
       const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
       // Decide
