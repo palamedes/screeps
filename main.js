@@ -1,4 +1,5 @@
 require('creep');
+require('creep.skaven');
 
 require('room');
 require('room.summon.slave');
