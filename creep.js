@@ -181,6 +181,7 @@ Creep.prototype.taskBuildTarget = function() {
   if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
     const res = this.build(target);
     if (res === OK) {
+      console.log('okay');
       // Do nothing -- we made on tick worth of build
     } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET ||
       res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_BUSY || res === ERR_NO_BODYPART) {
