@@ -195,10 +195,7 @@ Creep.prototype.taskBuildTarget = function() {
 Creep.prototype.taskBuildAnything = function() {
   var targets = this.room.find(FIND_CONSTRUCTION_SITES);
   if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
-    if(this.build(targets[0]) === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(targets[0], '#0000ff');
-    }
-    return true;
+    this.memory.myTargetId = targets[0].id;
+    this.task = 'buildTarget';
   }
-  return false;
 }
