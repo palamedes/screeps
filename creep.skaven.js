@@ -149,7 +149,7 @@ Creep.prototype.renewTask = function() {
   let closestSpawn = this.pos.findClosestByPath(spawns);
   if (closestSpawn) {
     if (this.pos.isNearTo(closestSpawn)) {
-      let result = closestSpawn.renewCreep(rat);
+      let result = closestSpawn.renewCreep(this);
       doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
     } else {
       this.moveCreepTo(closestSpawn, '#00ffff');
