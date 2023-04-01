@@ -58,7 +58,7 @@ Creep.prototype.run = function() {
 
 // Run an individual rat
 Creep.prototype.skitter = function() {
-  this.slave.sayHello();
+  console.log('anything', this.slave);
   if (this.getTask() === 'harvest')         { this.harvestTask(); }
   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
