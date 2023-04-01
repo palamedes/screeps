@@ -64,7 +64,7 @@ module.exports.loop = function () {
   }
 
   // Work the rats!
-  for(let name in Game.creeps) { skaven.skitter(Game.creeps[name]); }
+  for(let name in Game.creeps) { Game.creeps[name].skitter(); }
 
   // Report what's up..
   // console.log(statusUpdate);
