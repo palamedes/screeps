@@ -10,9 +10,6 @@
  * The parent namespace runs all the children, where as the child runs all of that type.
  */
 
-Creep.prototype.skaven = { slave: {}};
-
-
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
   // If we are a slave, and we have been spawned...
