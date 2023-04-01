@@ -62,13 +62,14 @@ Creep.prototype.carryingNonEnergyResource = function() {
 Creep.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
 Creep.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
 
-Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
-Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
-Creep.prototype.clearTarget = function() { this.memory.myTargetId = null; }
+Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.taskTarget); }
+Creep.prototype.setTarget = function(t) { return this.memory.taskTarget = t instanceof Object ? t.id : t; }
+Creep.prototype.clearTarget = function() { this.memory.taskTarget = null; }
 
-Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
+Creep.prototype.clearTask = function() { this.memory.taskTarget = null; this.memory.task = null; }
 Creep.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
-Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
+Creep.prototype.setTask = function(task) {
+  this.memory.task = task; this.memory.slept = 0;
   if (task === 'build')   { this.say('🚧'); }
   if (task === 'upgrade') { this.say('🛠️'); }
   if (task === 'repair')  { this.say('🔧'); }
@@ -177,7 +178,7 @@ Creep.prototype.trackTileVisits = function() {
 // Move to target and build it until its completed.
 // Return true on completion, false if we aren't done yet.
 Creep.prototype.taskBuildTarget = function() {
-  let target = Game.getObjectById(this.memory.myTargetId);
+  let target = this.getTarget();
   if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
     const res = this.build(target);
     if (res === OK) {
@@ -195,7 +196,7 @@ Creep.prototype.taskBuildTarget = function() {
 Creep.prototype.taskBuildAnything = function() {
   var targets = this.room.find(FIND_CONSTRUCTION_SITES);
   if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
-    this.memory.myTargetId = targets[0].id;
+    this.setTarget(targets[0]);
     this.task = 'buildTarget';
   }
 }

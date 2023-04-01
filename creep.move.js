@@ -19,7 +19,7 @@ Creep.prototype.moveCreepToXY = function(x, y, stroke) {
 
 // Compute a path to target, and store that path in the rats memory so we don't recalculate it every time
 Creep.prototype.memorizePath = function(target) {
-  if (!this.memory.path || this.memory.myTargetId !== target.id) {
+  if (!this.memory.path || this.memory.taskTarget !== target.id) {
     this.memory.path = this.room.findPath(this.pos, target.pos, {
       ignoreCreeps: false,
       maxRooms: 1,

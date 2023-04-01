@@ -66,7 +66,7 @@ Creep.prototype.skaven.slave.shouldWeBuild = function(slaves) {
     const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy
     // Decide
     if (enoughSlaves && notEnoughActive && fullEnergy) {
-      this.memory.myTargetId = constructionTargets[0].id;
+      this.setTarget(constructionTargets[0]);
       return true;
     }
   }

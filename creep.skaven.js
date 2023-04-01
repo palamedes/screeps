@@ -71,28 +71,28 @@ Creep.prototype.harvestTask = function() {
     if (this.canCarry()) {
 
       // Try to get energy from a container first.. But only if they can work.
-      if (!this.memory.myTargetId && this.canWork()) {
+      if (!this.memory.taskTarget && this.canWork()) {
         const containers = this.room.find(FIND_STRUCTURES, {
           filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
         });
         if (containers.length > 0) {
-          this.memory.myTargetId = this.pos.findClosestByRange(containers).id;
+          this.memory.taskTarget = this.pos.findClosestByRange(containers).id;
         }
       }
 
       // Hauler sees a tombstone with possible goodies...
-      if (!this.memory.myTargetId && this.cannotWork()) {
+      if (!this.memory.taskTarget && this.cannotWork()) {
         const containers = this.room.find(FIND_TOMBSTONES, {
           filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
         });
         if (containers.length > 0) {
-          this.memory.myTargetId = this.pos.findClosestByRange(containers).id;
+          this.memory.taskTarget = this.pos.findClosestByRange(containers).id;
         }
       }
 
       // Try to get energy that is dropped.. Anyone.
       // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
-      if (!this.memory.myTargetId) {
+      if (!this.memory.taskTarget) {
         // Try to pickup dropped energy first
         let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
           filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
@@ -106,7 +106,7 @@ Creep.prototype.harvestTask = function() {
               highestEnergyId = droppedEnergy[i].id;
             }
           }
-          this.memory.myTargetId = highestEnergyId;
+          this.memory.taskTarget = highestEnergyId;
         }
       }
 
@@ -114,19 +114,19 @@ Creep.prototype.harvestTask = function() {
     // Can this rat work? - So not a hauler
     if (this.canWork()) {
       // If the rat still doesn't have a target and one wasn't set above, go find a source.
-      if (!this.memory.myTargetId) {
+      if (!this.memory.taskTarget) {
         let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
           filter: (source) => source.energy > 0
         });
         if (sourceEnergy.length > 0) {
-          this.memory.myTargetId = this.pos.findClosestByRange(sourceEnergy).id;
+          this.memory.taskTarget = this.pos.findClosestByRange(sourceEnergy).id;
         }
       }
     }
 
     // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-    if (this.memory.myTargetId) {
-      let target = Game.getObjectById(this.memory.myTargetId);
+    if (this.memory.taskTarget) {
+      let target = Game.getObjectById(this.memory.taskTarget);
       if (target && !(target instanceof Source)) {
         // Is our rat within range of the target?
         if (this.pos.inRangeTo(target.pos, 1)) {
@@ -172,7 +172,7 @@ Creep.prototype.harvestTask = function() {
         if (sucklePointSourceId) {
           foundSucklePoint = true; // we are on it..
           // If we are standing on a point but not the one we found, then use this one. (no sense in moving)
-          if (target.id !== sucklePointSourceId) { this.memory.myTargetId = sucklePointSourceId; }
+          if (target.id !== sucklePointSourceId) { this.memory.taskTarget = sucklePointSourceId; }
           // Try to harvest it.. and if you can't.. just wait.
           if (this.harvest(target) === ERR_NOT_IN_RANGE) {
             // Waiting for power to respawn most likely
@@ -184,7 +184,7 @@ Creep.prototype.harvestTask = function() {
             for (let sucklePoint in Memory.rooms[this.room.name].sources[id]) {
               if (!isRatPresentAtLocation(Memory.rooms[this.room.name].sources[id][sucklePoint].x, Memory.rooms[this.room.name].sources[id][sucklePoint].y)) {
                 foundSucklePoint = true;
-                this.memory.myTargetId = id;
+                this.memory.taskTarget = id;
                 this.moveCreepTo(Game.getObjectById(id), '#ffaa00');
                 break;
               }
