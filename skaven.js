@@ -1,4 +1,3 @@
-const $actions = require('actions');
 
 /** Skaven! */
 var skaven = {
@@ -44,7 +43,6 @@ var skaven = {
       }
       // Okay rat... Do something..
       rat.skitter();
-      // $actions.skitter(rat);
     }
   },
 
@@ -123,11 +121,6 @@ var skaven = {
       return ' ~ Spawning new Slave ('+room.energyAvailable+')'
     } else { return ''; }
   },
-
-  // // Spawn us a rat ~ Standard Skaven worker rat
-  // summonRatOgre: (energy, memory) => {
-  //   if (energy >= 600) { $actions.summonRatOgre(energy, memory); return ' ~ Spawning new Rat Ogre ('+energy+')'; } else { return ''; }
-  // },
 
 }
 module.exports = skaven;
