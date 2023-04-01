@@ -48,7 +48,7 @@ Creep.prototype.run = function() {
 // Run an individual rat
 Creep.prototype.skitter = function() {
   if (this.getTask() === 'harvest')         { this.harvestTask(); }
-  if (this.getTask() === 'store')           { if (!sStore.using(this)) { this.sleep(); } }
+  if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
   if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
   if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
