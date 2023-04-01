@@ -5,6 +5,7 @@ const sStore    = require('skaven.store');
 const sRepair   = require('skaven.repair');
 const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
+const structureTower = require("structure.tower");
 
 Rat.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
 Rat.getMostVisitedTile = () => {
@@ -29,6 +30,25 @@ Rat.prototype.getAvailableSpawn = function() {
   });
   return spawns.length > 0 ? this.pos.findClosestByRange(spawns) : false;
 };
+Rat.prototype.getRepairTargets = function() {
+  let towers = structureTower.getTowers();
+  if (towers) {
+    return null;
+  } else {
+    return this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => {
+        if (structure.structureType === STRUCTURE_ROAD) {
+          return structure.hits < structure.hitsMax * 0.8; // repair roads at 80% of maximum hits
+        } else if (structure.structureType === STRUCTURE_WALL || structure.structureType === STRUCTURE_RAMPART) {
+          return structure.hits < structure.hitsMax * 0.0001;
+        } else {
+          return (structure.structureType !== STRUCTURE_CONTROLLER) &&
+            structure.hits < structure.hitsMax;
+        }
+      }
+    });
+  }
+}
 
 Rat.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
 Rat.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
