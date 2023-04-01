@@ -186,7 +186,7 @@ Creep.prototype.taskBuildTarget = function() {
       res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_BUSY || res === ERR_NO_BODYPART) {
       this.clearTask();
     } else if (res === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(targets[0], '#0000ff');
+      this.moveCreepTo(target, '#0000ff');
     }
   }
 }
