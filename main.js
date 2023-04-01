@@ -1,4 +1,5 @@
 require('creep');
+require('creep.move');
 require('creep.skaven');
 
 require('room');

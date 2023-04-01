@@ -1,4 +1,4 @@
-const move = require("skaven.move");
+
 let sStore = {
   // Go store the energy
   using: rat => {
@@ -59,7 +59,7 @@ let sStore = {
           rat.clearTarget();
         }
       } else {
-        move.moveTo(rat, target, '#ffffff');
+        rat.moveCreepTo(target, '#ffffff');
       }
       return true;
     }

@@ -1,4 +1,3 @@
-const move = require('skaven.move');
 
 let sHarvest = {
   // Harvest energy from sources, ruins, tombstones, and dropped resources
@@ -82,7 +81,7 @@ let sHarvest = {
           }
         } else {
           // If not in position and we aren't a harvester standing on a suckle point, lets move towards the target.
-          if (!rat.isHarvester()) { move.moveTo(rat, target, '#ffffff'); }
+          if (!rat.isHarvester()) { rat.moveCreepTo(target, '#ffffff'); }
         }
       }
 
@@ -123,7 +122,7 @@ let sHarvest = {
               if (!isRatPresentAtLocation(Memory.rooms[rat.room.name].sources[id][sucklePoint].x, Memory.rooms[rat.room.name].sources[id][sucklePoint].y)) {
                 foundSucklePoint = true;
                 rat.memory.myTargetId = id;
-                move.moveTo(rat, Game.getObjectById(id), '#ffaa00');
+                rat.moveCreepTo(Game.getObjectById(id), '#ffaa00');
                 break;
               }
             }
