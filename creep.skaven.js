@@ -52,21 +52,21 @@ Creep.prototype.run = function() {
       }
     }
     // Okay, with this individual rat.. Run him..
-    this.skitter();
+    this.skaven.slave.skitter.bind(this)();
   }
 }
 
-// Run an individual rat
-Creep.prototype.skitter = function() {
-  this.skaven.slave.sayHello.bind(this)();
-  if (this.getTask() === 'harvest')         { this.harvestTask(); }
-  if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
-  if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
-  if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
-  if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
-  if (this.getTask() === 'build')           { if (!this.buildTask())   { this.sleep(); } }
-  if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
-}
+// // Run an individual rat
+// Creep.prototype.skitter = function() {
+//   this.skaven.slave.sayHello.bind(this)();
+//   if (this.getTask() === 'harvest')         { this.harvestTask(); }
+//   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
+//   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
+//   if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
+//   if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
+//   if (this.getTask() === 'build')           { if (!this.buildTask())   { this.sleep(); } }
+//   if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
+// }
 
 // DECISIONS
 // Should we build something?
