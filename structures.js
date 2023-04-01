@@ -231,24 +231,26 @@ let structures = {
   // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
   // RUIN, PORTAL, LAB, SPAWN, LINK, WALL, EXTENSION, RAMPART, ROAD.
   // @ = SPAWN,  # = ROAD,  T = TOWER,  e = EXTENSION, · = {dynamic anything}
-  // c = RESOURCE_CONTAINER, L = LINK, S = Storage
+  // c = RESOURCE_CONTAINER, L = LINK, S = Storage, w = Wall
   baseStamp: () => {
     const stamp = [];
-    stamp[0] = ", , # # # # # # # # # # # , ,".replace(/ /g, '');
-    stamp[1] = ", # · · · · · # · · · · · # ,".replace(/ /g, '');
-    stamp[2] = "# · # · # · e # e · # · # · #".replace(/ /g, '');
-    stamp[3] = "# · · # · e e % e e · # · · #".replace(/ /g, '');
-    stamp[4] = "# · # · # e % T % e # · # · #".replace(/ /g, '');
-    stamp[5] = "# · · e e % e # e % e e · · #".replace(/ /g, '');
-    stamp[6] = "# · e e % c # # # c % e e · #".replace(/ /g, '');
-    stamp[7] = "# # # % S · T * T L c % # # #".replace(/ /g, '');
-    stamp[8] = "# · e e % c # # # c % e e · #".replace(/ /g, '');
-    stamp[9] = "# · · e e % e # e % e e · · #".replace(/ /g, '');
-    stamp[10]= "# · # · # e % T % e # · # · #".replace(/ /g, '');
-    stamp[11]= "# · · # · e e % e e · # · · #".replace(/ /g, '');
-    stamp[12]= "# · # · # · e # e · # · # · #".replace(/ /g, '');
-    stamp[13]= ", # · · · · · # · · · · · # ,".replace(/ /g, '');
-    stamp[14]= ", , # # # # # # # # # # # , ,".replace(/ /g, '');  
+    stamp[0]  = ", , , w w w w w w w w w w w , , ,".replace(/ /g, '');
+    stamp[1]  = ", , w # # # # # # # # # # # w , ,".replace(/ /g, '');
+    stamp[2]  = ", w # · · · · · # · · · · · # w ,".replace(/ /g, '');
+    stamp[3]  = "w # · # · # · e # e · # · # · # w".replace(/ /g, '');
+    stamp[4]  = "w # · · # · e e % e e · # · · # w".replace(/ /g, '');
+    stamp[5]  = "w # · # · # e % T % e # · # · # w".replace(/ /g, '');
+    stamp[6]  = "w # · · e e % e # e % e e · · # w".replace(/ /g, '');
+    stamp[7]  = "w # · e e % c # # # c % e e · # w".replace(/ /g, '');
+    stamp[8]  = "w # # # % S · T * T L c % # # # w".replace(/ /g, '');
+    stamp[9]  = "w # · e e % c # # # c % e e · # w".replace(/ /g, '');
+    stamp[10] = "w # · · e e % e # e % e e · · # w".replace(/ /g, '');
+    stamp[11] = "w # · # · # e % T % e # · # · # w".replace(/ /g, '');
+    stamp[12] = "w # · · # · e e % e e · # · · # w".replace(/ /g, '');
+    stamp[13] = "w # · # · # · e # e · # · # · # w".replace(/ /g, '');
+    stamp[14] = ", w # · · · · · # · · · · · # w ,".replace(/ /g, '');
+    stamp[15] = ", , w # # # # # # # # # # # w , ,".replace(/ /g, '');
+    stamp[16] = ", , , w w w w w w w w w w w , , ,".replace(/ /g, '');
     return stamp;
   }
 }
