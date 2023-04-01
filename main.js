@@ -20,6 +20,10 @@ module.exports.loop = function () {
   // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
 
+  // Define some universal values
+  const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
+  const ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
+
   let statusUpdate = "";
   // Iterate through each room we are in
   for (let i in Memory.roomsList) {
@@ -39,8 +43,6 @@ module.exports.loop = function () {
     Memory.rooms[roomName].containerAvailability = _.sum(containers, (c) => c.store.getFreeCapacity(RESOURCE_ENERGY));
 
     statusUpdate = 'Room "'+room.name+'" has ' + room.energyAvailable + '/' + Memory.rooms[roomName].maxEnergy + ' energy';
-    let slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
-    let ogres  = _.filter(Game.creeps, (rat) => rat.memory.role === 'ogre');
     statusUpdate += (slaves.length > 0) ? ' ~ Slaves: ' + slaves.length + '/' + Memory.rooms[room.name].maxSlaves : '';
     statusUpdate += (ogres.length > 0) ? ', Ogres: ' + ogres.length : '';
 
@@ -68,7 +70,7 @@ module.exports.loop = function () {
 
   // Work the rats!
   for(let name in Game.creeps) {
-    Game.creeps[name].run();
+    Game.creeps[name].run(slaves);
   }
 
   // Report what's up..
