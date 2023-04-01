@@ -1,3 +1,4 @@
+const Rat = Creep;
 const sHarvest  = require('skaven.harvest');
 const sBuild    = require('skaven.build');
 const sStore    = require('skaven.store');
@@ -5,37 +6,35 @@ const sRepair   = require('skaven.repair');
 const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
 
-Creep.prototype.numActive = task => {
-  return _.filter(Game.creeps, rat => rat.memory.task === task).length;
-}
+Rat.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
 
-Creep.prototype.getAvailableSpawn = function() {
+Rat.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
   });
   return spawns.length > 0 ? this.pos.findClosestByRange(spawns) : false;
 };
 
-Creep.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
-Creep.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
-Creep.prototype.isWorker = function() { return this.canCarry() && this.canWork(); }
+Rat.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
+Rat.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
+Rat.prototype.isWorker = function() { return this.canCarry() && this.canWork(); }
 
-Creep.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
-Creep.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
-Creep.prototype.carryingNonEnergyResource = function() {
+Rat.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
+Rat.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
+Rat.prototype.carryingNonEnergyResource = function() {
   for (let rT in this.store) { if (rT !== RESOURCE_ENERGY && this.store[rT] > 0) return true; } return false;
 };
 
-Creep.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
-Creep.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
+Rat.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
+Rat.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
 
-Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
-Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
-Creep.prototype.clearTarget = function() { this.memory.myTargetId = null; }
+Rat.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
+Rat.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
+Rat.prototype.clearTarget = function() { this.memory.myTargetId = null; }
 
-Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
-Creep.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
-Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
+Rat.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
+Rat.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
+Rat.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
   if (task === 'build')   { this.say('🚧'); }
   if (task === 'upgrade') { this.say('🛠️'); }
   if (task === 'repair')  { this.say('🔧'); }
@@ -44,9 +43,9 @@ Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.
   if (task === 'renew')   { this.say('⌛'); this.memory.renews--; }
   if (task === 'harvest') { this.say('⚡'); this.setTarget(null); }
 }
-Creep.prototype.getTask = function() { return this.memory.task; }
+Rat.prototype.getTask = function() { return this.memory.task; }
 
-Creep.prototype.takeAllFrom = function(target) {
+Rat.prototype.takeAllFrom = function(target) {
   let results = [];
   if (target.store) {
     const store = Object.keys(target.store);
@@ -85,7 +84,7 @@ Creep.prototype.takeAllFrom = function(target) {
   }
   return results;
 }
-Creep.prototype.takeFrom = function(target, resource) {
+Rat.prototype.takeFrom = function(target, resource) {
   let results = null;
   if (target instanceof Resource && target.energy > 0) { results = this.pickup(target); }
   if (target instanceof Tombstone && target.store[resource] > 0) { results = this.withdraw(target, resource); }
@@ -93,7 +92,7 @@ Creep.prototype.takeFrom = function(target, resource) {
   return results;
 }
 
-Creep.prototype.giveAllTo = function(target) {
+Rat.prototype.giveAllTo = function(target) {
   let results = [];
   const store = Object.keys(this.store);
   if (store.length > 0) {
@@ -128,11 +127,11 @@ Creep.prototype.giveAllTo = function(target) {
   }
   return results;
 }
-Creep.prototype.giveTo = function(target, resource) {
+Rat.prototype.giveTo = function(target, resource) {
   return this.transfer(target, resource);
 }
 
-Creep.prototype.skitter = function() {
+Rat.prototype.skitter = function() {
   if (this.getTask() === 'harvest')  { sHarvest.using(this); }
   if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
