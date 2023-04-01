@@ -9,6 +9,7 @@
  * Could be the same method, but the slave would do it differently than the ogre.. etc.
  * The parent namespace runs all the children, where as the child runs all of that type.
  */
+require('creep.skaven.slave');
 
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
