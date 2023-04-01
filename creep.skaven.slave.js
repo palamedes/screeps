@@ -21,14 +21,14 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
     // If rat has less than 80% free capacity ( at least 20% energy ) then go do some work.. Else harvest.
     else if (this.canWork() && this.canCarry() && (this.store.getFreeCapacity() / this.store.getCapacity()) < 0.8) {
       // Upgrade Controller
-      if (this.shouldWeUpgrade(slaves)) { this.setTask('upgrade'); }
+      if (this.skaven.slave.shouldWeUpgrade.bind(this)(slaves)) { this.setTask('upgrade'); }
       // Construction
       else if (this.skaven.slave.shouldWeBuild.bind(this)(slaves)) { this.setTask('build'); }
       // Repair
-      else if (this.shouldWeRepair(slaves)) { this.setTask('repair'); }
+      else if (this.skaven.slave.shouldWeRepair.bind(this)(slaves)) { this.setTask('repair'); }
       // Store (or Upgrade anyway if bored)
       else {
-        if (this.shouldWeUpgradeAnyway() && !this.carryingNonEnergyResource()) {
+        if (this.skaven.slave.shouldWeUpgradeAnyway.bind(this)() && !this.carryingNonEnergyResource()) {
           this.setTask('upgrade');
         } else {
           this.setTask('store');
@@ -89,4 +89,20 @@ Creep.prototype.skaven.slave.shouldWeUpgrade = function(slaves) {
 Creep.prototype.skaven.slave.shouldWeUpgradeAnyway = function() {
   const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy;
   return fullEnergy && this.canWork();
+}
+// Should we repair something?
+// If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
+Creep.prototype.skaven.slave.shouldWeRepair = function(slaves) {
+  const repairTargets = this.getRepairTargets();
+  if (repairTargets && repairTargets.length > 0 && this.canCarry() && this.canWork()) {
+    // Do we have 50% or more rats?
+    const enoughSlaves = slaves.length >= (Memory.rooms[this.room.name].maxSlaves/2);
+    // Are less than 25% doing the work?
+    const notEnoughActive = Creep.numActive('repair') <= (Memory.rooms[this.room.name].maxSlaves*0.25)
+    // Are there no towers repairing?
+    const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
+    // Decide
+    if (enoughSlaves && notEnoughActive && noTowers) return true;
+  }
+  return false;
 }
