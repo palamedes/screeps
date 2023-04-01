@@ -1,8 +1,9 @@
-require('rat.extensions');
+require('rat');
+
+require('room');
 require('room.summon.slave');
 
 const skaven = require('skaven');
-const rooms = require('rooms');
 
 // let startCPU = Game.cpu.getUsed();
 //   CODE HERE
@@ -25,7 +26,7 @@ module.exports.loop = function () {
     const roomName = Memory.roomsList[i];
     const room = Game.rooms[roomName];
     // Setup the room if it hasn't been yet
-    const mem = rooms.setMemory(room);
+    const mem = room.setMemory(room);
     // Get energy amounts
     const spawns = room.find(FIND_MY_SPAWNS);
     const extensions = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } });
@@ -56,12 +57,9 @@ module.exports.loop = function () {
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
       statusUpdate += skaven.summonSlave(room, { homeRoom: room.name, version: room.controller.level });
     }
-    // Spawn a rat ogre
-    // if (ogres < Memory.maxOgres && ogres.length === mem.maxOgres && room.energyAvailable >= Memory.rooms[room.name].maxEnergy) {
-    //   statusUpdate += skaven.summonRatOgre(room.energyAvailable, { homeRoom: room.name, version: room.controller.level });
-    // }
+
     // Based on the status of the room
-    rooms.run(room);
+    room.run();
   }
 
   // Work the rats!
