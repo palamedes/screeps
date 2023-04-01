@@ -3,6 +3,8 @@
 Creep.prototype.skitter = function(slaves) {
   // If we are a slave, and we have been spawned...
   if (this.memory.role === 'slave' && !this.spawning) {
+    // Get our list of slaves
+    let slaves = _.filter(Game.creeps, rat => rat.memory.role === 'slave');
     // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
     if (this.ticksToLive <= 50 && this.memory.task !== 'renew' && this.room.controller.level >= 4 && this.memory.renews > 0) {
       if (Game.rooms[this.memory.homeRoom].energyAvailable > 100) { this.setTask('renew'); }

@@ -63,11 +63,9 @@ module.exports.loop = function () {
     room.run();
   }
 
-  // Get our list of slaves
-  let slaves = _.filter(Game.creeps, (rat) => this.memory.role === 'slave');
   // Work the rats!
   for(let name in Game.creeps) {
-    Game.creeps[name].skitter(slaves);
+    Game.creeps[name].skitter();
   }
 
   // Report what's up..
