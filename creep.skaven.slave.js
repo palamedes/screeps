@@ -1,6 +1,6 @@
 Creep.prototype.skaven = {slave: {}};
 
-// Skitter!  Run the slave
+// Skitter!  Have the slave decide what he should be doing, and then go and do it..
 Creep.prototype.skaven.slave.skitter = function(slaves) {
 
   // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
@@ -44,6 +44,24 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
   if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
   if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
-  if (this.getTask() === 'build')           { if (!this.buildTask())   { this.sleep(); } }
+  if (this.getTask() === 'build')           { if (!this.skaven.slave.buildTask.bind(this)())   { this.sleep(); } }
   if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
+}
+
+// DECISIONS
+// Should we build something?
+// If we have 50% or more rats, and we don't have more than 50% doing the work
+Creep.prototype.skaven.slave.shouldWeBuild = function(slaves) {
+  const constructionTargets = this.room.find(FIND_CONSTRUCTION_SITES);
+  if (constructionTargets && constructionTargets.length > 0 && this.canCarry() && this.canWork()) {
+    // Do we have 50% or more max rats?
+    const enoughSlaves = slaves.length >= (Memory.rooms[this.room.name].maxSlaves/2);
+    // Are less than 50% of them doing the work?
+    const notEnoughActive = Creep.numActive('build') <= (Memory.rooms[this.room.name].maxSlaves*0.5);
+    // Are we full energy?
+    const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy
+    // Decide
+    if (enoughSlaves && notEnoughActive && fullEnergy) return true;
+  }
+  return false;
 }

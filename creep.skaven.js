@@ -10,32 +10,29 @@
  * The parent namespace runs all the children, where as the child runs all of that type.
  */
 
-// Run the Skaven (Slaves of all types)
+// This method iterates through all the different skaven type and runs them based on their role.
 Creep.prototype.run = function(slaves) {
-  // If we are a slave, and we have been spawned...
-  if (this.memory.role === 'slave' && !this.spawning) {
-    // Okay, with this individual rat.. Run him..
-    this.skaven.slave.skitter.bind(this)(slaves);
-  }
+  // If we are a Skaven Slave, and we have been spawned...
+  if (this.memory.role === 'slave' && !this.spawning) { this.skaven.slave.skitter.bind(this)(slaves); }
 }
 
 // DECISIONS
 // Should we build something?
 // If we have 50% or more rats, and we don't have more than 50% doing the work
-Creep.prototype.shouldWeBuild = function(slaves) {
-  const constructionTargets = this.room.find(FIND_CONSTRUCTION_SITES);
-  if (constructionTargets && constructionTargets.length > 0 && this.canCarry() && this.canWork()) {
-    // Do we have 50% or more max rats?
-    const enoughSlaves = slaves.length >= (Memory.rooms[this.room.name].maxSlaves/2);
-    // Are less than 50% of them doing the work?
-    const notEnoughActive = Creep.numActive('build') <= (Memory.rooms[this.room.name].maxSlaves*0.5);
-    // Are we full energy?
-    const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy
-    // Decide
-    if (enoughSlaves && notEnoughActive && fullEnergy) return true;
-  }
-  return false;
-}
+// Creep.prototype.shouldWeBuild = function(slaves) {
+//   const constructionTargets = this.room.find(FIND_CONSTRUCTION_SITES);
+//   if (constructionTargets && constructionTargets.length > 0 && this.canCarry() && this.canWork()) {
+//     // Do we have 50% or more max rats?
+//     const enoughSlaves = slaves.length >= (Memory.rooms[this.room.name].maxSlaves/2);
+//     // Are less than 50% of them doing the work?
+//     const notEnoughActive = Creep.numActive('build') <= (Memory.rooms[this.room.name].maxSlaves*0.5);
+//     // Are we full energy?
+//     const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy
+//     // Decide
+//     if (enoughSlaves && notEnoughActive && fullEnergy) return true;
+//   }
+//   return false;
+// }
 // Should we upgrade the controller?
 // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
 Creep.prototype.shouldWeUpgrade = function(slaves) {
