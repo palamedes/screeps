@@ -4,8 +4,6 @@ require('creep.skaven');
 require('room');
 require('room.summon.slave');
 
-const skaven = require('skaven');
-
 // let startCPU = Game.cpu.getUsed();
 //   CODE HERE
 // let endCPU = Game.cpu.getUsed();
@@ -56,7 +54,9 @@ module.exports.loop = function () {
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
-      statusUpdate += skaven.summonSlave(room, { homeRoom: room.name, version: room.controller.level });
+      if (room.summonSlave({ homeRoom: room.name, version: room.controller.level })) {
+        statusUpdate += ' ~ Spawning new Slave ('+room.energyAvailable+')'
+      }
     }
 
     // Based on the status of the room
