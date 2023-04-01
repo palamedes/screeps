@@ -1,5 +1,5 @@
 require('rat.extensions');
-require('summon.slave');
+require('room.summon.slave');
 
 const skaven = require('skaven');
 const rooms = require('rooms');
