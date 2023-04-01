@@ -1,4 +1,3 @@
-const Rat = Creep;
 const sHarvest  = require('skaven.harvest');
 const sBuild    = require('skaven.build');
 const sStore    = require('skaven.store');
@@ -7,8 +6,8 @@ const sUpgrade  = require('skaven.upgrade');
 const sRenew    = require('skaven.renew');
 const structureTower = require("structure.tower");
 
-Rat.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
-Rat.getMostVisitedTile = () => {
+Creep.numActive = task => { return _.filter(Game.creeps, rat => rat.memory.task === task).length; }
+Creep.getMostVisitedTile = () => {
   let mostVisited = {x: null, y: null, count: 0};
   for (let x in Memory.tileVisits) {
     for (let y in Memory.tileVisits[x]) {
@@ -24,13 +23,13 @@ Rat.getMostVisitedTile = () => {
 }
 
 
-Rat.prototype.getAvailableSpawn = function() {
+Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
   });
   return spawns.length > 0 ? this.pos.findClosestByRange(spawns) : false;
 };
-Rat.prototype.getRepairTargets = function() {
+Creep.prototype.getRepairTargets = function() {
   let towers = structureTower.getTowers();
   if (towers) {
     return null;
@@ -50,26 +49,26 @@ Rat.prototype.getRepairTargets = function() {
   }
 }
 
-Rat.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
-Rat.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
-Rat.prototype.isWorker = function() { return this.canCarry() && this.canWork(); }
+Creep.prototype.isHauler = function() { return this.canCarry() && this.cannotWork(); }
+Creep.prototype.isHarvester = function() { return this.cannotCarry() && this.canWork(); }
+Creep.prototype.isWorker = function() { return this.canCarry() && this.canWork(); }
 
-Rat.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
-Rat.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
-Rat.prototype.carryingNonEnergyResource = function() {
+Creep.prototype.canCarry = function() { return this.body.some(part => part.type === CARRY); }
+Creep.prototype.cannotCarry = function() { return this.body.every(part => part.type !== CARRY); }
+Creep.prototype.carryingNonEnergyResource = function() {
   for (let rT in this.store) { if (rT !== RESOURCE_ENERGY && this.store[rT] > 0) return true; } return false;
 };
 
-Rat.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
-Rat.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
+Creep.prototype.canWork = function() { return this.body.some(part => part.type === WORK); }
+Creep.prototype.cannotWork = function() { return this.body.every(part => part.type !== WORK); }
 
-Rat.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
-Rat.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
-Rat.prototype.clearTarget = function() { this.memory.myTargetId = null; }
+Creep.prototype.getTarget = function() { return Game.getObjectById(this.memory.myTargetId); }
+Creep.prototype.setTarget = function(t) { return this.memory.myTargetId = t instanceof Object ? t.id : t; }
+Creep.prototype.clearTarget = function() { this.memory.myTargetId = null; }
 
-Rat.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
-Rat.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
-Rat.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
+Creep.prototype.clearTask = function() { this.memory.myTargetId = null; this.memory.task = null; }
+Creep.prototype.sleep = function() { this.clearTask(); this.memory.slept++; }
+Creep.prototype.setTask = function(task) { this.memory.task = task; this.memory.slept = 0;
   if (task === 'build')   { this.say('🚧'); }
   if (task === 'upgrade') { this.say('🛠️'); }
   if (task === 'repair')  { this.say('🔧'); }
@@ -78,9 +77,9 @@ Rat.prototype.setTask = function(task) { this.memory.task = task; this.memory.sl
   if (task === 'renew')   { this.say('⌛'); this.memory.renews--; }
   if (task === 'harvest') { this.say('⚡'); this.setTarget(null); }
 }
-Rat.prototype.getTask = function() { return this.memory.task; }
+Creep.prototype.getTask = function() { return this.memory.task; }
 
-Rat.prototype.takeAllFrom = function(target) {
+Creep.prototype.takeAllFrom = function(target) {
   let results = [];
   if (target.store) {
     const store = Object.keys(target.store);
@@ -119,7 +118,7 @@ Rat.prototype.takeAllFrom = function(target) {
   }
   return results;
 }
-Rat.prototype.takeFrom = function(target, resource) {
+Creep.prototype.takeFrom = function(target, resource) {
   let results = null;
   if (target instanceof Resource && target.energy > 0) { results = this.pickup(target); }
   if (target instanceof Tombstone && target.store[resource] > 0) { results = this.withdraw(target, resource); }
@@ -127,7 +126,7 @@ Rat.prototype.takeFrom = function(target, resource) {
   return results;
 }
 
-Rat.prototype.giveAllTo = function(target) {
+Creep.prototype.giveAllTo = function(target) {
   let results = [];
   const store = Object.keys(this.store);
   if (store.length > 0) {
@@ -162,18 +161,18 @@ Rat.prototype.giveAllTo = function(target) {
   }
   return results;
 }
-Rat.prototype.giveTo = function(target, resource) {
+Creep.prototype.giveTo = function(target, resource) {
   return this.transfer(target, resource);
 }
 
-Rat.prototype.trackTileVisits = function() {
+Creep.prototype.trackTileVisits = function() {
   if (!Memory.tileVisits) { Memory.tileVisits = {}; }
   if (!Memory.tileVisits[this.pos.x]) { Memory.tileVisits[this.pos.x] = {}; }
   if (!Memory.tileVisits[this.pos.x][this.pos.y]) { Memory.tileVisits[this.pos.x][this.pos.y] = 0; }
   return ++Memory.tileVisits[this.pos.x][this.pos.y];
 }
 
-Rat.prototype.skitter = function() {
+Creep.prototype.skitter = function() {
   if (this.getTask() === 'harvest')  { sHarvest.using(this); }
   if (this.getTask() === 'store')    { if (!sStore.using(this))   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }

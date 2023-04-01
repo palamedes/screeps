@@ -1,4 +1,4 @@
-require('rat');
+require('creep');
 
 require('room');
 require('room.summon.slave');
