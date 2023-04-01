@@ -2,8 +2,6 @@ const sHarvest  = require("skaven.harvest");
 const sStore    = require("skaven.store");
 const sRenew    = require("skaven.renew");
 const sUpgrade  = require("skaven.upgrade");
-const sBuild    = require("skaven.build");
-const sRepair   = require("skaven.repair");
 
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
@@ -59,9 +57,10 @@ Creep.prototype.skitter = function() {
   if (this.getTask() === 'renew')    { if (!sRenew.using(this))   { this.sleep(); } }
   if (this.getTask() === 'upgrade')  { if (!sUpgrade.using(this)) { this.sleep(); } }
   if (this.getTask() === 'build')    { if (!this.buildTask())     { this.sleep(); } }
-  if (this.getTask() === 'repair')   { if (!sRepair.using(this))  { this.sleep(); } }
+  if (this.getTask() === 'repair')   { if (!this.repairTask())    { this.sleep(); } }
 }
 
+// DECISIONS
 // Should we build something?
 // If we have 50% or more rats, and we don't have more than 50% doing the work
 Creep.prototype.shouldWeBuild = function(slaves) {
@@ -78,7 +77,6 @@ Creep.prototype.shouldWeBuild = function(slaves) {
   }
   return false;
 }
-
 // Should we upgrade the controller?
 // Are we bored? Do we have enough slaves? Do we not have enough active? Are we full everywhere?
 Creep.prototype.shouldWeUpgrade = function(slaves) {
@@ -104,7 +102,6 @@ Creep.prototype.shouldWeUpgradeAnyway = function() {
   const fullEnergy = this.room.energyAvailable === Memory.rooms[this.room.name].maxEnergy;
   return fullEnergy && this.canWork();
 }
-
 // Should we repair something?
 // If we have 50% or more rats, and we have 20% or less repairing and there are no towers...
 Creep.prototype.shouldWeRepair = function(slaves) {
@@ -122,6 +119,7 @@ Creep.prototype.shouldWeRepair = function(slaves) {
   return false;
 }
 
+// TASKS
 // Find something to build and go build it, if there is nothing or we have finished building something, reset.
 Creep.prototype.buildTask = function() {
   var targets = this.room.find(FIND_CONSTRUCTION_SITES);
@@ -133,3 +131,15 @@ Creep.prototype.buildTask = function() {
   }
   return false;
 }
+// Go upgrade the room controller. (Note; if a rat is bored it will also do this task without the task being set)
+Creep.prototype.repairTask = function() {
+  var target = this.room.controller;
+  if (this.room.controller && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
+    if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(this.room.controller, '#00ff00');
+    }
+    return true;
+  }
+  return false;
+}
+
