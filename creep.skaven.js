@@ -22,16 +22,16 @@ Creep.prototype.run = function(slaves) {
 
 // TASKS
 // Find something to build and go build it, if there is nothing or we have finished building something, reset.
-Creep.prototype.buildTask = function() {
-  var targets = this.room.find(FIND_CONSTRUCTION_SITES);
-  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
-    if(this.build(targets[0]) === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(targets[0], '#0000ff');
-    }
-    return true;
-  }
-  return false;
-}
+// Creep.prototype.buildTask = function() {
+//   var targets = this.room.find(FIND_CONSTRUCTION_SITES);
+//   if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+//     if(this.build(targets[0]) === ERR_NOT_IN_RANGE) {
+//       this.moveCreepTo(targets[0], '#0000ff');
+//     }
+//     return true;
+//   }
+//   return false;
+// }
 // Go upgrade the room controller. (Note; if a rat is bored it will also do this task without the task being set)
 Creep.prototype.repairTask = function() {
   var target = this.room.controller;

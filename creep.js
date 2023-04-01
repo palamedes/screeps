@@ -172,3 +172,29 @@ Creep.prototype.trackTileVisits = function() {
   return ++Memory.tileVisits[this.pos.x][this.pos.y];
 }
 
+// TASKS
+
+// Move to target and build it until its completed.
+// Return true on completion, false if we aren't done yet.
+Creep.prototype.taskBuild = function(target) {
+  if (target && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+    const res = this.build(target);
+    if (res === OK || res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET ||
+        res === ERR_NOT_ENOUGH_RESOURCES || res === ERR_BUSY || res === ERR_NO_BODYPART) {
+      return true;
+    } else if (res === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(targets[0], '#0000ff');
+    }
+    return false;
+  }
+}
+Creep.prototype.taskBuildAnything = function() {
+  var targets = this.room.find(FIND_CONSTRUCTION_SITES);
+  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+    if(this.build(targets[0]) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(targets[0], '#0000ff');
+    }
+    return true;
+  }
+  return false;
+}
