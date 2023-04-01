@@ -1,5 +1,3 @@
-const sHarvest  = require("skaven.harvest");
-const sStore    = require("skaven.store");
 
 // Run the Skaven (Slaves of all types)
 Creep.prototype.run = function() {
@@ -51,7 +49,7 @@ Creep.prototype.run = function() {
 Creep.prototype.skitter = function() {
   if (this.getTask() === 'harvest')         { this.harvestTask(); }
   if (this.getTask() === 'store')           { if (!sStore.using(this)) { this.sleep(); } }
-  if (this.getTask() === 'storeUntilEmpty') { sStore.using(this); }
+  if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
   if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
   if (this.getTask() === 'upgrade')         { if (!this.upgradeTask()) { this.sleep(); } }
   if (this.getTask() === 'build')           { if (!this.buildTask())   { this.sleep(); } }
@@ -171,8 +169,7 @@ Creep.prototype.upgradeTask = function() {
   }
   return false;
 }
-
-  // Harvest energy from sources, ruins, tombstones, and dropped resources
+// Go harvest energy from sources, ruins, tombstones, and dropped resources
 Creep.prototype.harvestTask = function() {
     // const noCarryRats = _.filter(Game.creeps, rat => !this.body.some(part => part.type === CARRY)).length;
 
@@ -307,3 +304,68 @@ Creep.prototype.harvestTask = function() {
       if (target != null && (this.store.getFreeCapacity() === 0 || target.energy === 0) || target === null) { this.clearTask(); }
     }
   }
+// Go store the energy
+Creep.prototype.storeTask = function() {
+  let targets = [], target = null;
+
+  // If the rat cannot WORK then it's probably a hauler so check for more storage
+  if (this.cannotWork()) {
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      if (targets.length > 0) target = targets.sort((a, b) => a.store.getFreeCapacity(RESOURCE_ENERGY) - b.store.getFreeCapacity(RESOURCE_ENERGY))[0];
+    }
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity() > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+  }
+
+  // all other rats, probably a slave, store it somewhere else.
+  if (this.canWork()) {
+    // If we are a worker and have picked up a non energy resource
+    if (this.carryingNonEnergyResource()) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_CONTAINER    && structure.store.getFreeCapacity() > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_SPAWN      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+    if (targets.length === 0) { targets = this.room.find(FIND_STRUCTURES, {
+      filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+      if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+    }
+  }
+
+  // If the rat is empty then unset all the things.
+  if (this.store.getUsedCapacity() === 0 && !this.carryingNonEnergyResource()) {
+    // console.log('clear', this.name, target);
+    this.clearTask();
+  }
+  // If there are any targets store in order above..
+  else if (target) {
+    // console.log('target', this.name, target);
+    if (this.pos.inRangeTo(target.pos, 1)) {
+      let res = this.giveAllTo(target);
+      if (res.includes(ERR_NOT_IN_RANGE)) {
+        console.log('ERROR: Not in range?!  How....');
+      } else if (res.includes(ERR_INVALID_TARGET)) {
+        this.clearTask();
+      } else if (res.includes(ERR_FULL)) {
+        this.clearTarget();
+      }
+    } else {
+      this.moveCreepTo(target, '#ffffff');
+    }
+    return true;
+  }
+  return false;
+}
