@@ -1,4 +1,4 @@
-const sHarvest  = require("skaven/harvest");
+const sHarvest  = require("./skaven/harvest");
 const sStore    = require("skaven.store");
 const sRenew    = require("skaven.renew");
 const sUpgrade  = require("skaven.upgrade");
