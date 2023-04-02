@@ -219,7 +219,6 @@ Creep.prototype.taskUpgradeController = function() {
 }
 // Go find the nearest spawn and renew at it
 Creep.prototype.taskRenew = function() {
-  console.log('going to renew');
   const spawns = this.room.find(FIND_MY_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
   });
