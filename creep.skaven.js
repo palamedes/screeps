@@ -32,26 +32,6 @@ Creep.prototype.repairTask = function() {
   }
   return false;
 }
-// Go find the nearest spawn and renew at it
-// Creep.prototype.renewTask = function() {
-//   let doneRenewing = false;
-//   const spawns = this.room.find(FIND_MY_STRUCTURES, {
-//     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
-//   });
-//   let closestSpawn = this.pos.findClosestByPath(spawns);
-//   if (closestSpawn) {
-//     if (this.pos.isNearTo(closestSpawn)) {
-//       let result = closestSpawn.renewCreep(this);
-//       doneRenewing = result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY;
-//     } else {
-//       this.moveCreepTo(closestSpawn, '#00ffff');
-//       doneRenewing = false
-//     }
-//   } else {
-//     doneRenewing = true
-//   }
-//   return !doneRenewing;
-// }
 // Go harvest energy from sources, ruins, tombstones, and dropped resources
 Creep.prototype.harvestTask = function() {
     // const noCarryRats = _.filter(Game.creeps, rat => !this.body.some(part => part.type === CARRY)).length;
