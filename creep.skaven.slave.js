@@ -11,15 +11,15 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   // Rat needs to decide what it should be doing..
   if (!this.memory.task) {
     // Harvester: if this rat can't carry, then he's a harvester.. go do that.
-    if (this.cannotCarry()) { this.setTask('harvest'); }
+    if (this.isHarvester()) { this.setTask('harvest'); }
 
     // Hauler: If rat has less than 40% free capacity ( at least 60% full ) then go store it until empty
-    else if (this.cannotWork() && (this.store.getFreeCapacity() / this.store.getCapacity()) < 0.4) {
-      this.setTask('storeUntilEmpty');
+    else if (this.isHauler() && (this.store.getFreeCapacity() / this.store.getCapacity()) < 0.4) {
+      this.setTask('store');
     }
 
     // If rat has less than 80% free capacity ( at least 20% energy ) then go do some work.. Else harvest.
-    else if (this.canWork() && this.canCarry() && (this.store.getFreeCapacity() / this.store.getCapacity()) < 0.8) {
+    else if (this.isWorker() && (this.store.getFreeCapacity() / this.store.getCapacity()) < 0.8) {
       // Upgrade Controller
       if (this.skaven.slave.shouldWeUpgrade.bind(this)(slaves)) { this.setTask('upgrade'); }
       // Construction
@@ -41,8 +41,8 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
 
   // Okay now do the thing we have tasked ourselves to do
   if (this.getTask() === 'harvest')         { this.taskHarvest(); }
-  if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
-  if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
+  if (this.getTask() === 'store')           { this.taskStore(); }
+  // if (this.getTask() === 'storeUntilEmpty') { this.taskStore(); }
   if (this.getTask() === 'renew')           { this.taskRenew(); }
   if (this.getTask() === 'upgrade')         { this.taskUpgradeController(); }
   if (this.getTask() === 'build')           { this.taskBuildAnything(); }
