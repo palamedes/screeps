@@ -8,10 +8,11 @@ Creep.prototype.taskStore = function() {
 
   // STEP ONE:  FIND A PLACE TO STORE THE STUFF
 
-  // If no target, is hauler and there is a TOWER in need....
+  // If no target, is hauler or worker and there is a TOWER in need....
   if (!target && (isHauler || isWorker)) { targets = this.room.find(FIND_STRUCTURES, {
-    filter: (structure) => structure.structureType === STRUCTURE_TOWER      && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
-    if (targets.length > 0) target = targets.sort((a, b) => a.store.getFreeCapacity(RESOURCE_ENERGY) - b.store.getFreeCapacity(RESOURCE_ENERGY))[0];
+      filter: (structure) => structure.structureType === STRUCTURE_TOWER && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 &&
+        structure.store[RESOURCE_ENERGY] / structure.store.getCapacity(RESOURCE_ENERGY) <= 0.8 });
+    if (targets.length > 0) { target = targets.sort((a, b) => a.store.getFreeCapacity(RESOURCE_ENERGY) - b.store.getFreeCapacity(RESOURCE_ENERGY))[0]; }
   }
   // If no target, is hauler or worker and there is a SPAWN available...
   if (!target && (isHauler || isWorker)) { targets = this.room.find(FIND_STRUCTURES, {
