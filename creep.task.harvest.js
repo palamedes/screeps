@@ -1,65 +1,60 @@
 // Go harvest energy from sources, ruins, tombstones, and dropped resources
 Creep.prototype.taskHarvest = function() {
+  const isHauler = this.isHauler(), isWorker = this.isWorker(), isHarvester = this.isHarvester();
+  let target = this.getTarget();
 
-  // Can this rat carry? - So not harvesters
-  if (this.canCarry()) {
+  // STEP ONE; FIND SOMETHING TO HARVEST...
 
-    // Try to get energy from a container first.. But only if they can work.
-    if (!this.memory.taskTarget && this.canWork()) {
-      const containers = this.room.find(FIND_STRUCTURES, {
-        filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
-      });
-      if (containers.length > 0) {
-        this.memory.taskTarget = this.pos.findClosestByRange(containers).id;
-      }
+  // WORKER: Try to get energy from a container first...
+  if (!target && isWorker) {
+    const containers = this.room.find(FIND_STRUCTURES, {
+      filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
+    });
+    if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); }
+  }
+
+  // HAULER: Try to get stuff from tombstone...
+  if (!target && isHauler) {
+    const containers = this.room.find(FIND_TOMBSTONES, {
+      filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
+    });
+    if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); // @TODO Make sure the damn thing isn't empty }
     }
 
-    // Hauler sees a tombstone with possible goodies...
-    if (!this.memory.taskTarget && this.cannotWork()) {
-      const containers = this.room.find(FIND_TOMBSTONES, {
-        filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
-      });
-      if (containers.length > 0) {
-        this.memory.taskTarget = this.pos.findClosestByRange(containers).id;
-      }
-    }
-
-    // Try to get energy that is dropped.. Anyone.
+    // HAULER/WORKER: Try to get energy that is dropped..
     // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
-    if (!this.memory.taskTarget) {
+    if (!target && (isHauler || isWorker)) {
       // Try to pickup dropped energy first
       let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
         filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
       if (droppedEnergy.length > 0) {
-        let highestEnergy = 0;
-        let highestEnergyId = null;
+        let highestEnergyAmount = 0, highestEnergyId = null;
         for (let i = 0; i < droppedEnergy.length; i++) {
-          if (droppedEnergy[i].amount > highestEnergy) {
-            highestEnergy = droppedEnergy[i].amount;
-            highestEnergyId = droppedEnergy[i].id;
+          if (droppedEnergy[i].amount > highestEnergyAmount) {
+            highestEnergyAmount = droppedEnergy[i].amount;
+            highestEnergy = droppedEnergy[i];
           }
         }
-        this.memory.taskTarget = highestEnergyId;
+        this.setTarget(highestEnergy);
       }
     }
-
   }
-  // Can this rat work? - So not a hauler
-  if (this.canWork()) {
-    // If the rat still doesn't have a target and one wasn't set above, go find a source.
-    if (!this.memory.taskTarget) {
+
+  // HARVESTER/WORKER: Still haven't any energy, go find a source and suckle..
+  if (isHarvester || isWorker) {
+    if (!target) {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
       });
-      if (sourceEnergy.length > 0) {
-        this.memory.taskTarget = this.pos.findClosestByRange(sourceEnergy).id;
-      }
+      if (sourceEnergy.length > 0) { this.setTarget(this.pos.findClosestByRange(sourceEnergy)); }
     }
   }
 
+  // STEP TWO; HARVEST IT...
+
   // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-  if (this.memory.taskTarget) {
+  if (target) {
     let target = Game.getObjectById(this.memory.taskTarget);
     if (target && !(target instanceof Source)) {
       // Is our rat within range of the target?
