@@ -193,10 +193,10 @@ Creep.prototype.taskBuildTarget = function() {
   }
 }
 Creep.prototype.taskBuildAnything = function() {
-  var targets = this.room.find(FIND_CONSTRUCTION_SITES);
-  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+  const targets = this.room.find(FIND_CONSTRUCTION_SITES);
+  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
     this.setTarget(targets[0]);
-    this.task = 'buildTarget';
+    this.setTask('buildTarget');
   }
 }
 // Move to the room controller and upgrade it
@@ -235,5 +235,30 @@ Creep.prototype.taskRenew = function() {
     }
   } else {
     this.clearTask();
+  }
+}
+// Go find something to repair
+Creep.prototype.taskRepairTarget = function() {
+  const target = this.getTarget();
+  if (target && rat.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
+    const res = this.repair(target);
+      ERR_RCL_NOT_ENOUGH
+    if (res === OK) {
+      // Do nothing -- we made a successful tick worth of build
+    } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET ||
+      res === ERR_NOT_ENOUGH_ENERGY || res === ERR_RCL_NOT_ENOUGH) {
+      this.clearTask();
+    } else if (res === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(target, '#0000ff');
+    }
+  } else {
+    this.clearTask();
+  }
+}
+Creep.prototype.taskRepairAnything = function() {
+  const targets = this.getRepairTargets();
+  if(targets.length > 0 && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
+    this.setTarget(targets[0]);
+    this.setTask('repairTarget');
   }
 }

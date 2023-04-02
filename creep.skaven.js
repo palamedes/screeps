@@ -21,17 +21,6 @@ Creep.prototype.run = function(slaves) {
 }
 
 // TASKS
-// Go upgrade the room controller. (Note; if a rat is bored it will also do this task without the task being set)
-Creep.prototype.repairTask = function() {
-  var target = this.room.controller;
-  if (this.room.controller && this.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && this.canWork()) {
-    if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(this.room.controller, '#00ff00');
-    }
-    return true;
-  }
-  return false;
-}
 // Go harvest energy from sources, ruins, tombstones, and dropped resources
 Creep.prototype.harvestTask = function() {
     // const noCarryRats = _.filter(Game.creeps, rat => !this.body.some(part => part.type === CARRY)).length;

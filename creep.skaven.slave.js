@@ -47,7 +47,7 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   if (this.getTask() === 'upgrade')         { this.taskUpgradeController(); }
   if (this.getTask() === 'build')           { this.taskBuildAnything(); }
   if (this.getTask() === 'buildTarget')     { this.taskBuildTarget(); }
-  if (this.getTask() === 'repair')          { if (!this.repairTask())  { this.sleep(); } }
+  if (this.getTask() === 'repair')          { this.taskRepairTarget(); }
 }
 
 // DECISIONS
@@ -112,7 +112,10 @@ Creep.prototype.skaven.slave.shouldWeRepair = function(slaves) {
       // Are there no towers repairing?
       const noTowers = Object.values(Game.structures).filter(structure => structure.structureType === STRUCTURE_TOWER).length > 0;
       // Decide
-      if (enoughSlaves && notEnoughActive && noTowers) return true;
+      if (enoughSlaves && notEnoughActive && noTowers) {
+        this.setTarget(repairTargets[0]);
+        return true;
+      }
     }
   }
   return false;
