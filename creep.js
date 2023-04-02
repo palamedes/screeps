@@ -216,3 +216,24 @@ Creep.prototype.taskUpgradeController = function() {
     this.clearTask();
   }
 }
+// Go find the nearest spawn and renew at it
+Creep.prototype.taskRenew = function() {
+  const spawns = this.room.find(FIND_MY_STRUCTURES, {
+    filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
+  });
+  const closestSpawn = this.pos.findClosestByPath(spawns);
+  if (closestSpawn) {
+    const res = closestSpawn.renewCreep(this);
+    if (res === OK) {
+      // Do nothing -- we made a successful tick worth of upgrade
+    } else if (result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY) {
+      this.clearTask(); // Done successfully
+    } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET || res === ERR_BUSY || res === ERR_RCL_NOT_ENOUGH) {
+      this.clearTask(); // Done unsuccessfully
+    } else if (res === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(this.room.controller, '#00ff00');
+    }
+  } else {
+    this.clearTask();
+  }
+}

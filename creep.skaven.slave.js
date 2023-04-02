@@ -43,7 +43,7 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   if (this.getTask() === 'harvest')         { this.harvestTask(); }
   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
-  if (this.getTask() === 'renew')           { if (!this.renewTask())   { this.sleep(); } }
+  if (this.getTask() === 'renew')           { this.taskRenew(); }
   if (this.getTask() === 'upgrade')         { this.taskUpgradeController(); }
   if (this.getTask() === 'build')           { this.taskBuildAnything(); }
   if (this.getTask() === 'buildTarget')     { this.taskBuildTarget(); }
