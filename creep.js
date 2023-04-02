@@ -23,24 +23,6 @@ Creep.getMostVisitedTile = () => {
 }
 // const noCarryRats = _.filter(Game.creeps, rat => !this.body.some(part => part.type === CARRY)).length;
 
-// Summon a Skaven Slave if we need to...
-Creep.summonSkavenSlave = function(room, slaves) {
-  if ((slaves.length < 2 || (slaves.length < Memory.rooms[room.name].maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
-    room.summonSlave({ homeRoom: room.name, version: room.controller.level });
-  }
-}
-
-// Summon a Skaven Gutter Runner if we need to...
-Creep.summonSkavenRunner = function(room) {
-  // Summon a Gutter Runner if we meet certain criteria
-  if (room.controllerLevel <= 5 && runners.length === 0 && this.energyAvailable > 1000) {
-    const ratName = 'Runner-' + Game.time + '-' + this.energyAvailable;
-    const ratBrain = { memory: { role: 'runner', renews: 0, spawn: { id: ratSpawn.id, name: ratSpawn.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 } };
-    const ratParts = ['TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','CLAIM','MOVE','MOVE','MOVE','MOVE','MOVE','MOVE']
-    return room.spawnCreep(ratParts, ratName, ratBrain);
-  }
-}
-
 
 Creep.prototype.getAvailableSpawn = function() {
   const spawns = this.room.find(FIND_MY_STRUCTURES, {

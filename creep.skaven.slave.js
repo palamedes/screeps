@@ -136,3 +136,9 @@ Creep.prototype.skaven.slave.shouldWeStore = function(salves) {
 }
 
 
+// Summon a Skaven Slave if we need to...
+Creep.summonSkavenSlave = function(room, slaves) {
+  if ((slaves.length < 2 || (slaves.length < Memory.rooms[room.name].maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
+    room.summonSlave({ homeRoom: room.name, version: room.controller.level });
+  }
+}
