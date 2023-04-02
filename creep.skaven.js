@@ -20,4 +20,4 @@ Creep.prototype.run = function(slaves) {
   if (this.memory.role === 'slave' && !this.spawning) { this.skaven.slave.skitter.bind(this)(slaves); }
 }
 
-
+Creep.prototype.skaven = {slave: {}, runner: {}};

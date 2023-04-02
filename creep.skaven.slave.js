@@ -1,4 +1,7 @@
-Creep.prototype.skaven = {slave: {}};
+/**
+ * Skaven Slave!
+ * This is the creep that is your worker, hauler, harvester around the base.
+ */
 
 // Skitter!  Have the slave decide what he should be doing, and then go and do it..
 Creep.prototype.skaven.slave.skitter = function(slaves) {
