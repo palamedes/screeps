@@ -8,7 +8,7 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
 
   // If our ticks to live is down to 50, stop what you're doing and go solve that by renewing at your spawn
   if (this.ticksToLive <= 50 && this.memory.task !== 'renew' && this.room.controller.level >= 4 && this.memory.renews > 0) {
-    if (Game.rooms[this.memory.homeRoom].energyAvailable > 100) { this.setTask('renew'); }
+    if (this.room.energyAvailable > 100) { this.setTask('renew'); }
   }
 
   // Rat needs to decide what it should be doing..
@@ -45,7 +45,6 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   // Okay now do the thing we have tasked ourselves to do
   if (this.getTask() === 'harvest')         { this.taskHarvest(); }
   if (this.getTask() === 'store')           { this.taskStore(); }
-  // if (this.getTask() === 'storeUntilEmpty') { this.taskStore(); }
   if (this.getTask() === 'renew')           { this.taskRenew(); }
   if (this.getTask() === 'upgrade')         { this.taskUpgradeController(); }
   if (this.getTask() === 'build')           { this.taskBuildAnything(); }
@@ -134,4 +133,12 @@ Creep.prototype.skaven.slave.shouldWeStore = function(salves) {
     if (anyLowTowers) return true;
   }
   return false;
+}
+
+
+// Summon a Skaven Slave if we need to...
+Creep.prototype.skaven.slave.summon = function(room, slaves) {
+  if ((slaves.length < 2 || (slaves.length < Memory.rooms[room.name].maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
+    room.summonSlave({ homeRoom: room.name, version: room.controller.level });
+  }
 }
