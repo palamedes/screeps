@@ -6,7 +6,7 @@ Creep.prototype.taskHarvest = function() {
   // STEP ONE; FIND SOMETHING TO HARVEST...
 
   // WORKER: Try to get energy from a container first...
-  if (!target && isWorker) {
+  if (!this.getTarget() && isWorker) {
     const containers = this.room.find(FIND_STRUCTURES, {
       filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
     });
@@ -14,7 +14,7 @@ Creep.prototype.taskHarvest = function() {
   }
 
   // HAULER: Try to get stuff from tombstone...
-  if (!target && isHauler) {
+  if (!this.getTarget() && isHauler) {
     const containers = this.room.find(FIND_TOMBSTONES, {
       filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
     });
@@ -23,7 +23,7 @@ Creep.prototype.taskHarvest = function() {
 
     // HAULER/WORKER: Try to get energy that is dropped..
     // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
-    if (!target && (isHauler || isWorker)) {
+    if (!this.getTarget() && (isHauler || isWorker)) {
       // Try to pickup dropped energy first
       let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
         filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
@@ -43,7 +43,7 @@ Creep.prototype.taskHarvest = function() {
 
   // HARVESTER/WORKER: Still haven't any energy, go find a source and suckle..
   if (isHarvester || isWorker) {
-    if (!target) {
+    if (!this.getTarget()) {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
       });
@@ -54,8 +54,8 @@ Creep.prototype.taskHarvest = function() {
   // STEP TWO; HARVEST IT...
 
   // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-  if (target) {
-    let target = Game.getObjectById(this.memory.taskTarget);
+  if (this.getTarget()) {
+    let target = this.getTarget();
     if (target && !(target instanceof Source)) {
       // Is our rat within range of the target?
       if (this.pos.inRangeTo(target.pos, 1)) {
