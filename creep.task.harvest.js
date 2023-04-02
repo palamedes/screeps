@@ -59,7 +59,6 @@ Creep.prototype.taskHarvest = function() {
     if (target && !(target instanceof Source)) {
       // Is our rat within range of the target?
       if (this.pos.inRangeTo(target.pos, 1)) {
-        console.log(rat.name, 'here')
         // Try to take resources from target
         let res = this.canWork() ? [this.takeFrom(target, 'energy')] : this.takeAllFrom(target);
         // Respond to the attempt
