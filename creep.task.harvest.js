@@ -1,7 +1,6 @@
 // Go harvest energy from sources, ruins, tombstones, and dropped resources
 Creep.prototype.taskHarvest = function() {
   const isHauler = this.isHauler(), isWorker = this.isWorker(), isHarvester = this.isHarvester();
-  let target = this.getTarget();
 
   // STEP ONE; FIND SOMETHING TO HARVEST...
 
@@ -56,9 +55,11 @@ Creep.prototype.taskHarvest = function() {
   // Now that you have found a target, Go to that target and harvest it, assuming it has power.
   if (this.getTarget()) {
     let target = this.getTarget();
+
     if (target && !(target instanceof Source)) {
       // Is our rat within range of the target?
       if (this.pos.inRangeTo(target.pos, 1)) {
+        console.log(rat.name, 'here')
         // Try to take resources from target
         let res = this.canWork() ? [this.takeFrom(target, 'energy')] : this.takeAllFrom(target);
         // Respond to the attempt
