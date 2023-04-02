@@ -40,7 +40,7 @@ Creep.prototype.skaven.slave.skitter = function(slaves) {
   }
 
   // Okay now do the thing we have tasked ourselves to do
-  if (this.getTask() === 'harvest')         { this.harvestTask(); }
+  if (this.getTask() === 'harvest')         { this.taskHarvest(); }
   if (this.getTask() === 'store')           { if (!this.storeTask())   { this.sleep(); } }
   if (this.getTask() === 'storeUntilEmpty') { this.storeTask(); }
   if (this.getTask() === 'renew')           { this.taskRenew(); }

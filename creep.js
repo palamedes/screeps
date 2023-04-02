@@ -21,6 +21,7 @@ Creep.getMostVisitedTile = () => {
   }
   return mostVisited;
 }
+// const noCarryRats = _.filter(Game.creeps, rat => !this.body.some(part => part.type === CARRY)).length;
 
 
 Creep.prototype.getAvailableSpawn = function() {
