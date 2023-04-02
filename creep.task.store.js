@@ -34,6 +34,8 @@ Creep.prototype.taskStore = function() {
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
 
+  // STEP TWO; NOW ACTUALLY DO THE DEED
+
   // If there are any targets store in order above..
   if (target) {
     if (this.pos.inRangeTo(target.pos, 1)) {

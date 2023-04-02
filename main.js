@@ -1,6 +1,7 @@
 console.log('Code Reloaded!');
 require('creep');
 require('creep.move');
+require('creep.task.store');
 require('creep.task.harvest');
 require('creep.skaven');
 require('creep.skaven.slave');
