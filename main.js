@@ -57,7 +57,7 @@ module.exports.loop = function () {
     Memory.rooms[room.name].maxSlaves = (Memory.rooms[room.name].numSucklePoints * 2) + Memory.rooms[room.name].numSucklePoints;
 
     // At RCL 5+ we need to start being smarter about our rats and who does what work.
-    if (room.controller.level === 5) Memory.rooms[room.name].maxSlaves--;
+    if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 5;
 
     // Spawn a skaven slave
     if ((slaves.length < 2 || (slaves.length < mem.maxSlaves && room.energyAvailable >= Memory.rooms[room.name].maxEnergy)) && room.energyAvailable >= 200) {
