@@ -29,7 +29,7 @@ Creep.prototype.taskHarvest = function() {
         filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
       });
       if (droppedEnergy.length > 0) {
-        let highestEnergyAmount = 0, highestEnergyId = null;
+        let highestEnergyAmount = 0, highestEnergy = null;
         for (let i = 0; i < droppedEnergy.length; i++) {
           if (droppedEnergy[i].amount > highestEnergyAmount) {
             highestEnergyAmount = droppedEnergy[i].amount;
