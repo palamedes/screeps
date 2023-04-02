@@ -232,7 +232,7 @@ Creep.prototype.taskRenew = function() {
     } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET || res === ERR_BUSY || res === ERR_RCL_NOT_ENOUGH) {
       this.clearTask(); // Done unsuccessfully
     } else if (res === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(this.room.controller, '#00ff00');
+      this.moveCreepTo(closestSpawn, '#00ff00');
     }
   } else {
     this.clearTask();
