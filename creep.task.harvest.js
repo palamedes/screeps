@@ -40,6 +40,14 @@ Creep.prototype.taskHarvest = function() {
     }
   }
 
+  // WORKER: Try to get energy from a container first...
+  if (!this.getTarget() && isWorker) {
+    const containers = this.room.find(FIND_STRUCTURES, {
+      filter: structure => { return structure.structureType === STRUCTURE_STORAGE && structure.store[RESOURCE_ENERGY] > 0; }
+    });
+    if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); }
+  }
+
   // HARVESTER/WORKER: Still haven't any energy, go find a source and suckle..
   if (isHarvester || isWorker) {
     if (!this.getTarget()) {
