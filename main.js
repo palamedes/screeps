@@ -42,8 +42,8 @@ module.exports.loop = function () {
     // At RCL 5+ we need to start being smarter about our rats and who does what work.
     if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 5;
     // Spawn something if we need to
-    Creep.skaven.slave.summon(room, slaves);      // Spawn a Skaven Slave
-    Creep.skaven.runner.summon(room, runners);    // Spawn a Skaven Gutter Runner
+    Creep.summoneSkavenSlave(room, slaves);      // Spawn a Skaven Slave
+    Creep.summonSkavenRunner(room, runners);    // Spawn a Skaven Gutter Runner
     // Run the room..
     room.run();
   }
