@@ -226,7 +226,7 @@ Creep.prototype.taskRenew = function() {
     const res = closestSpawn.renewCreep(this);
     if (res === OK) {
       // Do nothing -- we made a successful tick worth of upgrade
-    } else if (result === ERR_FULL || result === ERR_NOT_ENOUGH_ENERGY) {
+    } else if (res === ERR_FULL || res === ERR_NOT_ENOUGH_ENERGY) {
       this.clearTask(); // Done successfully
     } else if (res === ERR_NOT_OWNER || res === ERR_INVALID_TARGET || res === ERR_BUSY || res === ERR_RCL_NOT_ENOUGH) {
       this.clearTask(); // Done unsuccessfully
