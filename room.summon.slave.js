@@ -21,7 +21,7 @@ Room.prototype.summonSlave = function(memory) {
   // Summon a dedicated hauler -- which is a rat that can't work.
   if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < numHarvesters-1) {
     percentWork = 0; percentCarry = 0.60; energy = energy > 1500 ? 1500 : energy;
-    renews = (energy - 200) / (1500 - 200) * 20;
+    renews = (energy - 200) / (1500 - 200) * 50;
   }
 
   // Setup the rat brain
