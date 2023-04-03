@@ -109,6 +109,8 @@ let structures = {
   // over time.  # are roads, e are extensions, T are towers, · can be anything..etc..
   basePlan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
+    if (!spawn) return false;
+
     const roomName = room.name;
     const basePlan = structures.baseStamp();
     // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
