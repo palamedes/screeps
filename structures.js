@@ -33,7 +33,7 @@ let structures = {
 
   // Place one of the road sections around the base
   buildRoad: room => {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const roadsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_ROAD}}).length;
     if (roadsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "#" to a x,y position and build there.
@@ -44,7 +44,7 @@ let structures = {
 
   // Place an extension around the base
   buildExtension: room => {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const extensionsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_EXTENSION}}).length;
     if (extensionsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
@@ -55,7 +55,7 @@ let structures = {
 
   // Place a tower around the base
   buildTower: room => {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const towersBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_TOWER}}).length;
     if (towersBeingBuilt === 0) {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
@@ -73,8 +73,7 @@ let structures = {
   // },
 
   drawBaseplan: room => {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
-    if (!spawn) return false;
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     // Plan the room and store it in memory
     Memory.rooms[room.name].basePlan = Memory.rooms[room.name].basePlan || structures.basePlan(room);
     // Function to take the spiral string, and actually draw it out on the map.
@@ -109,9 +108,7 @@ let structures = {
   // dynamically alter itself during the spiral draw to fit the terrain and then the bot itself will add what it wants
   // over time.  # are roads, e are extensions, T are towers, · can be anything..etc..
   basePlan: room => {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
-    if (!spawn) return false;
-
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const roomName = room.name;
     const basePlan = structures.baseStamp();
     // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
