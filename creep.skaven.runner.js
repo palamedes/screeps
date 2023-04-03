@@ -56,7 +56,7 @@ Creep.summonSkavenRunner = function(room, runners) {
         filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
       });
     if (spawns.length > 0) {
-      console.log(spawns[0].spawnCreep(ratParts, ratName, ratBrain);)
+      console.log(spawns[0].spawnCreep(ratParts, ratName, ratBrain));
     }
   }
 }
