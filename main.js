@@ -22,11 +22,6 @@ module.exports.loop = function () {
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
   // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
-  // Check to make sure we still own those rooms
-  if (Game.rooms[roomName] && room.controller && room.controller.my) {
-    console.log("You own room", roomName);
-  }
-
   // Define some universal values
   const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
   const runners = _.filter(Game.creeps, (rat) => rat.memory.role === 'runner') ;
