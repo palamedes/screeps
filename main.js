@@ -21,7 +21,9 @@ module.exports.loop = function () {
   // Delete memory of old dead creeps
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
   // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
+  console.log('before', Memory.roomsList);
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
+  console.log('after', Memory.roomsList);
 
   // Define some universal values
   const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
