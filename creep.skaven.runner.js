@@ -23,9 +23,7 @@ Creep.prototype.skaven.runner.skitter = function(runners) {
 Creep.prototype.skaven.runner.findRoom = function() {
 
   // if this isn't our spawn room, and we don't own this room... take it
-  if (this.room.name !== this.memory.spawn.name && !this.room.my) {
-    this.setTask('CLAIM_ROOM');
-  }
+  if (this.room.name !== this.memory.spawn.name && !this.room.my) { this.setTask('CLAIM_ROOM'); }
 
   // Pick a random exit to move to
   // const exits = Game.map.describeExits(this.room.name);
@@ -38,13 +36,7 @@ Creep.prototype.skaven.runner.findRoom = function() {
   const target = this.pos.findClosestByPath(FIND_EXIT, { filter: (pos) => {
       return (pos.x === 0 || pos.x === 49 || pos.y === 0 || pos.y === 49);
     }});
-
-  if (target !== null) {
-    this.moveCreepTo(target, '#ffffff');
-  } else {
-    // There is no exit point in the wall
-    console.log("No wall exit found!");
-  }
+  if (target !== null) { this.moveCreepTo(target, '#ffffff'); }
 
 }
 // CLaim this room..
@@ -62,6 +54,10 @@ Creep.prototype.skaven.runner.claimRoom = function() {
       // We did it!  Add Room to RoomList
       Memory.roomsList.push(this.room);
     }
+  }
+
+  if (this.room.controller && !this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
+    Memory.roomsList.push(this.room.name);
   }
 
 }
