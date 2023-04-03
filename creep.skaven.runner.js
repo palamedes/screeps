@@ -51,8 +51,8 @@ Creep.prototype.skaven.runner.claimRoom = function() {
     } else if (res === ERR_GCL_NOT_ENOUGH || res === ERR_NO_BODYPART) {
       this.suicide(); // Wounded, or GCL is off.. sometings wrong.. kill it.
     } else if (res === OK && this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
-      // We did it!  Add Room to RoomList
-      Memory.roomsList.push(this.room);
+      Memory.roomsList.push(this.room); // We did it!  Add Room to RoomList
+      this.suicide(); // We dont need this creep any more.
     }
   }
   // Make sure room makes it into the list
