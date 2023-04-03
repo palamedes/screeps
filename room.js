@@ -34,7 +34,7 @@ Room.prototype.init = function() {
     for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
       for (let y = source.pos.y - 1; y <= source.pos.y + 1; y++) {
         if (x === source.pos.x && y === source.pos.y) continue;
-        const look = source.this.lookAt(x, y);
+        const look = source.room.lookAt(x, y);
         if (look.some(obj => obj.type === LOOK_TERRAIN && obj.terrain === 'wall')) continue;
         if (look.some(obj => obj.type === LOOK_STRUCTURES && OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType))) continue;
         surroundings.push({x: x, y: y});
@@ -43,8 +43,7 @@ Room.prototype.init = function() {
     return surroundings;
   }
   for(let i in energySources) {
-    console.log(energySources);
-    // Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
+    Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
   }
 
   // @TODO Do stuff to setup the room here..
