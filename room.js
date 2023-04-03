@@ -43,7 +43,8 @@ Room.prototype.init = function() {
     return surroundings;
   }
   for(let i in energySources) {
-    Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
+    console.log(energySources);
+    // Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
   }
 
   // @TODO Do stuff to setup the room here..
