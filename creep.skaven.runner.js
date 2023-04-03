@@ -19,6 +19,7 @@ Creep.prototype.skaven.runner.skitter = function(runners) {
 
 }
 
+// Find us a room and move to it..
 Creep.prototype.skaven.runner.findRoom = function() {
 
   // if this isn't our spawn room, and we don't own this room... take it
@@ -59,7 +60,16 @@ Creep.prototype.skaven.runner.findRoom = function() {
   // }
 
 }
+// CLaim this room..
+Creep.prototype.skaven.runner.claimRoom = function() {
 
+  if (this.room.controller && !this.room.controller.my) {
+    if (this.claimController(controller) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(controller);
+    }
+  }
+
+}
 
 // Summon a Skaven Gutter Runner if we need to...
 Creep.summonSkavenRunner = function(room, runners) {
