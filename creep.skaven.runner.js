@@ -8,7 +8,7 @@
  *  CLAIM_ROOM      - Claim that room's controller
  */
 
-Creep.prototype.skaven.runner.skitter = function(room, runners) {
+Creep.prototype.skaven.runner.skitter = function(runners) {
 
   // If we don't know what we are doing, then lets find something to do...
   if (!this.getTask()) { this.setTask('FIND_ROOM'); }
