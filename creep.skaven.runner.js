@@ -27,11 +27,13 @@ Creep.prototype.skaven.runner.findRoom = function() {
   // const exitDir = _.sample(Object.keys(exits)); // random
 
   // Find closest exit
-  const exit = creep.pos.findClosestByPath(FIND_EXIT, { filter: (pos) => {
+  const target = this.pos.findClosestByPath(FIND_EXIT, { filter: (pos) => {
       return (pos.x === 0 || pos.x === 49 || pos.y === 0 || pos.y === 49);
     }});
 
-  if (exit !== null) { creep.moveTo(exit); } else {
+  if (target !== null) {
+    this.moveCreepTo(target, '#ffffff');
+  } else {
     // There is no exit point in the wall
     console.log("No wall exit found!");
   }
