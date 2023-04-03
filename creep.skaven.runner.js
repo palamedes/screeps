@@ -46,26 +46,13 @@ Creep.prototype.skaven.runner.findRoom = function() {
     console.log("No wall exit found!");
   }
 
-  // // Move the creep to the exit
-  // creep.moveTo(creep.pos.findClosestByPath(exit));
-  //
-  // // Once the creep reaches the new room, start claiming it
-  // if (creep.room.name !== currentRoom.name) {
-  //   const controller = creep.room.controller;
-  //   if (controller && !controller.my) {
-  //     if (creep.claimController(controller) === ERR_NOT_IN_RANGE) {
-  //       creep.moveTo(controller);
-  //     }
-  //   }
-  // }
-
 }
 // CLaim this room..
 Creep.prototype.skaven.runner.claimRoom = function() {
 
   if (this.room.controller && !this.room.controller.my) {
-    if (this.claimController(controller) === ERR_NOT_IN_RANGE) {
-      this.moveCreepTo(controller);
+    if (this.claimController(this.room.controller) === ERR_NOT_IN_RANGE) {
+      this.moveCreepTo(this.room.controller);
     }
   }
 
