@@ -51,7 +51,7 @@ Creep.summonSkavenRunner = function(room, runners) {
   if (room.controller.level >= 5 && runners.length === 0 && room.energyAvailable > 1000) {
     console.log('yes...')
     const ratName = 'Runner-' + Game.time + '-' + this.energyAvailable;
-    const ratBrain = { memory: { role: 'runner', renews: 0, spawn: { id: ratSpawn.id, name: ratSpawn.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 } };
+    const ratBrain = { memory: { role: 'runner', renews: 0, spawn: { id: room.id, name: room.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 } };
     const ratParts = ['TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','CLAIM','MOVE','MOVE','MOVE','MOVE','MOVE','MOVE']
     return room.spawnCreep(ratParts, ratName, ratBrain);
   }
