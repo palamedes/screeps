@@ -50,15 +50,14 @@ Creep.prototype.skaven.runner.claimRoom = function() {
       // SOMEONE BEAT US TO IT?!
     } else if (res === ERR_GCL_NOT_ENOUGH || res === ERR_NO_BODYPART) {
       this.suicide(); // Wounded, or GCL is off.. sometings wrong.. kill it.
-    } else if (res === OK && this.room.controller.my) {
+    } else if (res === OK && this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
       // We did it!  Add Room to RoomList
       Memory.roomsList.push(this.room);
     }
   }
-
+  // Make sure room makes it into the list
   if (this.room.controller && this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
     Memory.roomsList.push(this.room.name);
-    console.log('foo', Memory.roomsList);
   }
 
 }
