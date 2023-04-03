@@ -15,16 +15,23 @@ Creep.prototype.skaven.runner.skitter = function(runners) {
 
   // Perform a task
   if (this.getTask() === 'FIND_ROOM')     { this.skaven.runner.findRoom.bind(this)(); }
-  if (this.getTask() === 'MOVE_TO_ROOM')  { this.skaven.runner.moveToRoom.bind(this)(); }
   if (this.getTask() === 'CLAIM_ROOM')    { this.skaven.runner.claimRoom.bind(this)(); }
 
 }
 
 Creep.prototype.skaven.runner.findRoom = function() {
-  const exits = Game.map.describeExits(this.room.name);
+
+  // if this isn't our spawn room, and we don't own this room... take it
+  if (this.room.name !== this.memory.spawn.name && !this.room.my) {
+    this.setTask('CLAIM_ROOM');
+  }
 
   // Pick a random exit to move to
+  // const exits = Game.map.describeExits(this.room.name);
   // const exitDir = _.sample(Object.keys(exits)); // random
+
+  // Do we own this room?
+  // If this is a new room that we don't own, and it's safe... Change task to Claim
 
   // Find closest exit
   const target = this.pos.findClosestByPath(FIND_EXIT, { filter: (pos) => {
