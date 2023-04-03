@@ -52,14 +52,13 @@ Creep.prototype.skaven.runner.claimRoom = function() {
 
   if (this.room.controller && !this.room.controller.my) {
     const res = this.claimController(this.room.controller);
-
     if (res === ERR_NOT_IN_RANGE) {
       this.moveCreepTo(this.room.controller);
     } else if (res === ERR_INVALID_TARGET) {
       // SOMEONE BEAT US TO IT?!
     } else if (res === ERR_GCL_NOT_ENOUGH || res === ERR_NO_BODYPART) {
       this.suicide(); // Wounded, or GCL is off.. sometings wrong.. kill it.
-    } else if (res === OK) {
+    } else if (res === OK && this.room.controller.my) {
       // We did it!  Add Room to RoomList
       Memory.roomsList.push(this.room);
     }
