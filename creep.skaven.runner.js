@@ -56,7 +56,7 @@ Creep.prototype.skaven.runner.claimRoom = function() {
     }
   }
 
-  if (!this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
+  if (this.room.controller && this.room.controller.my && !Memory.roomsList.includes(this.room.name)) {
     Memory.roomsList.push(this.room.name);
     console.log('foo', Memory.roomsList);
   }
