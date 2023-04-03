@@ -14,7 +14,7 @@ Creep.prototype.skaven.runner.skitter = function(runners) {
   if (!this.getTask()) { this.setTask('FIND_ROOM'); }
 
   // Perform a task
-  if (this.getTask() === 'FIND_ROOM')     { this.findRoom(); }
+  if (this.getTask() === 'FIND_ROOM')     { this.skaven.runner.findRoom.bind(this)(); }
   if (this.getTask() === 'MOVE_TO_ROOM')  { this.moveToRoom(); }
   if (this.getTask() === 'CLAIM_ROOM')    { this.claimRoom(); }
 
