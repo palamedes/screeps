@@ -51,6 +51,10 @@ Creep.summonSkavenRunner = function(room, runners) {
     const ratName = 'Runner-' + Game.time + '-' + this.energyAvailable;
     const ratBrain = { memory: { role: 'runner', renews: 0, spawn: { id: room.id, name: room.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 } };
     const ratParts = ['TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','TOUGH','CLAIM','MOVE','MOVE','MOVE','MOVE','MOVE','MOVE']
-    // return room.spawnCreep(ratParts, ratName, ratBrain);
+
+    const spawn = room.find(FIND_MY_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
+      });
+    spawn.spawnCreep(ratParts, ratName, ratBrain);
   }
 }
