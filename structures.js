@@ -74,6 +74,7 @@ let structures = {
 
   drawBaseplan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
+    if (!spawn) return false;
     // Plan the room and store it in memory
     Memory.rooms[room.name].basePlan = Memory.rooms[room.name].basePlan || structures.basePlan(room);
     // Function to take the spiral string, and actually draw it out on the map.
