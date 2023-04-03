@@ -27,7 +27,7 @@ Creep.prototype.skaven.runner.findRoom = function() {
   const exitDir = _.sample(Object.keys(exits));
   const exit = exits[exitDir];
 
-  console.log('Finding exits', exit);
+  console.log('Finding exits', exit, exitDir);
   // // Move the creep to the exit
   // creep.moveTo(creep.pos.findClosestByPath(exit));
   //
