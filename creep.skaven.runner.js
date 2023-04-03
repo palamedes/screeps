@@ -45,7 +45,7 @@ Creep.prototype.skaven.runner.findRoom = function() {
 
 
 // Summon a Skaven Gutter Runner if we need to...
-Creep.summonSkavenRunner = function(room) {
+Creep.summonSkavenRunner = function(room, runners) {
   console.log('should we summon a runner?');
   // Summon a Gutter Runner if we meet certain criteria
   if (room.controllerLevel >= 5 && runners.length === 0 && this.energyAvailable > 1000) {
