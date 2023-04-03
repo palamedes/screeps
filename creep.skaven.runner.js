@@ -15,8 +15,8 @@ Creep.prototype.skaven.runner.skitter = function(runners) {
 
   // Perform a task
   if (this.getTask() === 'FIND_ROOM')     { this.skaven.runner.findRoom.bind(this)(); }
-  if (this.getTask() === 'MOVE_TO_ROOM')  { this.moveToRoom(); }
-  if (this.getTask() === 'CLAIM_ROOM')    { this.claimRoom(); }
+  if (this.getTask() === 'MOVE_TO_ROOM')  { this.skaven.runner.moveToRoom.bind(this)(); }
+  if (this.getTask() === 'CLAIM_ROOM')    { this.skaven.runner.claimRoom.bind(this)(); }
 
 }
 
@@ -24,10 +24,18 @@ Creep.prototype.skaven.runner.findRoom = function() {
   const exits = Game.map.describeExits(this.room.name);
 
   // Pick a random exit to move to
-  const exitDir = _.sample(Object.keys(exits));
-  const exit = exits[exitDir];
+  // const exitDir = _.sample(Object.keys(exits)); // random
 
-  console.log('Finding exits', exit, exitDir);
+  // Find closest exit
+  const exit = creep.pos.findClosestByPath(FIND_EXIT, { filter: (pos) => {
+      return (pos.x === 0 || pos.x === 49 || pos.y === 0 || pos.y === 49);
+    }});
+
+  if (exit !== null) { creep.moveTo(exit); } else {
+    // There is no exit point in the wall
+    console.log("No wall exit found!");
+  }
+
   // // Move the creep to the exit
   // creep.moveTo(creep.pos.findClosestByPath(exit));
   //
