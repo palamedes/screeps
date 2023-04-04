@@ -37,10 +37,10 @@ Room.prototype.summonSlave = function(memory) {
 
   // Build the array of body parts based on the calculated numbers
   let ratParts = [];
+  for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
   for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
   for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
   for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
-  for (let i = 0; i < numTough; i++)  { ratParts.push(TOUGH); }
   // Now try to summon it
   return ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
 }
