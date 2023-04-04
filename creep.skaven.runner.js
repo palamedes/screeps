@@ -62,7 +62,12 @@ Creep.prototype.skaven.runner.claimRoom = function() {
 
 }
 
-// Summon a Skaven Gutter Runner if we need to...
+/** Summon Skaven Runner
+ * This root Creep method does the work of determining if we need a Gutter Runner to scout and take another room or not.
+ * If we do it will summon the runner and let it go find us a room to take.
+ * @param room
+ * @param runners
+ */
 Creep.summonSkavenRunner = function(room, runners) {
   // Summon a Gutter Runner if we meet certain criteria
   if (room.controller.level >= 5 && runners.length === 0 && room.energyAvailable > 1000 && Memory.roomsList.length < Game.gcl.level) {
