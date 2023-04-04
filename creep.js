@@ -80,6 +80,7 @@ Creep.prototype.setTask = function(task) {
   if (task === 'harvest') { this.say('⚡'); this.setTarget(null); }
 }
 Creep.prototype.getTask = function() { return this.memory.task; }
+Creep.prototype.isTask = function(task) { return this.memory.task === task; }
 
 Creep.prototype.takeAllFrom = function(target) {
   let results = [];
