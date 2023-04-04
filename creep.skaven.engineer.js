@@ -48,10 +48,9 @@ Creep.prototype.skaven.engineer.getPower = function() {
  * @param engineers
  */
 Creep.summonSkavenEngineer = function(room, engineers) {
-  console.log(room.energyAvailable);
   return false;
   // Summon an Engineer if we don't have at least one in each room
-  if (engineers.length < Memory.roomsList.length ) {
+  if (engineers.length < Memory.roomsList.length && room.energyAvailable > 300) {
     const ratSpawn = Game.spawns[Object.keys(Game.spawns)[0]];
     if (ratSpawn) {
       const ratName = 'Engineer-' + Game.time + '-' + room.energyAvailable;
