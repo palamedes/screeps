@@ -70,10 +70,10 @@ Creep.prototype.skaven.runner.claimRoom = function() {
  */
 Creep.summonSkavenRunner = function(room, runners) {
   // Summon a Gutter Runner if we meet certain criteria
-  if (room.controller.level >= 5 && runners.length === 0 && room.energyAvailable > 1000 && Memory.roomsList.length < Game.gcl.level) {
-    const ratName = 'Runner-' + Game.time + '-' + this.energyAvailable;
+  if (room.controller.level >= 5 && runners.length === 0 && room.energyAvailable > 800 && Memory.roomsList.length < Game.gcl.level) {
+    const ratName = 'Runner-' + Game.time;
     const ratBrain = { memory: { role: 'runner', renews: 0, spawn: { id: room.id, name: room.name }, task: null, slept: 0, taskAttempt: 0, moveAttempt: 0 } };
-    const ratParts = [CLAIM,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE];
+    const ratParts = [CLAIM,MOVE,MOVE,MOVE,MOVE];
 
     const spawns = room.find(FIND_MY_STRUCTURES, {
         filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
