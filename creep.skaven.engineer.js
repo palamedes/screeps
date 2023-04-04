@@ -15,9 +15,11 @@ Creep.prototype.skaven.engineer.skitter = function(engineers) {
   if (!this.getTask()) { this.setTask('FIND_ROOM'); }
 
   // Perform a task
-  if (this.getTask() === 'FIND_ROOM')         { this.skaven.engineer.findRoom.bind(this)(); }
-  if (this.getTask() === 'UPDATE_CONTROLLER') { this.skaven.engineer.updateController.bind(this)(); }
-  if (this.getTask() === 'GET_POWER')         { this.skaven.engineer.getPower.bind(this)(); }
+  let task = this.getTask();
+  if (this.isTask(null))                { this.skaven.engineer.findRoom.bind(this)(); }
+  if (this.isTask('FIND_ROOM'))         { this.skaven.engineer.findRoom.bind(this)(); }
+  if (this.isTask('UPDATE_CONTROLLER')) { this.skaven.engineer.updateController.bind(this)(); }
+  if (this.isTask('GET_POWER'))         { this.skaven.engineer.getPower.bind(this)(); }
 
 }
 
@@ -70,14 +72,6 @@ Creep.summonSkavenEngineer = function(room, engineers) {
       for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
       // Now try to summon it
       // return ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
-
-      console.log(ratParts);
     }
-
-
-  //   const spawns = room.find(FIND_MY_STRUCTURES, {
-  //     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
-  //   });
-  //   if (spawns.length > 0) { spawns[0].spawnCreep(ratParts, ratName, ratBrain); }
   }
 }
