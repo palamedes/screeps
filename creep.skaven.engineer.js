@@ -48,7 +48,6 @@ Creep.prototype.skaven.engineer.getPower = function() {
  * @param engineers
  */
 Creep.summonSkavenEngineer = function(room, engineers) {
-  return false;
   // Summon an Engineer if we don't have at least one in each room
   if (engineers.length < Memory.roomsList.length && room.energyAvailable > 300) {
     const ratSpawn = Game.spawns[Object.keys(Game.spawns)[0]];
@@ -64,11 +63,18 @@ Creep.summonSkavenEngineer = function(room, engineers) {
       energy = energy - numCarry * 50;
       const numMove  = Math.floor(energy / 50); // 100% remaining to move
 
+      // Build the array of body parts based on the calculated numbers
+      let ratParts = [];
+      for (let i = 0; i < numWork; i++)   { ratParts.push(WORK); }
+      for (let i = 0; i < numCarry; i++)  { ratParts.push(CARRY); }
+      for (let i = 0; i < numMove; i++)   { ratParts.push(MOVE); }
+      // Now try to summon it
+      // return ratSpawn.spawnCreep(ratParts, ratName, ratBrain);
+
+      console.log(ratParts);
     }
 
 
-    //   const ratParts = [CLAIM,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE];
-  //
   //   const spawns = room.find(FIND_MY_STRUCTURES, {
   //     filter: (structure) => structure.structureType === STRUCTURE_SPAWN  && !structure.spawning
   //   });
