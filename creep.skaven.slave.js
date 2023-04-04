@@ -1,6 +1,8 @@
 /**
  * Skaven Slave!
  * This is the creep that is your worker, hauler, harvester around the base.
+ *
+ * @TODO this file has a limited life and will be complete refactored as we specialize
  */
 
 // Skitter!  Have the slave decide what he should be doing, and then go and do it..
