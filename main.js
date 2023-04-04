@@ -43,7 +43,8 @@ module.exports.loop = function () {
       Memory.rooms[roomName].numSucklePoints = Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0);
       Memory.rooms[room.name].maxSlaves = (Memory.rooms[room.name].numSucklePoints * 2) + Memory.rooms[room.name].numSucklePoints;
       // At RCL 5+ we need to start being smarter about our rats and who does what work.
-      if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 5;
+      // Limit to 4 slaves.  1 for each resource, 1 as a hauler, 1 as a worker...
+      if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 4;
       // Spawn something if we need to ... Each role knows how to summon itself
       Creep.summonSkavenSlave(room, slaves);        // Spawn a Skaven Slave
       Creep.summonSkavenRunner(room, runners);      // Spawn a Skaven Gutter Runner
