@@ -30,7 +30,7 @@ Creep.prototype.taskStore = function() {
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
   // If no target, is worker and there is an EXTENSION available...
-  if (!target && isWorker) { targets = this.room.find(FIND_STRUCTURES, {
+  if (!target && (isWorker || isHauler)) { targets = this.room.find(FIND_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
