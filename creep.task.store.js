@@ -24,14 +24,14 @@ Creep.prototype.taskStore = function() {
     filter: (structure) => structure.structureType === STRUCTURE_CONTAINER  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
-  // If no target, is hauler and there is a STORAGE available...
-  if (!target && isHauler) { targets = this.room.find(FIND_STRUCTURES, {
-    filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity() > 0 });
-    if (targets.length > 0) target = this.pos.findClosestByRange(targets);
-  }
   // If no target, is worker and there is an EXTENSION available...
   if (!target && (isWorker || isHauler)) { targets = this.room.find(FIND_STRUCTURES, {
     filter: (structure) => structure.structureType === STRUCTURE_EXTENSION  && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0 });
+    if (targets.length > 0) target = this.pos.findClosestByRange(targets);
+  }
+  // If no target, is hauler and there is a STORAGE available...
+  if (!target && isHauler) { targets = this.room.find(FIND_STRUCTURES, {
+    filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity() > 0 });
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
 
