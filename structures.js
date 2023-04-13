@@ -189,9 +189,23 @@ let structures = {
       }
       return results;
     }
-    // @TODO Find the x,y location of the *
-    let unmodifiedBasePlan = spiralStamp(basePlan,8, 8);
+
+    let starLocation = structures.findStarLocation();
+    let unmodifiedBasePlan = spiralStamp(basePlan, starLocation.x, starLocation.y);
     return modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
+  },
+
+  // Get our starting location for this base
+  findStarLocation: () => {
+    for (let y = 0; y < structures.baseStamp.length; y++) {
+      const row = structures.baseStamp[y];
+      const starIndex = row.indexOf('*');
+      if (starIndex !== -1) {
+        const x = starIndex;
+        return { x, y };
+      }
+    }
+    return null; // '*' not found
   },
 
   // In the same way we spiral around and draw the base, find our next build site based on the sent structure.
