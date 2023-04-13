@@ -199,6 +199,7 @@ let structures = {
   findStarLocation: () => {
     for (let y = 0; y < structures.baseStamp.length; y++) {
       const row = structures.baseStamp[y];
+      console.log(row);
       const starIndex = row.indexOf('*');
       if (starIndex !== -1) {
         const x = starIndex;
