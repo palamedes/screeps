@@ -23,9 +23,7 @@ module.exports.loop = function () {
   for(var name in Memory.creeps) { if(!Game.creeps[name]) { delete Memory.creeps[name]; }}
   // Get all our rooms (this should just be 1 room at the start of the game.. the rest will be added later)
   Memory.roomsList = Memory.roomsList || _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
-  if (Memory.roomsList.length === 0) {
-    _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name));
-  }
+  if (Memory.roomsList.length === 0) { Memory.roomsList = _.uniq(_.map(Game.spawns, (spawn) => spawn.room.name)); }
   // Get our various skaven roles
   const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave') ;
   const runners = _.filter(Game.creeps, (rat) => rat.memory.role === 'runner') ;
