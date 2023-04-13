@@ -18,6 +18,7 @@ Room.prototype.setMemory = function() {
 
 // Run the room...
 Room.prototype.run = function() {
+  console.log(structures.findStarLocation());
   let mem = Memory.rooms[this.name];
   mem.tickCount++;
   if (mem.status  === 'init')     { this.init(); }
