@@ -111,7 +111,7 @@ let structures = {
     const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const roomName = room.name;
     const basePlan = structures.baseStamp();
-    // Convert the above stamp, to a spiral starting at the main base "*" (7,8)
+    // Convert the above stamp, to a spiral starting at the main base "*" (8,8)
     // *eeT#Tee#·#e#ee#eT·e#e#·... etc.. around and around expanding outwards.  This allows us to dynamically change as we draw.
     // This was hard to figure out.. And kinda pointless, its only ever run once typically.. but still was a fun challenge.
     const spiralStamp = (basePlan, startX, startY) => {
@@ -189,7 +189,8 @@ let structures = {
       }
       return results;
     }
-    let unmodifiedBasePlan = spiralStamp(basePlan,7, 7);
+    // @TODO Find the x,y location of the *
+    let unmodifiedBasePlan = spiralStamp(basePlan,8, 8);
     return modifyDrawnSpiral(unmodifiedBasePlan, spawn.pos.x, spawn.pos.y);
   },
 
