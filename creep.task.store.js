@@ -35,7 +35,7 @@ Creep.prototype.taskStore = function() {
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
   // If no target, is hauler and there is STILL nothing.. go drop it near the controller
-  if (!target && isHauler) { target =  this.room.controller; }
+  // if (!target && isHauler) { target =  this.room.controller; }
 
   // STEP TWO; NOW ACTUALLY DO THE DEED
 
@@ -44,16 +44,16 @@ Creep.prototype.taskStore = function() {
     if (this.pos.inRangeTo(target.pos, 1)) {
       let res = this.giveAllTo(target);
       if (res.includes(ERR_NOT_IN_RANGE)) {
-        console.log('not in range')
+        // console.log('not in range')
         // How did we get here?  this shouldn't be possible
       } else if (res.includes(ERR_INVALID_TARGET)) {
         this.clearTask();
-        console.log('invalid')
+        // console.log('invalid')
       } else if (res.includes(ERR_FULL)) {
         this.clearTarget();
-        console.log('full')
+        // console.log('full')
       } else {
-        console.log(res);
+        // console.log(res);
       }
     } else {
       this.moveCreepTo(target, '#ffffff');
