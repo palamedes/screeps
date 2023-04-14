@@ -4,9 +4,6 @@ Creep.prototype.taskHarvest = function() {
 
   // STEP ONE; FIND SOMETHING TO HARVEST...
 
-  if (this.name === 'Slave-47352685-300') {
-    console.log('hi');
-  }
 
   // WORKER: Try to get energy from a container first...
   if (!this.getTarget() && isWorker) {
@@ -14,6 +11,10 @@ Creep.prototype.taskHarvest = function() {
       filter: structure => { return structure.structureType === STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] > 0; }
     });
     if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); }
+  }
+
+  if (this.name === 'Slave-47352685-300') {
+    console.log(this.getTarget());
   }
 
   // HAULER: Try to get stuff from tombstone...
