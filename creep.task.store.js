@@ -34,6 +34,8 @@ Creep.prototype.taskStore = function() {
     filter: (structure) => structure.structureType === STRUCTURE_STORAGE    && structure.store.getFreeCapacity() > 0 });
     if (targets.length > 0) target = this.pos.findClosestByRange(targets);
   }
+  // If no target, is hauler and there is STILL nothing.. go drop it near the controller
+  if (!target && isHauler) { target =  this.room.controller; }
 
   // STEP TWO; NOW ACTUALLY DO THE DEED
 
