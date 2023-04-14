@@ -4,7 +4,6 @@ Creep.prototype.taskHarvest = function() {
 
   // STEP ONE; FIND SOMETHING TO HARVEST...
 
-
   // WORKER: Try to get energy from a container first...
   if (!this.getTarget() && isWorker) {
     const containers = this.room.find(FIND_STRUCTURES, {
@@ -13,36 +12,30 @@ Creep.prototype.taskHarvest = function() {
     if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); }
   }
 
-
   // HAULER: Try to get stuff from tombstone...
   if (!this.getTarget() && isHauler) {
     const containers = this.room.find(FIND_TOMBSTONES, {
       filter: tombstone => { const totalResources = _.sum(tombstone.store); return totalResources > 0; }
     });
-    if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); // @TODO Make sure the damn thing isn't empty }
-    }
+    if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers));  }
+  }
 
-    if (this.name === 'Slave-47352685-300') {
-      console.log(!this.getTarget());
-    }
-
-    // HAULER/WORKER: Try to get energy that is dropped..
-    // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
-    if (!this.getTarget() && (isHauler || isWorker)) {
-      // Try to pickup dropped energy first
-      let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
-        filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
-      });
-      if (droppedEnergy.length > 0) {
-        let highestEnergyAmount = 0, highestEnergy = null;
-        for (let i = 0; i < droppedEnergy.length; i++) {
-          if (droppedEnergy[i].amount > highestEnergyAmount) {
-            highestEnergyAmount = droppedEnergy[i].amount;
-            highestEnergy = droppedEnergy[i];
-          }
+  // HAULER/WORKER: Try to get energy that is dropped..
+  // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
+  if (!this.getTarget() && (isHauler || isWorker)) {
+    // Try to pickup dropped energy first
+    let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
+      filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
+    });
+    if (droppedEnergy.length > 0) {
+      let highestEnergyAmount = 0, highestEnergy = null;
+      for (let i = 0; i < droppedEnergy.length; i++) {
+        if (droppedEnergy[i].amount > highestEnergyAmount) {
+          highestEnergyAmount = droppedEnergy[i].amount;
+          highestEnergy = droppedEnergy[i];
         }
-        this.setTarget(highestEnergy);
       }
+      this.setTarget(highestEnergy);
     }
   }
 
@@ -64,9 +57,9 @@ Creep.prototype.taskHarvest = function() {
     }
   }
 
-  // STEP TWO; HARVEST IT...
+// STEP TWO; HARVEST IT...
 
-  // Now that you have found a target, Go to that target and harvest it, assuming it has power.
+// Now that you have found a target, Go to that target and harvest it, assuming it has power.
   if (this.getTarget()) {
     let target = this.getTarget();
 
