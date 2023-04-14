@@ -22,14 +22,13 @@ Creep.prototype.taskHarvest = function() {
     if (containers.length > 0) { this.setTarget(this.pos.findClosestByRange(containers)); // @TODO Make sure the damn thing isn't empty }
     }
 
+    if (this.name === 'Slave-47352685-300') {
+      console.log(!this.getTarget());
+    }
+
     // HAULER/WORKER: Try to get energy that is dropped..
     // @TODO GET DROPPED ENERGY NOT AT A SUCKLE POINT FIRST
     if (!this.getTarget() && (isHauler || isWorker)) {
-      if (this.name === 'Slave-47352685-300') {
-        console.log('got here');
-      }
-
-
       // Try to pickup dropped energy first
       let droppedEnergy = Game.rooms[this.room.name].find(FIND_DROPPED_RESOURCES, {
         filter: dropped => dropped.resourceType === RESOURCE_ENERGY && dropped.amount > 25
