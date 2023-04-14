@@ -42,7 +42,8 @@ module.exports.loop = function () {
       Memory.rooms[roomName].maxEnergy = totalSpawnsCapacity + totalExtensionsCapacity;
       Memory.rooms[roomName].containerAvailability = _.sum(containers, (c) => c.store.getFreeCapacity(RESOURCE_ENERGY));
       Memory.rooms[roomName].numSucklePoints = Object.values(Memory.rooms[room.name].sources).reduce((acc, val) => acc + val.length, 0);
-      Memory.rooms[room.name].maxSlaves = Memory.rooms[room.name].numSucklePoints + 4;
+      // Number of slaves.. 1 per suckle point + 2 haulers + 3 workers early game
+      Memory.rooms[room.name].maxSlaves = Memory.rooms[room.name].numSucklePoints + 5;
       // At RCL 5+ we need to start being smarter about our rats and who does what work.
       // Limit to 4 slaves.  1 for each resource, 1 as a hauler, 1 as a worker...
       if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 4;
