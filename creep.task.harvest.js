@@ -14,7 +14,7 @@ Creep.prototype.taskHarvest = function() {
   }
 
   if (this.name === 'Slave-47352685-300') {
-    console.log(this.getTarget());
+    console.log(isWorker);
   }
 
   // HAULER: Try to get stuff from tombstone...
