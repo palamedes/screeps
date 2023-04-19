@@ -19,7 +19,7 @@ Room.prototype.summonSlave = function(memory) {
 
   // If we have more than 2 slaves already, and we have the max number of harvesters, and less haulers than harvesters..
   // Summon a dedicated hauler -- which is a rat that can't work.
-  if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < 2) {
+  if (slaves.length >= 2 && numHarvesters >= 2 && numHaulers < 1) {
     percentWork = 0; percentCarry = 0.60; energy = energy > 1500 ? 1500 : energy;
     renews = (energy - 200) / (1500 - 200) * 50;
   }
