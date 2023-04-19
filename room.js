@@ -5,13 +5,13 @@ Room.prototype.setMemory = function() {
   Memory.rooms = Memory.rooms || {}
   Memory.rooms[this.name] = Memory.rooms[this.name] || {}
   Memory.rooms[this.name] = {
-    status:     Memory.rooms[this.name].status    || 'init',
-    sources:    Memory.rooms[this.name].sources   || {},
-    maxSlaves:  Memory.rooms[this.name].maxSlaves || 2,
-    maxOgres:   Memory.rooms[this.name].maxOgres  || 0,
-    basePlan:   Memory.rooms[this.name].basePlan  || null,
-    tickCount:  Memory.rooms[this.name].tickCount || 0,
-    maxEnergy:  Memory.rooms[this.name].maxEnergy || 0,
+    status:       Memory.rooms[this.name].status    || 'init',
+    sources:      Memory.rooms[this.name].sources   || {},
+    sourcesUsed:  Memory.rooms[this.name].sources   || {},
+    maxSlaves:    Memory.rooms[this.name].maxSlaves || 2,
+    basePlan:     Memory.rooms[this.name].basePlan  || null,
+    tickCount:    Memory.rooms[this.name].tickCount || 0,
+    maxEnergy:    Memory.rooms[this.name].maxEnergy || 0,
   }
   return Memory.rooms[this.name];
 }
@@ -52,7 +52,7 @@ Room.prototype.init = function() {
   Memory.rooms[this.name].status = "running";
 }
 
-// okay do the day to day running of the room
+// Okay do the day to day running of the room
 Room.prototype.running = function() {
   // Work Towers
   structures.tower.run();
@@ -60,4 +60,9 @@ Room.prototype.running = function() {
   structures.drawBaseplan(this);
   // Okay every so often we need the room to build something
   structures.buildSomething(this);
+}
+
+// If we are RCL 5, we need to change our Creeps
+Room.prototype.onRCL5 = function() {
+
 }
