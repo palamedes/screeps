@@ -80,14 +80,7 @@ let structures = {
   },
 
 
-
-
-  // findHabitrails: () => {
-  //   //
-  //   const roomVisual = new RoomVisual('W24S37');
-  //   roomVisual.line(10, 10, 40, 40, { color: 'blue' });
-  // },
-
+  // This method draws the base plan on the map in real time for me to see..
   drawBaseplan: room => {
     const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     // Plan the room and store it in memory
@@ -252,12 +245,13 @@ let structures = {
   },
 
   // Look at what is actually placed.. and update the base plan accordingly to remove those items from the plan.
-  updateBasePlan: (room, index) => {
+  updateBasePlan: (room, index, updateCharacter) => {
+    if (!updateCharacter) { updateCharacter = ' '; }
     // if index is set, then just update that one location
     let replaceChar = (str, index, replacement) => {
       return str.slice(0, index) + replacement + str.slice(index + 1);
     }
-    Memory.rooms[room.name].basePlan = replaceChar(Memory.rooms[room.name].basePlan, index, ' ');
+    Memory.rooms[room.name].basePlan = replaceChar(Memory.rooms[room.name].basePlan, index, updateCharacter);
   },
 
   // RESOURCE_*, MINERAL_*, CREEP, TOWER, SOURCE, CONTROLLER, POWER_BANK, POWER_SPAWN,
