@@ -11,6 +11,10 @@ let structures = {
       let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
       let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
       if ((towersAllowed - towersBuilt) > 0) { structures.buildTower(room); }
+      // If we can build a container, we should..
+      let containersAllowed = CONTROLLER_STRUCTURES['container'][room.controller.level];
+      let containersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length;
+      if ((containersAllowed - containersBuilt) > 0) { structures.buildContainer(room); }
       // If we can build an extension, we should..
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
@@ -58,11 +62,23 @@ let structures = {
     const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const towersBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_TOWER}}).length;
     if (towersBeingBuilt === 0) {
-      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      // Pull the room base plan and translate the first "T" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_TOWER);
       structures.buildStructure(room, buildPos, STRUCTURE_TOWER);
     }
   },
+
+  // Place a container around the base
+  buildContainer: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
+    const containersBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_CONTAINER}}).length;
+    if (containersBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "e" to a x,y position and build there.
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_CONTAINER);
+      structures.buildStructure(room, buildPos, STRUCTURE_CONTAINER);
+    }
+  },
+
 
 
 
@@ -212,6 +228,7 @@ let structures = {
   findBuildLocationFromPlan: (start, str, structure) => {
     let findSymbol = '·';
     if (structure === STRUCTURE_EXTENSION) { findSymbol = 'e'; }
+    if (structure === STRUCTURE_CONTAINER) { findSymbol = 'c'; }
     if (structure === STRUCTURE_ROAD)      { findSymbol = '#'; }
     if (structure === STRUCTURE_TOWER)     { findSymbol = 'T'; }
     const x = start.x, y = start.y;
