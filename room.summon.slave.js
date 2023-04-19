@@ -11,9 +11,10 @@ Room.prototype.summonSlave = function(memory) {
   let energy = this.energyAvailable;
   let percentWork = 0.5, percentCarry = 0.50;
 
-  // If we have more than 2 slaves already, and we don't have as many dedicated harvesters as we need..
+  // If we have more than 2 slaves already, and the number of harvester is less than the max number of harvesters for this room...
   // Summon a dedicated harvester -- which is a rat that can't carry.
-  if (slaves.length >= 2 && numHarvesters < Memory.rooms[this.name].numSucklePoints) {
+  const maxHarvesters = this.controller.level > 5 ? Memory.rooms[this.name].numSucklePoints : Memory.rooms[this.name].sources.length;
+  if (slaves.length >= 2 && numHarvesters < maxHarvesters) {
     percentWork = 0.85; percentCarry = 0; energy = energy > 1000 ? 1000 : energy; renews = (energy === 1000) ? 50 : 0;
   }
 
