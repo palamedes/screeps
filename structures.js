@@ -19,17 +19,19 @@ let structures = {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
       if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
+      // Early room level, build the ramparts
+      if (room.controller.level < 4) { structures.buildRampart(room); }
       // Early room level, build the roads
-      structures.buildRoad(room);
-
+      if (room.controller.level < 3) { structures.buildRoad(room); }
     }
   },
 
-  buildStructure: (room, buildPos, structure) => {
+  buildStructure: (room, buildPos, structure, updatePlanCharacter) => {
     if (!buildPos) return;
+    if (!updatePlanCharacter) updatePlanCharacter = ' ';
     let results = room.createConstructionSite(buildPos.x, buildPos.y, structure);
     if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
-      structures.updateBasePlan(room, buildPos.index);
+      structures.updateBasePlan(room, buildPos.index, updatePlanCharacter);
     } else {
       console.log("we couldn't build " + structure + " for some reason. somethings wrong. Results:" + results)
     }
@@ -43,6 +45,17 @@ let structures = {
       // Pull the room base plan and translate the first "#" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
       structures.buildStructure(room, buildPos, STRUCTURE_ROAD);
+    }
+  },
+
+  // Place one of the road sections around the base
+  buildRampart: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
+    const rampartsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_RAMPART}}).length;
+    if (rampartsBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "%" to a x,y position and build there, then set the symbol to '#'
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
+      structures.buildStructure(room, buildPos, STRUCTURE_ROAD, '#');
     }
   },
 
@@ -223,6 +236,7 @@ let structures = {
     if (structure === STRUCTURE_EXTENSION) { findSymbol = 'e'; }
     if (structure === STRUCTURE_CONTAINER) { findSymbol = 'c'; }
     if (structure === STRUCTURE_ROAD)      { findSymbol = '#'; }
+    if (structure === STRUCTURE_RAMPART)   { findSymbol = '%'; }
     if (structure === STRUCTURE_TOWER)     { findSymbol = 'T'; }
     const x = start.x, y = start.y;
     let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
