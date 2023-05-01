@@ -50,7 +50,7 @@ module.exports.loop = function () {
       // Spawn something if we need to ... Each role knows how to summon itself
       Creep.summonSkavenSlave(room, slaves);        // Spawn a Skaven Slave
       Creep.summonSkavenRunner(room, runners);      // Spawn a Skaven Gutter Runner
-      Creep.summonSkavenEngineer(room, engineers);  // Spawn a Skaven Engineer
+      // Creep.summonSkavenEngineer(room, engineers);  // Spawn a Skaven Engineer
       // Run the room..
       room.run();
     } else {
