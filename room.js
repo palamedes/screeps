@@ -36,7 +36,9 @@ Room.prototype.init = function() {
         if (x === source.pos.x && y === source.pos.y) continue;
         const look = source.room.lookAt(x, y);
         if (look.some(obj => obj.type === LOOK_TERRAIN && obj.terrain === 'wall')) continue;
-        if (look.some(obj => obj.type === LOOK_STRUCTURES && OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType))) continue;
+        if (look.some(obj => obj.type === LOOK_STRUCTURES && (OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType) &&
+            obj.structure.structureType !== STRUCTURE_RAMPART &&
+            obj.structure.structureType !== STRUCTURE_ROAD))) continue;
         surroundings.push({x: x, y: y});
       }
     }
