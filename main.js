@@ -49,7 +49,7 @@ module.exports.loop = function () {
       if (room.controller.level >= 5) Memory.rooms[room.name].maxSlaves = 5;
       // Spawn something if we need to ... Each role knows how to summon itself
       Creep.summonSkavenSlave(room, slaves);        // Spawn a Skaven Slave
-      Creep.summonSkavenRunner(room, runners);      // Spawn a Skaven Gutter Runner
+      // Creep.summonSkavenRunner(room, runners);      // Spawn a Skaven Gutter Runner
       // Creep.summonSkavenEngineer(room, engineers);  // Spawn a Skaven Engineer
       // Run the room..
       room.run();
