@@ -93,9 +93,12 @@ Creep.prototype.taskHarvest = function() {
     let isNearResource = (rat, sources) => {
       const x = this.pos.x, y = this.pos.y;
       for (let sourceKey in sources) {
-        for (let posKey in sources[sourceKey]) {
-          if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
-            return sourceKey;
+        const source = Game.getObjectById(sourceKey);
+        if (source && source.energy > 0) {
+          for (let posKey in sources[sourceKey]) {
+            if (sources[sourceKey][posKey].x === x && sources[sourceKey][posKey].y === y) {
+              return sourceKey;
+            }
           }
         }
       }
