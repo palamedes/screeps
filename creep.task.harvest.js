@@ -53,10 +53,10 @@ Creep.prototype.taskHarvest = function() {
     if (!this.getTarget()) {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, { filter: (source) => source.energy > 0 });
       // console.log('count', sourceEnergy.length);
-      console.log('id', sourceEnergy[0].id);
+      // console.log('id', sourceEnergy[0].id);
       if (Memory.rooms[this.room.name].sourceLastUsed) {
-        sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
-        // console.log('recount', sourceEnergy.length);
+        sourceEnergy = sourceEnergy.filter((source) => source.id === Memory.rooms[this.room.name].sourceLastUsed.id);
+        console.log('recount', sourceEnergy.length);
       }
 
 
