@@ -49,13 +49,6 @@ Room.prototype.init = function() {
   for(let i in energySources) {
     Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
   }
-  // Set up our sources used code to recall which one we have used
-  for(let i in Memory.rooms[this.name].sources) {
-    Memory.rooms[this.name].sourcesUsed[i] = {}
-    for(let ii in Memory.rooms[this.name].sources[i]) {
-      Memory.rooms[this.name].sourcesUsed[i] = { nextIndex: 0 };
-    }
-  }
 
   // @TODO Do stuff to setup the room here..
 
