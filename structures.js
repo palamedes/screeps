@@ -58,7 +58,7 @@ let structures = {
     if (rampartsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "%" to a x,y position and build there, then set the symbol to '#'
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
-      structures.buildStructure(room, buildPos, STRUCTURE_ROAD, '#');
+      structures.buildStructure(room, buildPos, STRUCTURE_RAMPART, '#');
     }
   },
 
