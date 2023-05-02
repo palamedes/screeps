@@ -60,7 +60,7 @@ Creep.prototype.taskHarvest = function() {
       }
       if (sourceEnergy.length > 0) {
         let target = this.pos.findClosestByRange(sourceEnergy);
-        Memory.rooms[this.room.name].sourceLastUsed = target;
+        Memory.rooms[this.room.name].sourceLastUsed = target.id;
         this.setTarget(target);
       }
     }
