@@ -53,7 +53,7 @@ Room.prototype.init = function() {
   for(let i in Memory.rooms[this.name].sources) {
     Memory.rooms[this.name].sourcesUsed[i] = {}
     for(let ii in Memory.rooms[this.name].sources[i]) {
-      Memory.rooms[this.name].sourcesUsed[i][ii] = 0;
+      Memory.rooms[this.name].sourcesUsed[i] = 0;
     }
   }
 
