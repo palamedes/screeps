@@ -55,7 +55,6 @@ Creep.prototype.taskHarvest = function() {
         sourceEnergy = sourceEnergy.filter((source) => source.id === Memory.rooms[this.room.name].sourceLastUsed.id);
       }
       if (sourceEnergy.length > 0) {
-        console.log(sourceEnergy.length, sourceEnergy[0].id);
         let target = this.pos.findClosestByRange(sourceEnergy);
         Memory.rooms[this.room.name].sourceLastUsed = target;
         this.setTarget(target);
@@ -66,7 +65,7 @@ Creep.prototype.taskHarvest = function() {
 // STEP TWO; HARVEST IT...
 
 // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-  if (this.getTarget() && false) {
+  if (this.getTarget()) {
     let target = this.getTarget();
 
     if (target && !(target instanceof Source)) {
