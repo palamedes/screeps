@@ -48,12 +48,30 @@ Creep.prototype.taskHarvest = function() {
   }
 
   // HARVESTER/WORKER: Still haven't any energy, go find a source and suckle..
+
+  // @TODO Harvest from the other source back and forth
   if (isHarvester || isWorker) {
     if (!this.getTarget()) {
-      let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
-        filter: (source) => source.energy > 0
-      });
-      if (sourceEnergy.length > 0) { this.setTarget(this.pos.findClosestByRange(sourceEnergy)); }
+      // let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
+      //   filter: (source) => source.energy > 0
+      // });
+      // if (sourceEnergy.length > 0) { this.setTarget(this.pos.findClosestByRange(sourceEnergy)); }
+
+      for (let sourceId in Memory.rooms[this.room.name].sourcesUsed) {
+        const source = Game.getObjectById(sourceId);
+        if (!source || source.energy === 0) continue;
+        const targetIndex = Memory.rooms[this.room.name].sourcesUsed[sourceId].nextIndex;
+        const sucklePoints = Memory.rooms[this.room.name].sources[sourceId];
+        if (sucklePoints.length === 0) continue;
+        const nextSucklePoint = sucklePoints[targetIndex % sucklePoints.length];
+        const target = new RoomPosition(nextSucklePoint.x, nextSucklePoint.y, this.room.name);
+        if (this.pos.isEqualTo(target)) {
+          Memory.rooms[this.room.name].sourcesUsed[sourceId].nextIndex++;
+        } else {
+          this.setTarget(target);
+        }
+      }
+
     }
   }
 
