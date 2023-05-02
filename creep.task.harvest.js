@@ -54,7 +54,7 @@ Creep.prototype.taskHarvest = function() {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
       });
-      console.log('count', sourceEnergy.count);
+      console.log('count', sourceEnergy.length);
       if (Memory.rooms[this.room.name].sourceLastUsed) {
         sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
         // console.log('here', sourceEnergy)
