@@ -57,7 +57,7 @@ Creep.prototype.taskHarvest = function() {
       console.log('count', sourceEnergy.length);
       if (Memory.rooms[this.room.name].sourceLastUsed) {
         sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
-        // console.log('here', sourceEnergy)
+        console.log('recount', sourceEnergy.length);
       }
 
 
