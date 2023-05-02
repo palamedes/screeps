@@ -57,7 +57,7 @@ let structures = {
     const rampartsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_RAMPART}}).length;
     if (rampartsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "%" to a x,y position and build there, then set the symbol to '#'
-      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_RAMPART);
       structures.buildStructure(room, buildPos, STRUCTURE_RAMPART, '#');
     }
   },
