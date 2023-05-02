@@ -10,19 +10,19 @@ let structures = {
       // If we can build a tower, we should..
       let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
       let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
-      if ((towersAllowed - towersBuilt) > 0) { structures.buildTower(room); }
+      if ((towersAllowed - towersBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildTower(room); }
       // If we can build a container, we should..
       let containersAllowed = CONTROLLER_STRUCTURES['container'][room.controller.level];
       let containersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length;
-      if ((containersAllowed - containersBuilt) > 0) { structures.buildContainer(room); }
+      if ((containersAllowed - containersBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildContainer(room); }
       // If we can build an extension, we should..
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
-      if ((extensionsAllowed - extensionsBuilt) > 0) { structures.buildExtension(room); }
+      if ((extensionsAllowed - extensionsBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildExtension(room); }
       // Early room level, build the ramparts
-      if (room.controller.level < 4) { structures.buildRampart(room); }
+      if (room.controller.level > 4 && _.size(Game.constructionSites) === 0) { structures.buildRampart(room); }
       // Early room level, build the roads
-      if (room.controller.level < 3) { structures.buildRoad(room); }
+      if (room.controller.level > 3 && _.size(Game.constructionSites) === 0) { structures.buildRoad(room); }
     }
   },
 
