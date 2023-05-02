@@ -51,9 +51,9 @@ Creep.prototype.taskHarvest = function() {
   if (isHarvester || isWorker) {
     if (!this.getTarget()) {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, { filter: (source) => source.energy > 0 });
-      if (Memory.rooms[this.room.name].sourceLastUsed) {
-        sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
-      }
+      // if (Memory.rooms[this.room.name].sourceLastUsed) {
+      //   sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
+      // }
       if (sourceEnergy.length > 0) {
         let target = this.pos.findClosestByRange(sourceEnergy);
         Memory.rooms[this.room.name].sourceLastUsed = target;
