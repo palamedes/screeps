@@ -33,7 +33,8 @@ let structures = {
     if (results === OK || results === ERR_RCL_NOT_ENOUGH) {
       structures.updateBasePlan(room, buildPos.index, updatePlanCharacter);
     } else if (results === ERR_INVALID_TARGET) {
-      console.log("We can't place the '" + structure + "' at the location requested: ["+buildPos.x+","+buildPos.y+"]");
+      structures.updateBasePlan(room, buildPos.index, updatePlanCharacter);
+      console.log("We can't place the '" + structure + "' at the location requested: ["+buildPos.x+","+buildPos.y+"] ~ Assuming it was already built and clearing character.");
     } else {
       console.log("we couldn't build " + structure + " for some reason. somethings wrong. Results:" + results)
     }
