@@ -16,6 +16,11 @@
 
 // This method iterates through all the different skaven type and runs them based on their role.
 Creep.prototype.run = function(slaves, runners, engineers) {
+  // If our creep doesn't have a role try to set it via the name
+  if (!this.memory.role && this.name.includes('Slave')) { creep.memory.role = 'slave'; }
+  if (!this.memory.role && this.name.includes('Runner')) { creep.memory.role = 'runner'; }
+  if (!this.memory.role && this.name.includes('Engineer')) { creep.memory.role = 'engineer'; }
+
   // If we are a Skaven Slave, and we have been spawned...
   if (this.memory.role === 'slave' && !this.spawning) { this.skaven.slave.skitter.bind(this)(slaves); }
   // If we are a Skaven Gutter Runner, and we have been spawned...
