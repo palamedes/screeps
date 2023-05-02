@@ -48,9 +48,8 @@ Creep.prototype.taskHarvest = function() {
   }
 
   // HARVESTER/WORKER: Still haven't any energy, go find a source and suckle..
-
-  // @TODO Harvest from the other source back and forth
   if (isHarvester || isWorker) {
+    console.log(this.name);
     if (!this.getTarget()) {
       let sourceEnergy = Game.rooms[this.room.name].find(FIND_SOURCES, {
         filter: (source) => source.energy > 0
