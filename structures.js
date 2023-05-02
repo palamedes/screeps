@@ -42,9 +42,11 @@ let structures = {
 
   // Place one of the road sections around the base
   buildRoad: room => {
+    console.log('attempting to build road');
     const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
     const roadsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_ROAD}}).length;
     if (roadsBeingBuilt === 0) {
+      console.log('no roads being built');
       // Pull the room base plan and translate the first "#" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_ROAD);
       structures.buildStructure(room, buildPos, STRUCTURE_ROAD);
