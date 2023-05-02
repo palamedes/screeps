@@ -66,7 +66,7 @@ Creep.prototype.taskHarvest = function() {
 // STEP TWO; HARVEST IT...
 
 // Now that you have found a target, Go to that target and harvest it, assuming it has power.
-  if (this.getTarget()) {
+  if (this.getTarget() && false) {
     let target = this.getTarget();
 
     if (target && !(target instanceof Source)) {
