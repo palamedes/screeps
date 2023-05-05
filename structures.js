@@ -29,6 +29,7 @@ let structures = {
       // RAMPART ~ Build a rampart if there are no construction sites
       if (room.controller.level > 4 && _.size(Game.constructionSites) === 0) { structures.buildRampart(room); }
       // WALL ~ Build a wall if there are no construction sites
+      if (room.controller.level > 5 && _.size(Game.constructionSites) === 0) { structures.buildWall(room); }
     }
   },
 
@@ -112,6 +113,16 @@ let structures = {
     }
   },
 
+  // Place a storage around the base
+  buildWall: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
+    const wallsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_WALL}}).length;
+    if (wallsBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "#" to a x,y position and build there.
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_WALLS);
+      structures.buildStructure(room, buildPos, STRUCTURE_WALLS);
+    }
+  },
 
   // This method draws the base plan on the map in real time for me to see..
   drawBaseplan: room => {
