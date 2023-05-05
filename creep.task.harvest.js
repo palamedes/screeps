@@ -54,7 +54,7 @@ Creep.prototype.taskHarvest = function() {
       // if (Memory.rooms[this.room.name].sourceLastUsed) {
       //   sourceEnergy = sourceEnergy.filter((source) => source.id !== Memory.rooms[this.room.name].sourceLastUsed.id);
       // }
-      if (sourceEnergy.length > 0) {
+      if (sourceEnergy && sourceEnergy.length > 0) {
         let target = this.pos.findClosestByRange(sourceEnergy);
         Memory.rooms[this.room.name].sourceLastUsed = target;
         this.setTarget(target);
@@ -118,7 +118,7 @@ Creep.prototype.taskHarvest = function() {
         if (this.harvest(target) === ERR_NOT_IN_RANGE) {
           // Waiting for power to respawn most likely
         }
-        // ...otherwise find us a suckle point that is open and move to it.
+      // ...otherwise find us a suckle point that is open and move to it.
       } else {
         for (let id in Memory.rooms[this.room.name].sources) {
           if (foundSucklePoint) break;
