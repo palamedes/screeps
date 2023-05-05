@@ -5,28 +5,30 @@ let structures = {
 
   // Build something!
   buildSomething: room => {
+    console.log('# construction sites', _.size(Game.constructionSites));
     if (_.size(Game.constructionSites) === 0) {
       // @TODO and the room containers are more than 50% full...
-      // If we can build a tower, we should..
+      // TOWER ~ If we can build a tower, we should..
       let towersAllowed = CONTROLLER_STRUCTURES['tower'][room.controller.level];
       let towersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } }).length;
       if ((towersAllowed - towersBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildTower(room); }
-      // If we can build a container, we should..
+      // CONTAINER ~ If we can build a container, we should..
       let containersAllowed = CONTROLLER_STRUCTURES['container'][room.controller.level];
       let containersBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length;
       if ((containersAllowed - containersBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildContainer(room); }
-      // If we can build an extension, we should..
+      // EXTENSION ~ If we can build an extension, we should..
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
       if ((extensionsAllowed - extensionsBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildExtension(room); }
-      // if we can build a storage, we should..
+      // STORAGE ~ if we can build a storage, we should..
       let storagesAllowed = CONTROLLER_STRUCTURES['storage'][room.controller.level];
       let storagesBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_STORAGE } }).length;
       if ((storagesAllowed - storagesBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildStorage(room); }
-      // Early room level, build the roads
+      // ROAD ~ Build a road if there are no construction sites
       if (room.controller.level > 3 && _.size(Game.constructionSites) === 0) { structures.buildRoad(room); }
-      // Early room level, build the ramparts
+      // RAMPART ~ Build a rampart if there are no construction sites
       if (room.controller.level > 4 && _.size(Game.constructionSites) === 0) { structures.buildRampart(room); }
+      // WALL ~ Build a wall if there are no construction sites
     }
   },
 
