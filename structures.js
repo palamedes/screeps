@@ -5,7 +5,6 @@ let structures = {
 
   // Build something!
   buildSomething: room => {
-    console.log('# construction sites', _.size(Game.constructionSites));
     if (_.size(Game.constructionSites) === 0) {
       // @TODO and the room containers are more than 50% full...
       // TOWER ~ If we can build a tower, we should..
@@ -119,8 +118,8 @@ let structures = {
     const wallsBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_WALL}}).length;
     if (wallsBeingBuilt === 0) {
       // Pull the room base plan and translate the first "#" to a x,y position and build there.
-      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_WALLS);
-      structures.buildStructure(room, buildPos, STRUCTURE_WALLS);
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_WALL);
+      structures.buildStructure(room, buildPos, STRUCTURE_WALL);
     }
   },
 
