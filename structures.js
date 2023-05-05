@@ -22,7 +22,6 @@ let structures = {
       // if we can build a storage, we should..
       let storagesAllowed = CONTROLLER_STRUCTURES['storage'][room.controller.level];
       let storagesBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_STORAGE } }).length;
-      console.log('storages', storagesAllowed, storagesBuilt);
       if ((storagesAllowed - storagesBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildStorage(room); }
       // Early room level, build the roads
       if (room.controller.level > 3 && _.size(Game.constructionSites) === 0) { structures.buildRoad(room); }
