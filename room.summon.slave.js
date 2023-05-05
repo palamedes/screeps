@@ -1,8 +1,10 @@
 Room.prototype.summonSlave = function(memory) {
   // Get our slaves and then get the number of them that don't have the ability to carry anything.
   const slaves = _.filter(Game.creeps, (rat) => rat.memory.role === 'slave');
-  const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
-  const numHarvesters = _.filter(slaves, (slave) => !slave.body.some((part) => part.type === CARRY)).length;
+  const numHaulers = slaves.filter((slave) => slave.name.includes("hauler")).length;
+  const numHarvesters = slaves.filter((slave) => slave.name.includes("harvester")).length;
+  // const numHaulers = _.filter(Game.creeps, rat => rat.body.every(part => part.type !== WORK)).length;
+  // const numHarvesters = _.filter(slaves, (slave) => !slave.body.some((part) => part.type === CARRY)).length;
   const ratSpawn = this.find(FIND_MY_SPAWNS)[0];
   const ratID = (Game.time % 100000) + '-' + this.energyAvailable;
 
@@ -13,7 +15,8 @@ Room.prototype.summonSlave = function(memory) {
 
   // If we have more than 2 slaves already, and the number of harvester is less than the max number of harvesters for this room...
   // Summon a dedicated harvester -- which is a rat that can't carry.
-  const maxHarvesters = this.controller.level < 5 ? Memory.rooms[this.name].numSucklePoints : Memory.rooms[this.name].sources.length;
+  // const maxHarvesters = this.controller.level < 5 ? Memory.rooms[this.name].numSucklePoints : Memory.rooms[this.name].sources.length;
+  const maxHarvesters = Memory.rooms[this.name].sources.length;
   if (slaves.length >= 2 && numHarvesters < maxHarvesters) {
     percentWork = 0.85;
     percentCarry = 0;
