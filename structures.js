@@ -19,6 +19,10 @@ let structures = {
       let extensionsAllowed = CONTROLLER_STRUCTURES['extension'][room.controller.level];
       let extensionsBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_EXTENSION } }).length;
       if ((extensionsAllowed - extensionsBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildExtension(room); }
+      // if we can build a storage, we should..
+      let storagesAllowed = CONTROLLER_STRUCTURES['storage'][room.controller.level];
+      let storagesBuilt = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_STORAGE } }).length;
+      if ((storagesAllowed - storagesBuilt) > 0 && _.size(Game.constructionSites) === 0) { structures.buildStorage(room); }
       // Early room level, build the roads
       if (room.controller.level > 3 && _.size(Game.constructionSites) === 0) { structures.buildRoad(room); }
       // Early room level, build the ramparts
@@ -92,6 +96,17 @@ let structures = {
       // Pull the room base plan and translate the first "e" to a x,y position and build there.
       let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_CONTAINER);
       structures.buildStructure(room, buildPos, STRUCTURE_CONTAINER);
+    }
+  },
+
+  // Place a storage around the base
+  buildStorage: room => {
+    const spawn = room.find(FIND_MY_SPAWNS)[0]; if (!spawn) return false;
+    const storagesBeingBuilt = room.find(FIND_CONSTRUCTION_SITES, {filter: {structureType: STRUCTURE_STORAGE}}).length;
+    if (storagesBeingBuilt === 0) {
+      // Pull the room base plan and translate the first "S" to a x,y position and build there.
+      let buildPos = structures.findBuildLocationFromPlan(spawn.pos, Memory.rooms[room.name].basePlan, STRUCTURE_STORAGE);
+      structures.buildStructure(room, buildPos, STRUCTURE_STORAGE);
     }
   },
 
@@ -241,6 +256,7 @@ let structures = {
     if (structure === STRUCTURE_ROAD)      { findSymbol = '#'; }
     if (structure === STRUCTURE_RAMPART)   { findSymbol = '%'; }
     if (structure === STRUCTURE_TOWER)     { findSymbol = 'T'; }
+    if (structure === STRUCTURE_STORAGE)   { findSymbol = 'S'; }
     const x = start.x, y = start.y;
     let dx = 0, dy = -1, len = 0, posX = x, posY = y, index = 0;
     while (index < str.length) {
