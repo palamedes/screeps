@@ -1,3 +1,9 @@
+// if (Memory.__wipe !== 2) {
+//   for (const k in Memory) delete Memory[k];
+//   Memory.__wipe = 2;
+//   console.log('Memory wiped');
+// }
+
 require('empire');
 require('room');
 require('creep');
