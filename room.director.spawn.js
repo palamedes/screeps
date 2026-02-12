@@ -8,9 +8,9 @@ module.exports = {
 
     if (!spawn) return;
 
-    const creeps = _.filter(Game.creeps, c => c.room.name === room.name);
+    const creeps = Object.values(Game.creeps).filter(c => c.room.name === room.name);
 
-    if (creeps.length === 0) {
+    if (creeps.length === 0 && room.energyAvailable >= 200) {
       return this.spawnBootstrap(room, spawn);
     }
 
