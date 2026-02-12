@@ -112,7 +112,7 @@ Room.prototype.orient = function () {
     return this.setState(ROOM_STATE.WAR);
   }
 
-  if (snap.rcl === 1 || snap.energyCapacity < 800) {
+  if (snap.rcl === 1) {
     return this.setState(ROOM_STATE.BOOTSTRAP);
   }
 
@@ -141,7 +141,7 @@ Room.prototype.decide = function () {
 
     case ROOM_STATE.GROW:
       JobBoard.publishBuildJobs(this);
-      JobBoard.publishHarvestJobs(this);
+      JobBoard.publishUpgradeJobs(this);
       break;
 
     case ROOM_STATE.WAR:
