@@ -3,7 +3,7 @@
  * Stores per-tick jobs and assigns them to creeps.
  * No Memory writes — fully ephemeral.
  */
-global.JobBoard = {
+module.exports = {
 
   _rooms: {},
 
@@ -28,8 +28,8 @@ global.JobBoard = {
     this._rooms[roomName].push({
       type: job.type,
       targetId: job.targetId,
-      priority: job.priority ?? 0,
-      slots: job.slots ?? 1,
+      priority: job.priority !== undefined ? job.priority : 0,
+      slots: job.slots !== undefined ? job.slots : 1,
       assigned: []
     });
   },
