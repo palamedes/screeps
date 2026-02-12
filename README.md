@@ -21,10 +21,11 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 - Towers know how to Attack, Heal and Repair
 
 #### TODO
+- Only build the number of creeps we need initially
+- Fix build order.  We don't need to build storage immediately. Create a build order system?
 - FIX RENEWS COUNT somethings up there... 
 - When a Hauler goes to pick up energy at a source, if there is no road.. track that and maybe add a road?
 - Make hauler transfer from ruins and enemy creep tomb stones ALL things.. not just energy
-
 - Add "homeRoom" to rat memory and "currentRoom" and get roomBound working
   - Turn on RoomBinding for rats so they stay in the room they are assigned to
 - Set what the controller level was at the time a slave is spawned, such that later if we go up in controller level we allow that slave to die off and generate a new better one.  Think, version numbers.  This prevents ups from renewing old janky creeps.
