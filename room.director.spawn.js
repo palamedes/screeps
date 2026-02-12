@@ -60,20 +60,16 @@ module.exports = {
    */
   createWorkerBody(room) {
     const energy = room.energyCapacityAvailable;
-    const patternCost = BODYPART_COST[WORK] +
-      BODYPART_COST[CARRY] +
-      BODYPART_COST[MOVE];
-
     const body = [];
-
-    while (
-      body.length < 15 && // prevent absurd size early
-      this.bodyCost(body) + patternCost <= energy
-      ) {
-      body.push(WORK, CARRY, MOVE);
+    // Always start with basic mobility
+    body.push(WORK, CARRY, MOVE);
+    let remaining = energy - 200;
+    // Prioritize WORK first
+    while (remaining >= 100) {
+      body.unshift(WORK); // add work at front
+      remaining -= 100;
     }
-
-    return body.length ? body : [WORK, CARRY, MOVE];
+    return body;
   },
 
   bodyCost(body) {
