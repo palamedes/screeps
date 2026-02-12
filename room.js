@@ -1,72 +1,131 @@
-const structures = require("structures");
+/**
+ * Room lifecycle states.
+ * These represent strategic posture, not tactical behavior.
+ */
+const ROOM_STATE = {
+  BOOTSTRAP: 0, // fragile, early economy
+  STABLE: 1,    // balanced economy
+  GROW: 2,      // active construction
+  FORTIFY: 3,   // defensive buildup
+  WAR: 4        // hostile presence
+};
 
-// Set the room memory...
-Room.prototype.setMemory = function() {
-  Memory.rooms = Memory.rooms || {}
-  Memory.rooms[this.name] = Memory.rooms[this.name]         || {}
-  Memory.rooms[this.name] = {
-    status:         Memory.rooms[this.name].status          || 'init',
-    sources:        Memory.rooms[this.name].sources         || {},
-    sourceLastUsed: Memory.rooms[this.name].sourceLastUsed  || null,
-    maxSlaves:      Memory.rooms[this.name].maxSlaves       || 2,
-    basePlan:       Memory.rooms[this.name].basePlan        || null,
-    tickCount:      Memory.rooms[this.name].tickCount       || 0,
-    maxEnergy:      Memory.rooms[this.name].maxEnergy       || 0,
+const JobBoard = require('job.board');
+const SpawnDirector = require('room.director.spawn');
+
+/**
+ * Main room OODA loop.
+ * Observe → Orient → Decide.
+ * Called once per tick for owned rooms.
+ */
+Room.prototype.tick = function () {
+  this.initMemory();
+  this.profile();
+  this.observe();
+  this.orient();
+  this.decide();
+};
+
+/**
+ * Initializes persistent room memory.
+ * Only stores long-lived strategic data.
+ */
+Room.prototype.initMemory = function () {
+  if (!this.memory.state) {
+    this.memory.state = ROOM_STATE.BOOTSTRAP;
   }
-  return Memory.rooms[this.name];
-}
+};
 
-// Run the room...
-Room.prototype.run = function() {
-  let mem = Memory.rooms[this.name];
-  mem.tickCount++;
-  if (mem.status  === 'init')     { this.init(); }
-  if (mem.status  === 'running')  { this.running(); }
-}
+/**
+ * Profiles permanent room characteristics.
+ * Runs once and stores immutable traits.
+ */
+Room.prototype.profile = function () {
+  if (this.memory.profile) return;
 
-// Setup plan for base, roads to sources..etc.
-Room.prototype.init = function() {
-  // Find our sources and build path from spawn to
-  const energySources = this.find(FIND_SOURCES);
-  // Look around the sources, and find the suckle points
-  let findSucklePoints = source => {
-    const surroundings = [];
-    for (let x = source.pos.x - 1; x <= source.pos.x + 1; x++) {
-      for (let y = source.pos.y - 1; y <= source.pos.y + 1; y++) {
-        if (x === source.pos.x && y === source.pos.y) continue;
-        const look = source.room.lookAt(x, y);
-        if (look.some(obj => obj.type === LOOK_TERRAIN && obj.terrain === 'wall')) continue;
-        if (look.some(obj => obj.type === LOOK_STRUCTURES && (OBSTACLE_OBJECT_TYPES.includes(obj.structure.structureType) &&
-            obj.structure.structureType !== STRUCTURE_RAMPART &&
-            obj.structure.structureType !== STRUCTURE_ROAD))) continue;
-        surroundings.push({x: x, y: y});
-      }
-    }
-    return surroundings;
+  const sources = this.find(FIND_SOURCES);
+
+  this.memory.profile = {
+    sourceCount: sources.length,
+    exitCount: this.find(FIND_EXIT).length
+  };
+};
+
+/**
+ * Collects ephemeral tick data.
+ * Stored on the room instance, not in Memory.
+ */
+Room.prototype.observe = function () {
+  this._snapshot = {
+    energyAvailable: this.energyAvailable,
+    energyCapacity: this.energyCapacityAvailable,
+    sources: this.find(FIND_SOURCES),
+    constructionSites: this.find(FIND_MY_CONSTRUCTION_SITES),
+    hostiles: this.find(FIND_HOSTILE_CREEPS)
+  };
+};
+
+/**
+ * Sets room strategic state if changed.
+ * @param {number} state - ROOM_STATE enum value
+ */
+Room.prototype.setState = function (state) {
+  if (this.memory.state !== state) {
+    this.memory.state = state;
+  }
+};
+
+/**
+ * Determines strategic posture based on current snapshot.
+ * Converts observed facts into a high-level state.
+ */
+Room.prototype.orient = function () {
+  const snap = this._snapshot;
+
+  if (snap.hostiles.length > 0) {
+    return this.setState(ROOM_STATE.WAR);
   }
 
-  // Set up our suckle points one time so we don't have to do this again
-  for(let i in energySources) {
-    Memory.rooms[this.name].sources[energySources[i].id] = findSucklePoints(energySources[i]);
+  if (snap.energyCapacity < 800) {
+    return this.setState(ROOM_STATE.BOOTSTRAP);
   }
 
-  // @TODO Do stuff to setup the room here..
+  if (snap.constructionSites.length > 0) {
+    return this.setState(ROOM_STATE.GROW);
+  }
 
-  // Once this is all said and done, we can run the this.
-  Memory.rooms[this.name].status = "running";
-}
+  return this.setState(ROOM_STATE.STABLE);
+};
 
-// Okay do the day to day running of the room
-Room.prototype.running = function() {
-  // Work Towers
-  structures.tower.run();
-  // Draw the base plan based on the rooms information
-  structures.drawBaseplan(this);
-  // Okay every so often we need the room to build something
-  structures.buildSomething(this);
-}
+/**
+ * Publishes jobs for the current tick.
+ * Strategy layer — no creep logic here.
+ */
+Room.prototype.decide = function () {
+  const state = this.memory.state;
 
-// If we are RCL 5, we need to change our Creeps
-Room.prototype.onRCL5 = function() {
+  JobBoard.reset(this.name);
 
-}
+  switch (state) {
+
+    case ROOM_STATE.BOOTSTRAP:
+      JobBoard.publishHarvestJobs(this);
+      JobBoard.publishUpgradeJobs(this);
+      break;
+
+    case ROOM_STATE.GROW:
+      JobBoard.publishBuildJobs(this);
+      JobBoard.publishHarvestJobs(this);
+      break;
+
+    case ROOM_STATE.WAR:
+      JobBoard.publishDefenseJobs(this);
+      break;
+
+    default:
+      JobBoard.publishUpgradeJobs(this);
+      break;
+  }
+
+  SpawnDirector.run(this);
+};
