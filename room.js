@@ -82,11 +82,12 @@ Room.prototype.profile = function () {
  */
 Room.prototype.observe = function () {
   this._snapshot = {
+    rcl: this.controller ? this.controller.level : 0,
     energyAvailable: this.energyAvailable,
     energyCapacity: this.energyCapacityAvailable,
     sources: this.find(FIND_SOURCES),
     constructionSites: this.find(FIND_MY_CONSTRUCTION_SITES),
-    hostiles: this.find(FIND_HOSTILE_CREEPS)
+    hostiles: this.find(FIND_HOSTILE_CREEPS),
   };
 };
 
@@ -111,7 +112,7 @@ Room.prototype.orient = function () {
     return this.setState(ROOM_STATE.WAR);
   }
 
-  if (snap.energyCapacity < 800) {
+  if (snap.rcl === 1 || snap.energyCapacity < 800) {
     return this.setState(ROOM_STATE.BOOTSTRAP);
   }
 
