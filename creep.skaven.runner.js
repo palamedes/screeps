@@ -39,10 +39,14 @@ Creep.prototype.skaven.runner.findRoom = function() {
   if (target !== null) { this.moveCreepTo(target, '#ffffff'); }
 
 }
-// CLaim this room..
+// Claim this room..
 Creep.prototype.skaven.runner.claimRoom = function() {
 
-  if (this.room.controller && !this.room.controller.my) {
+  if (!this.room.controller) {
+    // This room doesn't even have a controller.. Add it to the list of not viable rooms
+    // Move back to our main room.. and then from there, find a new room
+
+  } else if (this.room.controller && !this.room.controller.my) {
     const res = this.claimController(this.room.controller);
     if (res === ERR_NOT_IN_RANGE) {
       this.moveCreepTo(this.room.controller);
