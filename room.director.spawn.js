@@ -28,24 +28,45 @@ module.exports = {
    * Spawns creeps based on harvest capacity and demand.
    */
   spawnByDemand(room, spawn, creeps) {
-    const profile = room.memory.profile;
-    if (!profile || !profile.sources) {
-      room.profile(); // force build if missing
+    const rcl = room.controller.level;
+    const sources = room.find(FIND_SOURCES);
+
+    const miners = creeps.filter(c => c.memory.role === 'miner');
+    const haulers = creeps.filter(c => c.memory.role === 'hauler');
+    const workers = creeps.filter(c => c.memory.role === 'worker');
+
+    // RCL1 fallback
+    if (rcl === 1) {
+      if (creeps.length < sources.length) {
+        spawn.spawnCreep(this.createBootstrapBody(room), `rat_${Game.time}`, {
+          memory: { role: 'slave' }
+        });
+      }
+      return;
     }
 
-    const maxHarvesters = profile.sources
-      .reduce((sum, s) => sum + s.openSpots, 0);
+    // RCL2+ pivot
+    if (miners.length < sources.length) {
+      spawn.spawnCreep(this.createMinerBody(room), `miner_${Game.time}`, {
+        memory: { role: 'miner' }
+      });
+      return;
+    }
 
-    const workers = creeps.filter(c => c.memory.role === 'slave');
-    const workerCount = workers.length;
+    if (haulers.length < miners.length) {
+      spawn.spawnCreep(this.createHaulerBody(room), `hauler_${Game.time}`, {
+        memory: { role: 'hauler' }
+      });
+      return;
+    }
 
-    if (workerCount < maxHarvesters) {
-      const body = this.createWorkerBody(room);
-      spawn.spawnCreep(body, `rat_${Game.time}`, {
-        memory: { role: 'slave' }
+    if (workers.length < 1) {
+      spawn.spawnCreep(this.createWorkerBody(room), `worker_${Game.time}`, {
+        memory: { role: 'worker' }
       });
     }
   },
+
 
   /**
    * Returns creeps belonging to this room.
@@ -56,9 +77,9 @@ module.exports = {
   },
 
   /**
-   * Creates scalable worker body based on energy capacity.
+   * Creates scalable bootstrap body based on energy capacity for RCL1
    */
-  createWorkerBody(room) {
+  createBootstrapBody(room) {
     const energy = room.energyCapacityAvailable;
     const body = [];
     // Always start with basic mobility
@@ -70,6 +91,39 @@ module.exports = {
       remaining -= 100;
     }
     return body;
+  },
+
+  createMinerBody(room) {
+    const energy = room.energyCapacityAvailable;
+    if (energy >= 550) {
+      return [WORK, WORK, WORK, WORK, WORK, MOVE];
+    }
+    if (energy >= 450) {
+      return [WORK, WORK, WORK, WORK, MOVE];
+    }
+    return [WORK, WORK, CARRY, MOVE]; // fallback
+  },
+
+  createHaulerBody(room) {
+    const energy = room.energyCapacityAvailable;
+    if (energy >= 500) {
+      return [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE];
+    }
+    if (energy >= 300) {
+      return [CARRY, CARRY, MOVE];
+    }
+    return [CARRY, MOVE];
+  },
+
+  createWorkerBody(room) {
+    const energy = room.energyCapacityAvailable;
+    if (energy >= 500) {
+      return [WORK, WORK, CARRY, CARRY, MOVE, MOVE];
+    }
+    if (energy >= 300) {
+      return [WORK, CARRY, MOVE];
+    }
+    return [WORK, CARRY, MOVE];
   },
 
 };
