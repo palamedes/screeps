@@ -31,7 +31,7 @@ Room.prototype.tick = function () {
  * Only stores long-lived strategic data.
  */
 Room.prototype.initMemory = function () {
-  if (!this.memory.state) {
+  if (this.memory.state === undefined) {
     this.memory.state = ROOM_STATE.BOOTSTRAP;
   }
 };

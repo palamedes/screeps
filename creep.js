@@ -1,3 +1,5 @@
+const JobBoard = require('job.board');
+
 Creep.prototype.tick = function () {
 
   if (!this.memory.job) {
@@ -10,10 +12,7 @@ Creep.prototype.tick = function () {
 };
 
 Creep.prototype.findJob = function () {
-  const jobs = Memory.rooms[this.room.name].jobs;
-  if (!jobs || jobs.length === 0) return null;
-
-  return jobs[0]; // naive for now
+  return JobBoard.assignJob(this);
 };
 
 Creep.prototype.runJob = function () {
@@ -45,4 +44,10 @@ Creep.prototype.runJob = function () {
       }
       break;
   }
+
+  // Clear job if action completed
+  if (job.type === 'BUILD' && target.progress === target.progressTotal) {
+    this.memory.job = null;
+  }
+
 };
