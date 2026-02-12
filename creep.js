@@ -5,7 +5,7 @@ Creep.prototype.tick = function() {
     case 'miner': return this.runMiner();
     case 'hauler': return this.runHauler();
     case 'worker': return this.runWorker();
-    case 'slave': return this.runBootstrap();
+    case 'slave': return this.findJob();
   }
 };
 
