@@ -60,7 +60,7 @@ module.exports = {
       return;
     }
 
-    if (workers.length < 1) {
+    if (workers.length < miners.length)
       spawn.spawnCreep(this.createWorkerBody(room), `worker_${Game.time}`, {
         memory: { role: 'worker' }
       });
