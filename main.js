@@ -15,7 +15,7 @@ module.exports.loop = function () {
 
   for (const roomName in Game.rooms) {
     const room = Game.rooms[roomName];
-    if (room.controller?.my) {
+    if (room.controller && room.controller.my) {
       room.tick();
     }
   }
