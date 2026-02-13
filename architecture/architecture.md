@@ -317,5 +317,8 @@ A Layer 1 warren is complete when:
 
 ---
 
-*Last updated: collaboratively with AI assistant during architecture review session.*
-*When resuming work: paste this file + current code files into context. State which Layer is active.*
+## Current Status
+Layer: 1 — Economic Engine
+Last session: Renamed all files to warren/rat/spawn/plan convention.
+Fixed rat.slave, rat.worker, rat.hauler, warren.decide.
+Next: Deploy to fresh room and observe bootstrap behavior.
