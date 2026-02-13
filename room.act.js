@@ -1,6 +1,11 @@
 const JobBoard = require('job.board');
+const Publishers = require('job.board.publish');
 const SpawnDirector = require('director.spawn');
 require('planner.extensions');
+
+JobBoard.reset(this.name);
+
+Publishers.publishBuildJobs(JobBoard, this);
 
 Room.prototype.act = function () {
   JobBoard.reset(this.name);

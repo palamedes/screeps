@@ -1,7 +1,3 @@
-require('job.board.publish');
-require('job.board.scoring');
-require('job.board.util');
-
 const JobBoard = {
 
   _rooms: {},
@@ -44,9 +40,8 @@ const JobBoard = {
       if (!target) continue;
 
       const distance = creep.pos.getRangeTo(target);
-      const baseScore = this.score(job, distance);
-      const roleWeight = this.rolePreference(creep, job);
-      const score = baseScore + roleWeight;
+      const score = this.score(job, distance) +
+        this.rolePreference(creep, job);
 
       if (score > bestScore) {
         bestScore = score;
