@@ -1,5 +1,11 @@
+const Scoring = require('planner.scoring');
+
 Room.prototype.planExtensions = function () {
-  const extensions = this.find(FIND_MY_STRUCTURES, {
+
+  const spawn = this.find(FIND_MY_SPAWNS)[0];
+  if (!spawn) return;
+
+  const existing = this.find(FIND_MY_STRUCTURES, {
     filter: s => s.structureType === STRUCTURE_EXTENSION
   });
 
@@ -7,14 +13,23 @@ Room.prototype.planExtensions = function () {
     filter: s => s.structureType === STRUCTURE_EXTENSION
   });
 
-  const total = extensions.length + sites.length;
-  if (total >= 5) return;
+  const total = existing.length + sites.length;
 
-  const spawn = this.find(FIND_MY_SPAWNS)[0];
-  if (!spawn) return;
+  const max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][this.controller.level];
+  if (total >= max) return;
 
-  const x = spawn.pos.x + 1 + extensions.length;
-  const y = spawn.pos.y;
+  const candidates = Scoring.getBuildableTiles(this, spawn.pos, 8);
 
-  this.createConstructionSite(x, y, STRUCTURE_EXTENSION);
+  const scored = candidates.map(tile => ({
+    ...tile,
+    score: Scoring.scoreExtensionTile(this, tile, spawn)
+  }));
+
+  const sorted = _.sortBy(scored, t => -t.score);
+
+  for (const tile of sorted) {
+    if (this.createConstructionSite(tile.x, tile.y, STRUCTURE_EXTENSION) === OK) {
+      break;
+    }
+  }
 };
