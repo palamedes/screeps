@@ -1,4 +1,4 @@
-const { ROOM_STATE } = require('room.memory');
+const { ROOM_STATE } = require('warren.memory');
 
 Room.prototype.decide = function () {
   const state = this.memory.state;

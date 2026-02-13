@@ -1,6 +1,6 @@
 const JobBoard = require('job.board');
-const SpawnDirector = require('director.spawn');
-require('planner.extensions');
+const SpawnDirector = require('spawn.director');
+require('plan.extensions');
 
 Room.prototype.act = function () {
 

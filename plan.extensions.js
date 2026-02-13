@@ -1,5 +1,5 @@
-const Utils = require('planner.utils');
-const Scoring = require('planner.scoring');
+const Utils = require('plan.utils');
+const Scoring = require('plan.scoring');
 
 Room.prototype.planExtensions = function () {
   const spawn = this.find(FIND_MY_SPAWNS)[0];

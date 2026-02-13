@@ -1,7 +1,7 @@
-require('creep.worker');
-require('creep.miner');
-require('creep.hauler');
-require('creep.slave');
+require('rat.worker');
+require('rat.miner');
+require('rat.hauler');
+require('rat.slave');
 
 const JobBoard = require('job.board');
 

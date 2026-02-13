@@ -5,8 +5,8 @@
 // }
 
 require('empire');
-require('room');
-require('creep');
+require('warren');
+require('rat');
 
 /**
  * Main game loop.

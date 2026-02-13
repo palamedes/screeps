@@ -1,6 +1,6 @@
-const Utils = require('planner.utils');
+const Utils = require('plan.utils');
 
-const PlannerScoring = {
+const PlanScoring = {
 
   scoreExtensionTile(room, tile, spawn) {
     let score = 0;
@@ -45,4 +45,4 @@ const PlannerScoring = {
 
 };
 
-module.exports = PlannerScoring;
+module.exports = PlanScoring;

@@ -1,5 +1,5 @@
 
-const PlannerUtils = {
+const PlanUtils = {
 
   /**
    * Iterate over all tiles within a radius of an origin.
@@ -132,4 +132,4 @@ const PlannerUtils = {
 
 };
 
-module.exports = PlannerUtils;
+module.exports = PlanUtils;
