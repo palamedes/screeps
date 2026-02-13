@@ -116,12 +116,21 @@ Room.prototype.orient = function () {
     return this.setState(ROOM_STATE.BOOTSTRAP);
   }
 
+  const extensions = this.find(FIND_MY_STRUCTURES, {
+    filter: s => s.structureType === STRUCTURE_EXTENSION
+  });
+
+  if (extensions.length < 5) {
+    return this.setState(ROOM_STATE.GROW);
+  }
+
   if (snap.constructionSites.length > 0) {
     return this.setState(ROOM_STATE.GROW);
   }
 
   return this.setState(ROOM_STATE.STABLE);
 };
+
 
 /**
  * Publishes jobs for the current tick.
@@ -155,3 +164,15 @@ Room.prototype.decide = function () {
 
   SpawnDirector.run(this);
 };
+
+const extensions = this.find(FIND_MY_STRUCTURES, {
+  filter: s => s.structureType === STRUCTURE_EXTENSION
+});
+
+if (extensions.length < 5) {
+  const spawn = this.find(FIND_MY_SPAWNS)[0];
+  const x = spawn.pos.x + 1 + extensions.length;
+  const y = spawn.pos.y;
+
+  this.createConstructionSite(x, y, STRUCTURE_EXTENSION);
+}
