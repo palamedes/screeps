@@ -1,4 +1,3 @@
-
 const Utils = require('planner.utils');
 
 const PlannerScoring = {
@@ -6,9 +5,15 @@ const PlannerScoring = {
   scoreExtensionTile(room, tile, spawn) {
     let score = 0;
 
-    // Prefer closer to spawn
     const dist = spawn.pos.getRangeTo(tile.x, tile.y);
-    score += (20 - dist);
+
+    // Never block spawn adjacency
+    if (dist <= 1) {
+      return -Infinity;
+    }
+
+    // Prefer relatively close, but not suffocating
+    score += (10 - dist);
 
     // Prefer clustering
     const area = room.lookForAtArea(
@@ -33,7 +38,7 @@ const PlannerScoring = {
       }
     }
 
-    score += nearbyExtensions * 5;
+    score += nearbyExtensions * 4;
 
     return score;
   }
