@@ -18,8 +18,8 @@ const JobBoard = {
     this._rooms[roomName].push({
       type: job.type,
       targetId: job.targetId,
-      priority: job.priority ?? 0,
-      slots: job.slots ?? 1,
+      priority: job.priority !== undefined ? job.priority : 0,
+      slots: job.slots !== undefined ? job.slots : 1,
       assigned: []
     });
   },
