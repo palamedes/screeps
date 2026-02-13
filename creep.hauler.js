@@ -1,7 +1,7 @@
 Creep.prototype.runHauler = function () {
 
   if (this.store.getFreeCapacity() > 0) {
-    const dropped = this.pos.findClosestByPath(FIND_DROPPED_RESOURCES);
+    const dropped = this.room.find(FIND_DROPPED_RESOURCES).sort((a, b) => b.amount - a.amount)[0];
 
     if (dropped) {
       if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
