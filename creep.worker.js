@@ -14,7 +14,7 @@ Creep.prototype.runWorker = function () {
   // --- Emergency Recovery Mode ---
   if (emergency) {
 
-    if (this.store.getFreeCapacity(RESOURCE_ENERGY) > 0)
+    if (this.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       const source = this.pos.findClosestByPath(FIND_SOURCES);
       if (this.harvest(source) === ERR_NOT_IN_RANGE) {
         this.moveTo(source);
