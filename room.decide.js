@@ -11,6 +11,19 @@ Room.prototype.decide = function () {
     publishDefense: false
   };
 
+  // --- Economic recovery guard ---
+  const sources = this.find(FIND_SOURCES);
+  const creeps = Object.values(Game.creeps)
+    .filter(c => c.room.name === this.name);
+
+  const miners = creeps.filter(c => c.memory.role === 'miner');
+
+  if (miners.length < sources.length) {
+    this._plan.publishHarvest = true;
+    return; // hard override
+  }
+  // --- End recovery guard ---
+
   switch (state) {
 
     case ROOM_STATE.BOOTSTRAP:
@@ -20,6 +33,7 @@ Room.prototype.decide = function () {
 
     case ROOM_STATE.GROW:
       this._plan.buildExtensions = true;
+      this._plan.publishHarvest = true; // keep economy flowing
       this._plan.publishBuild = true;
       this._plan.publishUpgrade = true;
       break;
