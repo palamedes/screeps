@@ -1,5 +1,4 @@
 const JobBoard = require('job.board');
-const Publishers = require('job.board.publish');
 const SpawnDirector = require('director.spawn');
 require('planner.extensions');
 
@@ -14,19 +13,19 @@ Room.prototype.act = function () {
   }
 
   if (plan.publishHarvest) {
-    Publishers.publishHarvestJobs(JobBoard, this);
+    JobBoard.publishHarvestJobs(this);
   }
 
   if (plan.publishBuild) {
-    Publishers.publishBuildJobs(JobBoard, this);
+    JobBoard.publishBuildJobs(this);
   }
 
   if (plan.publishUpgrade) {
-    Publishers.publishUpgradeJobs(JobBoard, this);
+    JobBoard.publishUpgradeJobs(this);
   }
 
   if (plan.publishDefense) {
-    Publishers.publishDefenseJobs(JobBoard, this);
+    JobBoard.publishDefenseJobs(this);
   }
 
   SpawnDirector.run(this);
