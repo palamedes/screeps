@@ -48,3 +48,5 @@ I am leaving this repo completely open and letting everyone see how I'm doing th
 #### Known Bugs
 - Right now if not careful rats will stack up at a power source and clog the area.  This is why I think I need to go to a harvest and drop model so no one is trapped.
 - The road creation methodology is a little zealous.. so much so I have commented it out.. cause dang.. 
+
+For technical architecture and developer documentation, see [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md).
