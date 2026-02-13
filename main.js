@@ -5,7 +5,7 @@
 // }
 
 require('empire');
-require('room/room');
+require('room');
 require('creep');
 
 /**
