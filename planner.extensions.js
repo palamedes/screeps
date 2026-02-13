@@ -1,9 +1,9 @@
+const Utils = require('planner.utils');
 const Scoring = require('planner.scoring');
 
 Room.prototype.planExtensions = function () {
-
   const spawn = this.find(FIND_MY_SPAWNS)[0];
-  if (!spawn) return;
+  if (!spawn || !this.controller) return;
 
   const existing = this.find(FIND_MY_STRUCTURES, {
     filter: s => s.structureType === STRUCTURE_EXTENSION
@@ -15,13 +15,14 @@ Room.prototype.planExtensions = function () {
 
   const total = existing.length + sites.length;
 
-  const max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][this.controller.level];
+  const max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][this.controller.level] || 0;
   if (total >= max) return;
 
-  const candidates = Scoring.getBuildableTiles(this, spawn.pos, 8);
+  const candidates = Utils.getBuildableTiles(this, spawn.pos, 8);
 
   const scored = candidates.map(tile => ({
-    ...tile,
+    x: tile.x,
+    y: tile.y,
     score: Scoring.scoreExtensionTile(this, tile, spawn)
   }));
 
