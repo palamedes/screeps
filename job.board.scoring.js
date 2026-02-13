@@ -1,11 +1,3 @@
-const JobBoard = require('job.board');
-
-JobBoard.score = function (job, distance) {
-  const priorityWeight = job.priority * 100;
-  const distancePenalty = distance * 2;
-  return priorityWeight - distancePenalty;
-};
-
 JobBoard.rolePreference = function (creep, job) {
 
   const role = creep.memory.role;
@@ -18,18 +10,19 @@ JobBoard.rolePreference = function (creep, job) {
       if (job.type === 'UPGRADE') return 50;
       return 0;
 
-    case 'packmaster':
-      if (job.type === 'HAUL') return 300;
-      return -100;
+    case 'miner':
+      if (job.type === 'HARVEST') return 500;
+      return -200;
 
-    case 'warlock':
-      if (job.type === 'BUILD') return 250;
-      if (job.type === 'REPAIR') return 200;
+    case 'hauler':
+      if (job.type === 'HAUL') return 500;
+      return -200;
+
+    case 'worker':
+      if (job.type === 'BUILD') return 300;
+      if (job.type === 'UPGRADE') return 100;
+      if (job.type === 'REPAIR') return 150;
       return -50;
-
-    case 'warlord':
-      if (job.type === 'DEFEND') return 400;
-      return -500;
 
     default:
       return 0;
