@@ -6,10 +6,15 @@ Room.prototype.orient = function () {
   const extensions = snap.structures.filter(
     s => s.structureType === STRUCTURE_EXTENSION
   );
+
   const extensionSites = snap.constructionSites.filter(
     s => s.structureType === STRUCTURE_EXTENSION
   );
+
   const totalExtensions = extensions.length + extensionSites.length;
+
+  const maxExtensions =
+    CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][snap.rcl] || 0;
 
   if (snap.hostiles.length > 0) {
     return this.setState(ROOM_STATE.WAR);
