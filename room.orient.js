@@ -2,10 +2,14 @@ const { ROOM_STATE } = require('room.memory');
 
 Room.prototype.orient = function () {
   const snap = this._snapshot;
+
   const extensions = snap.structures.filter(
     s => s.structureType === STRUCTURE_EXTENSION
   );
-  const maxExtensions = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][snap.rcl] || 0;
+  const extensionSites = snap.constructionSites.filter(
+    s => s.structureType === STRUCTURE_EXTENSION
+  );
+  const totalExtensions = extensions.length + extensionSites.length;
 
   if (snap.hostiles.length > 0) {
     return this.setState(ROOM_STATE.WAR);
@@ -16,11 +20,11 @@ Room.prototype.orient = function () {
   }
 
   if (snap.rcl === 2) {
-    if (extensions.length < 2) {
+    if (totalExtensions < 2) {
       return this.setState(ROOM_STATE.GROW);
     }
   } else {
-    if (extensions.length < maxExtensions) {
+    if (totalExtensions < maxExtensions) {
       return this.setState(ROOM_STATE.GROW);
     }
   }
