@@ -1,18 +1,37 @@
 Creep.prototype.runWorker = function () {
 
-  // If empty, go get energy from spawn
-  if (this.store[RESOURCE_ENERGY] === 0) {
-    const spawn = this.room.find(FIND_MY_SPAWNS)[0];
+  const sources = this.room.find(FIND_SOURCES);
+  const miners = Object.values(Game.creeps)
+    .filter(c =>
+      c.room.name === this.room.name &&
+      c.memory.role === 'miner'
+    );
 
-    if (spawn.store[RESOURCE_ENERGY] > 0) {
-      if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(spawn);
+  // --- If empty ---
+  if (this.store[RESOURCE_ENERGY] === 0) {
+
+    // Fallback: no miners → harvest directly
+    if (miners.length < sources.length) {
+      const source = this.pos.findClosestByPath(FIND_SOURCES);
+      if (this.harvest(source) === ERR_NOT_IN_RANGE) {
+        this.moveTo(source);
       }
+      return;
     }
+
+    // Otherwise use job system
+    if (!this.memory.job) {
+      this.memory.job = this.findJob();
+    }
+
+    if (this.memory.job) {
+      this.runJob();
+    }
+
     return;
   }
 
-  // Has energy → do job
+  // --- Has energy → perform job ---
   if (!this.memory.job) {
     this.memory.job = this.findJob();
   }
