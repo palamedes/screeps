@@ -8,6 +8,12 @@
  *   false = gathering energy (pickup dropped resources)
  *   true  = spending energy (running assigned job)
  *
+ * Gathering priority depends on current job:
+ *   Upgrading: controller container first (already at controller, no travel cost)
+ *              then tombstones → ruins → dropped pile → spawn fallback
+ *   Building:  tombstones → ruins → dropped pile → spawn fallback
+ *              (don't trek to controller container and back for a build site elsewhere)
+ *
  * Emergency mode: if miners are down, workers harvest directly and
  * feed the spawn so the director can recover the miner population.
  *
@@ -93,7 +99,27 @@ Creep.prototype.runWorker = function () {
 
   // --- Gathering Phase ---
 
-  // Check tombstones first — dead rats shouldn't waste their energy
+  // If current job is UPGRADE, try the controller container first.
+  // The worker is already standing at the controller — withdrawing from the
+  // adjacent container costs zero travel ticks vs running back to the source
+  // drop pile. Workers building elsewhere skip this to avoid a detour.
+  if (this.memory.job && this.memory.job.type === 'UPGRADE') {
+    const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        s.pos.inRangeTo(this.room.controller, 3) &&
+        s.store[RESOURCE_ENERGY] > 0
+    });
+
+    if (controllerContainer) {
+      if (this.withdraw(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, controllerContainer);
+      }
+      return;
+    }
+  }
+
+  // Check tombstones — dead rats shouldn't waste their energy
   const tombstone = this.room.find(FIND_TOMBSTONES, {
     filter: t => t.store[RESOURCE_ENERGY] > 0
   })[0];
