@@ -5,7 +5,7 @@
  * Haulers have no WORK parts. They only move energy around.
  *
  * Pickup priority:   dropped resources (largest pile first)
- * Delivery priority: spawn → extensions → towers → (storage, future)
+ * Delivery priority: spawn → extensions → towers → controller container → (storage, future)
  *
  * Haulers also pick up from tombstones and ruins to recover lost energy.
  *
@@ -16,7 +16,8 @@
  * The delivering flag ensures haulers don't flip back to gathering when
  * partially full after a deliver — e.g. spawn takes 50% and hauler still
  * has energy left. It stays in delivery mode and finds the next consumer
- * (extension, tower) rather than heading back to pick up more.
+ * (extension, tower, controller container) rather than heading back to
+ * pick up more.
  */
 
 Creep.prototype.runHauler = function () {
@@ -72,7 +73,24 @@ Creep.prototype.runHauler = function () {
       return;
     }
 
-    // Everything is full — drop what we have and go gather more.
+    // Priority 4: Controller container — feeds the Warlock Engineer
+    // Only fills it if it isn't already full, so hauler doesn't waste
+    // trips when the engineer is keeping up with delivery.
+    const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        s.pos.inRangeTo(this.room.controller, 3) &&
+        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+    });
+
+    if (controllerContainer) {
+      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        this.moveTo(controllerContainer, { visualizePathStyle: {}, ignoreCreeps: true });
+      }
+      return;
+    }
+
+    // Everything is full — drop delivering flag and go gather more.
     // Prevents hauler freezing when all consumers are satisfied.
     this.memory.delivering = false;
     return;
