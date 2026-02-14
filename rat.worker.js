@@ -82,6 +82,15 @@ Creep.prototype.runWorker = function () {
     this.memory.working = true;
   }
 
+  // --- Job Validation ---
+  // Clear any job type a worker should never be running.
+  // Can happen when a slave promotes mid-job and inherits a stale HARVEST.
+  // findJob() only fires when memory.job is null so without this the worker
+  // runs its old job forever and never re-evaluates.
+  if (this.memory.job && this.memory.job.type === 'HARVEST') {
+    this.memory.job = null;
+  }
+
   // --- Spending Phase ---
   if (this.memory.working) {
     if (!this.memory.job) {
