@@ -10,8 +10,9 @@
  * Delegates: SpawnDirector, JobBoard, planners
  */
 
-const JobBoard = require('job.board');
+const JobBoard     = require('job.board');
 const SpawnDirector = require('spawn.director');
+require('plan.spawn');
 require('plan.extensions');
 require('plan.containers');
 
@@ -20,6 +21,12 @@ Room.prototype.act = function () {
   JobBoard.reset(this.name);
 
   const plan = this._plan;
+
+  // Spawn placement fires first — without a spawn nothing else can happen.
+  // The planner self-guards: no-ops if spawn or spawn site already exists.
+  if (plan.buildSpawn) {
+    this.planSpawn();
+  }
 
   if (plan.buildExtensions) {
     this.planExtensions();
