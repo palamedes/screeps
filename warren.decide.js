@@ -18,11 +18,12 @@ Room.prototype.decide = function () {
 
   // Initialize all flags to false — act() only does what's explicitly enabled
   this._plan = {
-    buildExtensions: false,
-    publishHarvest:  false,
-    publishBuild:    false,
-    publishUpgrade:  false,
-    publishDefense:  false
+    buildExtensions:         false,
+    buildControllerContainer: false,
+    publishHarvest:          false,
+    publishBuild:            false,
+    publishUpgrade:          false,
+    publishDefense:          false
   };
 
   // --- Economic Recovery Guard ---
@@ -47,18 +48,22 @@ Room.prototype.decide = function () {
   switch (state) {
 
     case ROOM_STATE.BOOTSTRAP:
-      // RCL1: harvest to stay alive, upgrade to reach RCL2
-      this._plan.publishHarvest = true;
-      this._plan.publishUpgrade = true;
+      // RCL1: harvest to stay alive, upgrade to reach RCL2.
+      // Still queue the controller container — it costs nothing to place the
+      // site early and workers will build it whenever energy allows.
+      this._plan.buildControllerContainer = true;
+      this._plan.publishHarvest           = true;
+      this._plan.publishUpgrade           = true;
       break;
 
     case ROOM_STATE.GROW:
       // Actively expanding: build extensions, keep economy flowing,
       // build construction sites, and keep upgrading
-      this._plan.buildExtensions = true;
-      this._plan.publishHarvest  = true;
-      this._plan.publishBuild    = true;
-      this._plan.publishUpgrade  = true;
+      this._plan.buildExtensions           = true;
+      this._plan.buildControllerContainer  = true;
+      this._plan.publishHarvest            = true;
+      this._plan.publishBuild              = true;
+      this._plan.publishUpgrade            = true;
       break;
 
     case ROOM_STATE.WAR:
@@ -73,8 +78,9 @@ Room.prototype.decide = function () {
       // so it's safe to call every tick — it will no-op if conditions aren't met.
       // Without this, the warren deadlocks: workers drain spawn just enough to
       // prevent energyCapped from firing, so GROW state never triggers.
-      this._plan.buildExtensions = true;
-      this._plan.publishUpgrade  = true;
+      this._plan.buildExtensions           = true;
+      this._plan.buildControllerContainer  = true;
+      this._plan.publishUpgrade            = true;
       break;
   }
 };
