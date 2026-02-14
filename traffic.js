@@ -13,18 +13,29 @@
  *   only move when they have a clear path.
  *
  * Core concepts:
- *   pin(creep)               — stationary creep locks its tile. Nobody
- *                              routes through it. Miners and Warlock Engineers
- *                              call this every tick once seated.
+ *   pin(creep)               — HARD pin. Stationary creep with purpose.
+ *                              Miners and Warlock Engineers call this every
+ *                              tick once seated. These creeps are NEVER pushed.
  *
  *   requestMove(creep, target, opts) — moving creep declares intent.
  *                              Calculates next-step direction via cached path.
  *                              Does NOT call creep.move() — resolve() does that.
  *
  *   resolve()                — called once after all creep ticks. Auto-pins
- *                              any creep that registered no intent (idle creeps
- *                              are invisible blockers without this). Detects
- *                              swaps, resolves conflicts, executes moves.
+ *                              any creep that registered no intent as a SOFT pin.
+ *                              Soft-pinned creeps (idle rats with nothing to do)
+ *                              can be pushed aside by moving creeps that need
+ *                              their tile. Hard-pinned creeps cannot be displaced.
+ *
+ * Pin types:
+ *   Hard pin (_pins only, not _softPins):
+ *     Set by explicit pin() calls — miners seated on sources, warlock at controller.
+ *     These rats have work and own their tile. Nobody routes through, nobody pushes.
+ *
+ *   Soft pin (_pins AND _softPins):
+ *     Set automatically in resolve() for creeps that registered no intent.
+ *     These rats are idle and just parked. A moving creep that needs their tile
+ *     will shove them to any adjacent free tile rather than waiting.
  *
  * Path caching:
  *   Paths are stored in creep.memory._trafficPath as {x,y} arrays.
@@ -32,21 +43,30 @@
  *     - target changes
  *     - creep is pushed off-path
  *     - next cached step is now blocked by a structure or construction site
+ *     - next cached step is HARD-pinned by a different creep
+ *   Soft-pinned tiles do NOT invalidate the cache — the moving creep keeps
+ *   its direct path and resolve() pushes the blocker out of the way.
  *   Roads get cost 1 vs plain cost 2 — naturally preferred once built.
- *   Pinned creep tiles get cost 20 in the CostMatrix — strong enough signal
- *   that the pathfinder routes around occupied clusters rather than threading
- *   through them. Cost 20 (not 0xff) keeps adjacent tiles reachable for
- *   final approach to a target that is itself adjacent to a pinned creep.
- *   Construction sites for blocking structures get cost 0xff — they are
- *   physically impassable even though they aren't structures yet, and the
- *   pathfinder must treat them as walls or it will plan routes through them
- *   that creep.move() will silently fail to execute every tick.
+ *   Pinned creep tiles get cost 20 in the CostMatrix — deters routing through
+ *   occupied clusters, but cost 20 (not 0xff) keeps tiles reachable so
+ *   final approach to targets adjacent to pinned creeps still works.
+ *   Construction sites for blocking structures get cost 0xff — physically
+ *   impassable even though they aren't structures yet.
+ *
+ * Push logic:
+ *   When a moving creep's next step is soft-pinned (idle rat parked there),
+ *   resolve() looks for any adjacent free tile and shoves the idle rat there.
+ *   "Free" means: walkable terrain, not hard-pinned, not a blocking structure
+ *   or site, and not a tile another creep is already moving into this tick.
+ *   If no push tile exists (completely boxed in), the moving creep waits one tick.
+ *   A pushed blocker is immediately removed from _softPins so a second creep
+ *   doesn't try to push the same rat again in the same tick.
  *
  * Auto-pin:
  *   Any creep that ends its tick without registering a move intent is
- *   automatically pinned at its current position. This makes idle creeps
- *   (haulers waiting for energy, workers with no job) visible to the
- *   pathfinder so other creeps route around them naturally.
+ *   automatically soft-pinned at its current position. This makes idle creeps
+ *   visible to the pathfinder (cost 20 deters routing through) while still
+ *   allowing motivated creeps to displace them when necessary.
  *
  * Future hooks (not yet implemented):
  *   - Priority weighting by role for contested tiles
@@ -60,8 +80,9 @@
 
 const Traffic = {
 
-  _intents: {},  // creepName → { creep, target, range }
-  _pins:    {},  // "x,y"     → creepName
+  _intents:  {},  // creepName → { creep, target, range }
+  _pins:     {},  // "x,y"     → creepName  (ALL pinned tiles — used for CostMatrix)
+  _softPins: {},  // "x,y"     → creepName  (auto-pinned idle creeps — can be pushed)
 
   // -------------------------------------------------------------------------
   // Public API
@@ -71,18 +92,22 @@ const Traffic = {
    * Clear all intents and pins. Called at the top of every tick in main.js.
    */
   reset() {
-    this._intents = {};
-    this._pins    = {};
+    this._intents  = {};
+    this._pins     = {};
+    this._softPins = {};
   },
 
   /**
-   * Register a stationary creep. Pins its current tile so other creeps
-   * don't route through it or contest it.
+   * Register a HARD-pinned creep. Owns its tile permanently for this tick.
+   * Nobody routes through it, nobody pushes it.
    * Miners and Warlock Engineers call this every tick once seated.
+   *
+   * Hard pin = in _pins, NOT in _softPins.
    */
   pin(creep) {
     const key = `${creep.pos.x},${creep.pos.y}`;
     this._pins[key] = creep.name;
+    // Deliberately NOT adding to _softPins — this rat cannot be displaced.
   },
 
   /**
@@ -106,23 +131,26 @@ const Traffic = {
    * Called once per tick in main.js after all creep ticks complete.
    *
    * Resolution order:
-   *   0. Auto-pin any creep that registered no intent this tick
+   *   0. Auto soft-pin any creep that registered no intent this tick
    *   1. Skip creeps already in range of their target
    *   2. Calculate next-step direction for each intent (cached paths)
    *   3. Detect and execute mutual swaps
-   *   4. Execute uncontested moves
-   *   5. Skip contested or pinned destinations (creep waits one tick)
+   *   4. Execute uncontested moves; push soft-pinned blockers when needed
+   *   5. Skip hard-pinned or unresolvable destinations (creep waits one tick)
    */
   resolve() {
 
-    // Step 0: Auto-pin idle creeps.
-    // Any creep that didn't register a move intent this tick is stationary.
-    // Pin it so the pathfinder treats its tile as occupied — otherwise idle
-    // creeps are invisible blockers that other creeps' paths route straight
-    // through, causing physical deadlocks every time they meet.
+    // Step 0: Auto soft-pin idle creeps.
+    // Any creep that didn't register a move intent this tick is parked.
+    // Register as a SOFT pin — idle rats can be pushed by motivated movers.
+    // The _pins entry (cost 20 in CostMatrix) still makes other creeps prefer
+    // to route around them; the _softPins entry marks them as displaceable.
     for (const name in Game.creeps) {
       if (!this._intents[name]) {
-        this.pin(Game.creeps[name]);
+        const creep = Game.creeps[name];
+        const key = `${creep.pos.x},${creep.pos.y}`;
+        this._pins[key]     = creep.name;
+        this._softPins[key] = creep.name;
       }
     }
 
@@ -150,7 +178,8 @@ const Traffic = {
       };
     }
 
-    // Step 3: Detect mutual swaps and execute them first
+    // Step 3: Detect mutual swaps and execute them first.
+    // A wants B's tile and B wants A's tile — clean swap, both move.
     const swapped = new Set();
 
     for (const [nameA, moveA] of Object.entries(moves)) {
@@ -160,7 +189,6 @@ const Traffic = {
         if (nameA === nameB)    continue;
         if (swapped.has(nameB)) continue;
 
-        // A wants B's tile and B wants A's tile — clean swap
         if (moveA.toKey === moveB.fromKey && moveB.toKey === moveA.fromKey) {
           moveA.creep.move(moveA.dir);
           moveB.creep.move(moveB.dir);
@@ -171,7 +199,14 @@ const Traffic = {
       }
     }
 
-    // Step 4 & 5: Group remaining moves by destination, execute uncontested
+    // Step 4 & 5: Group remaining moves by destination, then resolve.
+    //
+    // For each destination tile:
+    //   - Hard-pinned: skip entirely (miner/warlock owns this tile).
+    //   - Soft-pinned: try to push the idle blocker to a free adjacent tile,
+    //     then let the moving creep through. If no push tile exists, skip.
+    //   - Uncontested: move freely.
+    //   - Contested: first registrant wins (future: weight by role priority).
     const destinations = {};  // toKey → [creepName, ...]
 
     for (const [name, move] of Object.entries(moves)) {
@@ -182,17 +217,43 @@ const Traffic = {
 
     for (const [toKey, names] of Object.entries(destinations)) {
 
-      // Skip pinned tiles — stationary creep owns this tile
-      if (this._pins[toKey]) continue;
+      // Hard-pinned tile — miner or warlock owns this. Nobody gets in.
+      // Hard pin = in _pins but NOT in _softPins.
+      if (this._pins[toKey] && !this._softPins[toKey]) continue;
 
-      if (names.length === 1) {
-        // Uncontested — move freely
-        moves[names[0]].creep.move(moves[names[0]].dir);
-      } else {
-        // Contested — first registrant wins for now.
-        // Future: weight by role priority (hauler > worker > slave)
-        moves[names[0]].creep.move(moves[names[0]].dir);
+      // Determine the one mover we'll try to execute (first registrant).
+      const moverName = names[0];
+      const mover     = moves[moverName];
+
+      // Soft-pinned tile — idle rat is parked here. Try to shove it aside.
+      if (this._softPins[toKey]) {
+        const blockerName = this._softPins[toKey];
+        const blocker     = Game.creeps[blockerName];
+
+        if (!blocker) {
+          // Blocker died this tick — proceed normally.
+          mover.creep.move(mover.dir);
+          continue;
+        }
+
+        const pushDir = this._getPushDir(blocker, destinations);
+
+        if (pushDir !== null) {
+          // Push the idle rat to a free adjacent tile, then advance.
+          blocker.move(pushDir);
+          mover.creep.move(mover.dir);
+
+          // Remove from softPins so a second contender doesn't also try
+          // to push this same rat in the same tick (move() can only fire once).
+          delete this._softPins[toKey];
+        }
+        // If pushDir is null the blocker has nowhere to go — moving creep
+        // waits one tick. This should be rare (completely boxed in blocker).
+        continue;
       }
+
+      // Uncontested or contested — move the first registrant.
+      mover.creep.move(mover.dir);
     }
   },
 
@@ -205,15 +266,20 @@ const Traffic = {
    * Recalculates when:
    *   - target changes
    *   - creep is pushed off-path
-   *   - next cached step is now blocked by a structure or construction site
+   *   - next cached step is blocked by a structure or construction site
+   *   - next cached step is HARD-pinned by a different creep
+   *
+   * Soft-pinned tiles do NOT trigger cache invalidation — the moving creep
+   * keeps its direct path and resolve() will push the blocker aside.
+   * Routing around a soft pin (via cost 20 detour) is wasteful when we can
+   * simply displace the idle rat and take the straight line.
    *
    * Pinned creep tiles are written into the CostMatrix at cost 20 so the
-   * pathfinder routes around occupied clusters proactively.
+   * pathfinder routes around occupied clusters proactively, but still allows
+   * paths through them when no good detour exists.
    *
    * Construction sites for blocking structures are written at cost 0xff —
-   * they are physically impassable even though they aren't structures yet.
-   * Without this, the pathfinder plans routes through them that creep.move()
-   * silently fails to execute, freezing the creep indefinitely.
+   * physically impassable even though they aren't structures yet.
    */
   _getNextDir(creep, target, range) {
     const targetPos = target.pos || target;
@@ -234,18 +300,12 @@ const Traffic = {
       }
     }
 
-    // Invalidate if the next cached step is now blocked by a structure,
-    // construction site, or a pinned creep that wasn't there when the path
-    // was calculated.
-    //
-    // The pinned-creep check is critical for the "convoy" case: two creeps
-    // follow the same cached path to the same target. The leading creep
-    // reaches range and pins. The trailing creep's next step is now the
-    // pinned tile — resolve() will block the move every tick and the creep
-    // freezes. Invalidating here forces a fresh path that routes around the
-    // now-occupied tile.
+    // Invalidate if the next cached step is now blocked.
+    // Structure/site blocks are always hard invalidations.
+    // Pin invalidation is ONLY for hard pins — soft-pinned creeps (idle rats)
+    // will be pushed out of the way by resolve(), so the path stays valid.
     if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
-      const next = creep.memory._trafficPath[0];
+      const next    = creep.memory._trafficPath[0];
       const nextKey = `${next.x},${next.y}`;
 
       const structures = creep.room.lookForAt(LOOK_STRUCTURES, next.x, next.y);
@@ -263,11 +323,14 @@ const Traffic = {
         s.structureType !== STRUCTURE_RAMPART
       );
 
-      // Pinned by a different creep — recalculate so we route around them
-      const pinnedByOther = this._pins[nextKey] &&
+      // Only hard pins force a reroute. Soft-pinned tiles (idle rats) don't —
+      // resolve() will push them aside rather than making this creep detour.
+      const hardPinnedByOther =
+        this._pins[nextKey] &&
+        !this._softPins[nextKey] &&
         this._pins[nextKey] !== creep.name;
 
-      if (structureBlocked || siteBlocked || pinnedByOther) {
+      if (structureBlocked || siteBlocked || hardPinnedByOther) {
         creep.memory._trafficPath = null;
       }
     }
@@ -284,8 +347,6 @@ const Traffic = {
     if (!creep.memory._trafficPath || !creep.memory._trafficPath.length) {
 
       // Capture pins at path-calculation time so the closure sees current state.
-      // This is the key to proactive routing — the pathfinder knows where
-      // every idle creep is sitting before it plans a route around them.
       const pins = Object.assign({}, this._pins);
 
       const result = PathFinder.search(
@@ -327,12 +388,14 @@ const Traffic = {
               }
             });
 
-            // Pinned creep tiles: strongly discourage routing through occupied
-            // positions. Cost 20 makes even a single pinned tile expensive enough
-            // that the pathfinder prefers a detour. Cost 20 vs plain cost 2 means
-            // the pathfinder will take up to a 10-tile detour to avoid one pinned
-            // creep — enough to break up dense clusters near spawn without making
-            // final approach to adjacent targets impossible.
+            // All pinned creep tiles (hard and soft): cost 20.
+            // Pathfinder prefers to route around occupied clusters.
+            // Cost 20 vs plain 2 = pathfinder takes up to 10-tile detour
+            // to avoid one pinned creep. Cost 20 (not 0xff) keeps adjacent
+            // tiles reachable for final approach past pinned creeps.
+            // Soft-pinned creeps are included here — the pathfinder still
+            // prefers to avoid them, but if the direct path is best, resolve()
+            // will push them rather than having this creep detour.
             for (const key of Object.keys(pins)) {
               const [x, y] = key.split(',').map(Number);
               if (costs.get(x, y) < 20) {
@@ -353,6 +416,89 @@ const Traffic = {
     if (!creep.memory._trafficPath || !creep.memory._trafficPath.length) return null;
 
     return this._dirTo(creep.pos, creep.memory._trafficPath[0]);
+  },
+
+  /**
+   * Find a direction to push an idle (soft-pinned) blocker.
+   *
+   * A valid push tile must be:
+   *   1. Within room bounds
+   *   2. Walkable terrain (not a wall)
+   *   3. Not hard-pinned (not a miner/warlock tile)
+   *   4. Not a blocking structure or construction site
+   *   5. Not already the destination of another moving creep this tick
+   *      (avoids two creeps trying to occupy the same tile after the push)
+   *
+   * Prefers cardinal directions (TOP/RIGHT/BOTTOM/LEFT) over diagonals
+   * to minimize the chance of pushing a rat into a corner.
+   *
+   * Returns a direction constant, or null if the blocker is boxed in.
+   *
+   * @param {Creep}  blocker      — the idle rat to be pushed
+   * @param {object} destinations — current tick's destination map { toKey: [names] }
+   */
+  _getPushDir(blocker, destinations) {
+    const terrain = blocker.room.getTerrain();
+
+    // Cardinals first — diagonals as fallback.
+    // Pushing into a cardinal direction keeps the rat on open ground more often.
+    const dirs = [TOP, RIGHT, BOTTOM, LEFT, TOP_RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, TOP_LEFT];
+    const offsets = {
+      [TOP]:          { dx:  0, dy: -1 },
+      [TOP_RIGHT]:    { dx:  1, dy: -1 },
+      [RIGHT]:        { dx:  1, dy:  0 },
+      [BOTTOM_RIGHT]: { dx:  1, dy:  1 },
+      [BOTTOM]:       { dx:  0, dy:  1 },
+      [BOTTOM_LEFT]:  { dx: -1, dy:  1 },
+      [LEFT]:         { dx: -1, dy:  0 },
+      [TOP_LEFT]:     { dx: -1, dy: -1 }
+    };
+
+    for (const dir of dirs) {
+      const { dx, dy } = offsets[dir];
+      const nx = blocker.pos.x + dx;
+      const ny = blocker.pos.y + dy;
+
+      // Bounds check
+      if (nx <= 0 || nx >= 49 || ny <= 0 || ny >= 49) continue;
+
+      // Terrain must be walkable
+      if (terrain.get(nx, ny) === TERRAIN_MASK_WALL) continue;
+
+      const tileKey = `${nx},${ny}`;
+
+      // Don't push into a hard-pinned tile (miner or warlock owns it).
+      // Soft-pinned tiles are OK — we'd just displace one idle rat with another,
+      // which is harmless (the displaced rat will re-evaluate next tick).
+      if (this._pins[tileKey] && !this._softPins[tileKey]) continue;
+
+      // Don't push into a tile another creep is moving into this tick.
+      // Avoids the pushed rat colliding with an incoming mover.
+      if (destinations[tileKey]) continue;
+
+      // Don't push into a blocking structure
+      const structures = blocker.room.lookForAt(LOOK_STRUCTURES, nx, ny);
+      const structureBlocked = structures.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      );
+      if (structureBlocked) continue;
+
+      // Don't push into a blocking construction site
+      const sites = blocker.room.lookForAt(LOOK_CONSTRUCTION_SITES, nx, ny);
+      const siteBlocked = sites.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      );
+      if (siteBlocked) continue;
+
+      return dir;
+    }
+
+    // Blocker is completely surrounded — moving creep waits one tick.
+    return null;
   },
 
   /**
@@ -400,8 +546,8 @@ const Traffic = {
 
 };
 
-// Expose as global so Traffic._pins, Traffic._intents etc. are inspectable
-// from the Screeps console without needing require().
+// Expose as global so Traffic._pins, Traffic._intents, Traffic._softPins etc.
+// are inspectable from the Screeps console without needing require().
 global.Traffic = Traffic;
 
 module.exports = Traffic;
