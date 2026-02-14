@@ -8,7 +8,17 @@
  *   1. Emergency slave if warren is empty
  *   2. Miners until all sources are covered (1 miner per source)
  *   3. Haulers until haulers == miners (1 hauler per miner)
- *   4. Workers until workers == miners * 2
+ *   4. Workers up to target count (see workerTarget below)
+ *
+ * Worker target formula:
+ *   Base:  sources * 2      (minimum viable spending capacity)
+ *   Bonus: +sources         (if energy is currently capped — economy is saturated)
+ *   Cap:   sources * 4      (hard ceiling, prevents runaway spawning)
+ *
+ *   The bonus fires when energyAvailable == energyCapacityAvailable, meaning
+ *   the hauler is delivering faster than workers can spend. Spawning an extra
+ *   worker drains the surplus. When extensions are no longer full the bonus
+ *   disappears and the director stops at the base count.
  *
  * At RCL1, only slaves are spawned.
  *
@@ -53,9 +63,9 @@ module.exports = {
    * Passing available means we always spawn the best body we can right now.
    */
   spawnByDemand(room, spawn, creeps) {
-    const rcl = room.controller.level;
+    const rcl     = room.controller.level;
     const sources = room.find(FIND_SOURCES);
-    const energy = room.energyAvailable;
+    const energy  = room.energyAvailable;
 
     const miners  = creeps.filter(c => c.memory.role === 'miner');
     const haulers = creeps.filter(c => c.memory.role === 'hauler');
@@ -70,6 +80,7 @@ module.exports = {
     }
 
     // RCL2+ — specialist roles
+
     if (miners.length < sources.length) {
       this.spawnRat(spawn, 'miner', Bodies.miner(energy));
       return;
@@ -80,7 +91,17 @@ module.exports = {
       return;
     }
 
-    if (workers.length < miners.length * 2) {
+    // Worker target is energy-responsive.
+    // Base count handles normal operation.
+    // Bonus fires when extensions are capped — we're producing more than we spend.
+    // Hard cap prevents runaway spawning in rooms with many sources.
+    const energyCapped = room.energyAvailable === room.energyCapacityAvailable;
+    const baseWorkers  = sources.length * 2;
+    const bonusWorkers = energyCapped ? sources.length : 0;
+    const workerCap    = sources.length * 4;
+    const workerTarget = Math.min(baseWorkers + bonusWorkers, workerCap);
+
+    if (workers.length < workerTarget) {
       this.spawnRat(spawn, 'worker', Bodies.worker(energy));
     }
   },

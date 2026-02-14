@@ -17,10 +17,10 @@ module.exports = {
     }
 
     this._rooms[roomName].push({
-      type: job.type,
+      type:     job.type,
       targetId: job.targetId,
       priority: job.priority !== undefined ? job.priority : 0,
-      slots: job.slots !== undefined ? job.slots : 1,
+      slots:    job.slots    !== undefined ? job.slots    : 1,
       assigned: []
     });
   },
@@ -33,7 +33,7 @@ module.exports = {
     const jobs = this.getJobs(creep.room.name);
     if (!jobs.length) return null;
 
-    let bestJob = null;
+    let bestJob   = null;
     let bestScore = -Infinity;
 
     for (const job of jobs) {
@@ -52,7 +52,7 @@ module.exports = {
 
       if (score > bestScore) {
         bestScore = score;
-        bestJob = job;
+        bestJob   = job;
       }
     }
 
@@ -114,7 +114,7 @@ module.exports = {
         return -200;
 
       case 'worker':
-        if (job.type === 'BUILD') return 300;
+        if (job.type === 'BUILD')   return 300;
         if (job.type === 'UPGRADE') return 100;
         return -50;
 
@@ -126,30 +126,35 @@ module.exports = {
   publishHarvestJobs(room) {
     room.find(FIND_SOURCES).forEach(source => {
       this.publish(room.name, {
-        type: 'HARVEST',
+        type:     'HARVEST',
         targetId: source.id,
         priority: 100,
-        slots: 1
+        slots:    1
       });
     });
   },
 
   publishUpgradeJobs(room) {
+    // Slot count matches the worker hard cap (sources * 4) so the upgrade
+    // job is never the bottleneck regardless of how many workers are active.
+    // In practice only as many workers as exist will ever fill these slots —
+    // unused slots cost nothing.
+    const slots = room.find(FIND_SOURCES).length * 4;
     this.publish(room.name, {
-      type: 'UPGRADE',
+      type:     'UPGRADE',
       targetId: room.controller.id,
       priority: 50,
-      slots: 2
+      slots:    Math.max(2, slots)
     });
   },
 
   publishBuildJobs(room) {
     room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
       this.publish(room.name, {
-        type: 'BUILD',
+        type:     'BUILD',
         targetId: site.id,
         priority: 800,
-        slots: 2
+        slots:    2
       });
     });
   },
@@ -157,10 +162,10 @@ module.exports = {
   publishDefenseJobs(room) {
     room.find(FIND_HOSTILE_CREEPS).forEach(hostile => {
       this.publish(room.name, {
-        type: 'DEFEND',
+        type:     'DEFEND',
         targetId: hostile.id,
         priority: 200,
-        slots: 3
+        slots:    3
       });
     });
   }
