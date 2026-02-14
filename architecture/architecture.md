@@ -65,11 +65,18 @@ Engineer upgrading continuously, and the director no longer has anything urgent 
 without any human input from tick 1. RCL progression is a side effect of this working, not
 the goal itself.
 
-### Layer 2 — Self-Sustaining Growth
-The Warren climbs RCL on its own. It builds roads, containers at sources, storage, towers.
+### Layer 2 — Self-Sustaining Growth (NEXT)
+The Warren climbs RCL on its own. It builds roads, source containers, storage, towers.
 It manages energy routing through containers and storage correctly at each RCL tier. It knows
-when it is "saturated" and signals the Empire to expand. Traffic manager road preference
-becomes meaningful here — road tiles are already cost 1 in the CostMatrix.
+when it is "saturated" and signals the Empire to expand.
+
+**Immediate Layer 2 targets (prioritized):**
+1. **Tower** — RCL3 unlocks one tower. Auto-place it, wire hauler delivery, enable basic defense.
+2. **Roads** — High-traffic paths (spawn→sources, spawn→controller). Reduces fatigue,
+   improves hauler throughput, unlocks traffic manager road preference (already cost 1 in CostMatrix).
+3. **Source containers** — Miners drop into containers instead of the ground. Haulers withdraw
+   from containers. Reduces energy waste from decay.
+4. **Storage** — RCL4. Central energy buffer. Rewires hauler delivery priority.
 
 ### Layer 3 — Multi-Room Expansion
 Empire detects when a Warren is saturated. Spawns a Grey Seer to claim a new room.
@@ -85,6 +92,8 @@ Player vs Player is in scope but far future.
 - Mineral harvesting (Hydrogen, Oxygen, etc.) and boosting creep body parts
 - Power creeps
 - Market / terminal trading
+- Population rebalancing: detect surplus workers / deficit haulers and suicide lowest-value
+  creep of over-represented role to free spawn capacity. (Skaven would approve.)
 
 ---
 
@@ -241,10 +250,10 @@ Emergency: 0 creeps in room + energy >= 200 → spawn slave immediately
 RCL1: creeps < sources.length → spawn slave
 
 RCL2+:
-  miners < sources.length         → spawn miner (highest priority)
-  haulers < miners.length         → spawn hauler
-  workers < workerTarget          → spawn worker
-  warlock absent + container exists → spawn warlock
+  miners < sources.length             → spawn miner (highest priority)
+  haulers < miners.length             → spawn hauler
+  workers < workerTarget              → spawn worker
+  warlock absent + container exists   → spawn warlock (lowest priority)
 ```
 
 **Worker target formula:**
@@ -283,21 +292,31 @@ Traffic.requestMove(creep, target, opts) // moving creep declares intent
 Traffic.resolve()                        // called in main.js after all ticks
 ```
 
+**Traffic is exposed as a global** (`global.Traffic = Traffic` at bottom of traffic.js).
+This means `Traffic._pins`, `Traffic._intents` etc. are inspectable from the Screeps
+console without needing `require()`. Invaluable for debugging movement issues.
+
 **How it works:**
 - Each tick, roles call `pin()` or `requestMove()` — never `moveTo()`
 - `resolve()` runs after all creep ticks. It auto-pins any creep that registered no intent
   (idle creeps are invisible blockers without this)
 - Paths are calculated via `PathFinder.search` with a custom CostMatrix:
     - Roads: cost 1 (naturally preferred once built — Layer 2 hook already in place)
-    - Pinned creep tiles: cost 5 (pathfinder routes around occupied positions proactively)
+    - Pinned creep tiles: cost 20 (strong deterrent — pathfinder takes up to 10-tile
+      detour to avoid a single pinned creep, breaking up dense clusters near spawn)
+    - Construction sites for blocking structures: cost 0xff (impassable — see sharp edges)
     - Other structures: cost 0xff (impassable)
 - Mutual swaps are detected and executed cleanly (A wants B's tile, B wants A's tile)
 - Contested tiles: first registrant wins (future: weight by role priority)
-- Paths are cached in `creep.memory._trafficPath` and invalidated when target changes
-  or creep is pushed off-path
+- Paths are cached in `creep.memory._trafficPath` and invalidated when:
+    - Target changes
+    - Creep is pushed off-path
+    - Next cached step is blocked by a structure
+    - Next cached step is blocked by a construction site
+    - Next cached step is pinned by a different creep (convoy fix)
 
 **Who pins:**
-- Miners: pin when `harvest()` succeeds (seated on source)
+- Miners: pin when seated on source (explicit range check, not harvest return code)
 - Warlock Engineers: pin when `upgradeController()` succeeds (seated at controller)
 - All idle creeps: auto-pinned by `resolve()` if no intent was registered
 
@@ -321,14 +340,21 @@ It is reset at the start of every `act()` call. It holds no state between ticks.
 
 **Priority weights (reference):**
 ```
-BUILD    800   (highest — unfinished construction blocks growth)
-HARVEST  100
-DEFEND   200
-UPGRADE   50
+BUILD (controller container)  900   (must come online before extensions — unlocks warlock)
+BUILD (everything else)       800   (unfinished construction blocks growth)
+HARVEST                       100
+DEFEND                        200
+UPGRADE                        50
 ```
 
-**Upgrade job slots** scale with source count: `Math.max(2, sources.length * 4)`.
-This matches the worker hard cap so the upgrade job is never the bottleneck.
+**Upgrade job slots** are context-sensitive:
+```
+warlock active + build sites exist  → slots: 1   (workers should be building)
+warlock active + no build sites     → slots: sources * 4  (nothing to build, pile on)
+no warlock                          → slots: sources * 4  (workers cover upgrading)
+```
+This ensures workers snap onto build jobs when the warlock covers upgrading, but flood
+onto the controller when there's nothing left to build.
 
 **Role preference weights (job.types.js):**
 ```
@@ -380,14 +406,15 @@ All `plan.*` files are pure calculation engines. They:
 ```
 RCL2 (current):
   Miner → drops on ground at source
-  Hauler → picks up pile → spawn → extensions → towers → controller container
-  Worker → picks up dropped pile → builds / upgrades
+  Hauler → picks up pile → spawn → controller container → extensions → towers
+  Worker (building) → picks up dropped pile → builds
+  Worker (upgrading, near controller) → withdraws from controller container → upgrades
   Warlock Engineer → withdraws from controller container → upgrades forever
 
 RCL2 (with source containers, Layer 2):
   Miner → drops into source container
-  Hauler → withdraws from source container → spawn → extensions → towers → controller container
-  Worker → picks up dropped pile OR withdraws from source container
+  Hauler → withdraws from source container → spawn → controller container → extensions → towers
+  Worker → withdraws from source container OR picks up dropped pile
   Warlock Engineer → withdraws from controller container → upgrades forever
 
 RCL4+ (with storage, Layer 2):
@@ -397,59 +424,69 @@ RCL4+ (with storage, Layer 2):
 **Hauler delivery priority:**
 ```
 1. Spawn
-2. Extensions (closest first)
-3. Towers
-4. Controller container
+2. Controller container   (warlock needs continuous supply — more valuable than extensions)
+3. Extensions (closest first)
+4. Towers
 5. (Storage — Layer 2)
+```
+
+**Worker energy gathering priority:**
+```
+If within range 5 of controller:
+  1. Controller container (already here, zero travel cost)
+  2. Tombstones
+  3. Ruins
+  4. Dropped pile
+  5. Spawn fallback (>250 energy only)
+Otherwise:
+  1. Tombstones
+  2. Ruins
+  3. Dropped pile
+  4. Spawn fallback (>250 energy only)
 ```
 
 ---
 
+## Layer 2 Planning Notes
+
+### Tower (RCL3)
+- RCL3 unlocks one tower. It should be placed automatically, near spawn for good coverage.
+- `plan.towers.js` — new planner, places one tower site at RCL3 if none exists.
+- Warren state machine: WAR state should activate towers via `room.find(FIND_MY_STRUCTURES,
+  {filter: s => s.structureType === STRUCTURE_TOWER})` and call `tower.attack(hostile)`.
+- Hauler delivery priority: towers slot between extensions and storage (after controller
+  container — keep the warlock fed first).
+- Tower auto-attack should live in `warren.act.js` — it's a side effect, not a job.
+  No need to route through the job board; towers act independently of creeps.
+
+### Roads
+- High-value paths first: spawn→source1, spawn→source2, spawn→controller.
+- `plan.roads.js` — generates road sites along cached paths between key points.
+- Only place road sites when energy ratio is healthy (same 0.7 guard as extensions).
+- One site at a time (same discipline as extensions) — workers build incrementally.
+- Traffic manager already handles roads correctly: cost 1 in CostMatrix means paths
+  naturally prefer roads once built. No traffic changes needed for Layer 2 roads.
+- Road maintenance (repair) is a future concern — roads decay slowly, add REPAIR jobs
+  when a road hits ~50% hits.
+
+### Source Containers
+- Miners drop onto ground currently. Source containers eliminate decay waste.
+- `plan.containers.js` will need a second placement mode: source containers at each source.
+- Miner behavior unchanged — it drops energy which falls into the container automatically
+  when the container is on the miner's tile.
+- Hauler gathering phase: check source containers before dropped resources.
+- Workers: can also withdraw from source containers as a gathering option.
+
+### Storage (RCL4)
+- Central energy buffer. Changes hauler routing significantly.
+- Haulers deliver everything to storage first. Secondary haulers (or same haulers with
+  updated priority) route from storage to spawn/extensions/towers/controller container.
+- Worker gathering: withdraw from storage before dropped pile.
+- This is a significant energy routing refactor — design carefully before implementing.
+
+---
+
 ## Known Sharp Edges / Open Issues
-
-**[RESOLVED] warren.decide.js — STABLE state never triggered extension placement**
-Workers withdrew from spawn just enough to prevent `energyCapped` from firing, so
-GROW state never triggered. Extensions never got placed. Fix: `buildExtensions` now
-runs in STABLE state too. The planner's own guards make it safe to call every tick.
-
-**[RESOLVED] spawn.director.js — emergency and demand spawns used energyCapacityAvailable**
-After total population collapse, extensions are empty so spawn only has 300 base energy.
-Requesting a body sized to full capacity silently fails every tick — spawn never fires.
-Fix: all spawn calls now use `energyAvailable` so they build the best body actually
-affordable right now. During normal operation both values are equal so quality is unchanged.
-
-**[RESOLVED] rat.hauler.js — partial delivery caused premature flip to gather phase**
-Hauler delivered to a full spawn (which took less than a full load), still had energy
-remaining, but flipped back to gathering because `getFreeCapacity() > 0`. Extra energy
-was never delivered to extensions. Fix: hauler now uses a `memory.delivering` state
-toggle — full triggers delivery, completely empty triggers gathering.
-
-**[RESOLVED] rat.worker.js — stale HARVEST job after slave promotion**
-Slaves grab HARVEST jobs from the job board. On RCL2 promotion the role flips to worker
-but `memory.job` persists. `findJob()` only fires when job is null, so the worker kept
-running the stale HARVEST job indefinitely. Fix: job validation check at top of spending
-phase clears any HARVEST job a worker is holding before the spending phase runs.
-
-**[RESOLVED] job.board.js — workers could be assigned HARVEST jobs**
-HARVEST priority * 100 score dominated role preference penalty. Workers would grab
-HARVEST jobs and sit on sources instead of consuming the dropped pile. Fix: `canDo()`
-now explicitly excludes workers from HARVEST jobs.
-
-**[RESOLVED] spawn.director.js — worker ratio too rigid**
-`workers < miners * 2` was a fixed ratio that didn't respond to energy pressure.
-With full extensions the economy saturated and workers couldn't drain energy fast enough.
-Fix: energy-responsive worker target formula with a cap of `sources * 4`.
-
-**[RESOLVED] plan.extensions.js — all extension sites placed simultaneously**
-Multiple sites queued at once caused all workers to converge on builds simultaneously,
-draining the energy pool and leaving the hauler with nothing to deliver. Fix: one site
-at a time — planner returns early if any extension site already exists.
-
-**[RESOLVED] movement — direct moveTo caused oscillation and drug-creep syndrome**
-`ignoreCreeps: true` told the pathfinder to route through occupied tiles. The creep
-physically couldn't get there. Stuck detection fired random moves. Creeps oscillated.
-Fix: traffic.js replaces all direct moveTo calls. Paths respect pinned tiles via
-CostMatrix. Idle creeps are auto-pinned so they're never invisible blockers.
 
 **orient.js — "any construction site forces GROW"**
 Currently any construction site (road, wall, container, anything) triggers GROW state.
@@ -457,18 +494,8 @@ This can cause over-planning. Future fix: only extension sites should trigger GR
 gate on energy saturation as a secondary condition.
 
 **hauler.js — delivery targets**
-Hauler fills spawn → extensions → towers → controller container in priority order.
 Storage not yet handled (Layer 2 feature). When all consumers are full, hauler clears
 `delivering` flag and returns to gathering rather than freezing.
-
-**spawn.director.js — warlock spawning not yet implemented**
-The Warlock Engineer role is defined and functional but the spawn director does not yet
-spawn one. Needs: check for existing warlock by homeRoom, check for controller container
-existence, spawn when both conditions are met. Next immediate task.
-
-**spawn.bodies.js — warlock body recipe not yet added**
-Warlock needs a body recipe. Heavy on WORK parts (upgrade throughput), minimal MOVE
-(it never travels far), enough CARRY to make container withdrawal worthwhile.
 
 **spawn.director.js — getRoomCreeps uses room.name filter**
 Works correctly for single-room play. Will need updating for multi-room when creeps
@@ -483,12 +510,17 @@ When two creeps want the same tile, the first to register wins. Future improveme
 weight by role priority (hauler > worker > slave) so higher-value creeps don't get
 blocked by lower-value ones.
 
-**traffic.js — path cache invalidation on structure changes**
-Cached paths in `creep.memory._trafficPath` are invalidated when target changes or the
-creep is pushed off-path, but not when new structures are built (roads, extensions, etc.).
-Low risk for now — paths naturally re-route around new structures once they're built and
-added to the CostMatrix. Road preference (cost 1) will attract paths to new roads once
-they appear without requiring explicit invalidation.
+**traffic.js — path cache not invalidated on road construction**
+Cached paths in `creep.memory._trafficPath` are not rebuilt when new roads are built.
+Low risk — paths naturally re-route to roads once they appear in the CostMatrix on the
+next recalculation. Road preference (cost 1) will attract paths to new roads without
+requiring explicit invalidation.
+
+**Future — population rebalancing**
+No mechanism yet to kill a surplus worker and spawn a needed hauler. When haulers are
+undersupplied relative to miners, energy piles up at sources and decays. Detection:
+`droppedAtSource > threshold` → flag least-valuable worker for `creep.suicide()` →
+spawn director fills hauler gap. Layer 2 feature at earliest.
 
 ---
 
@@ -503,43 +535,50 @@ they appear without requiring explicit invalidation.
 - **Skaven names in logs and comments.** `rat`, `warren`, `slave`, `miner` — not `creep`, `room`, `worker1`.
 - **Always use energyAvailable for spawn body sizing.** Never energyCapacityAvailable.
 - **No direct moveTo calls.** All movement goes through `Traffic.requestMove()` or `Traffic.pin()`.
+- **Construction sites for blocking structures must be in the CostMatrix at 0xff.**
+  They are physically impassable even though `FIND_STRUCTURES` misses them. Any pathfinding
+  code must include `FIND_MY_CONSTRUCTION_SITES` alongside `FIND_STRUCTURES`.
+- **Do not use harvest() return code to decide movement.** Use explicit `pos.inRangeTo()`
+  checks. Transient harvest errors (cooldown, fatigue) return non-ERR_NOT_IN_RANGE codes
+  that would cause the old else-pin pattern to freeze the creep indefinitely.
 
 ---
 
 ## Current Status
 
-**Layer:** 1 — Economic Engine
-**RCL:** 2
+**Layer:** 1 — Economic Engine (late stage, approaching Layer 2)
+**RCL:** 2 → 3 (climbing)
 **Room:** Single warren, two sources, one spawn (HQ)
 
 **Current population (target):**
 - 2 Miners — locked on sources, mining continuously
-- 2 Haulers — picking up dropped pile, delivering to spawn / extensions / controller container
-- 4 Workers — building extension sites one at a time, upgrading controller
-- 1 Warlock Engineer — sits at controller, upgrades forever (pending spawn logic)
+- 2 Haulers — picking up dropped pile, delivering spawn → container → extensions
+- 4 Workers — building extension sites one at a time, upgrading controller when idle
+- 1 Warlock Engineer — sits at controller container, upgrades forever
 
 **Infrastructure:**
-- 5+ Extensions built — energy capacity growing
-- Controller container site placed automatically, workers building it
+- 5 Extensions built — energy capacity 800
+- Controller container built — warlock has continuous energy supply
 - No roads yet (Layer 2)
 - No source containers yet (Layer 2)
+- No towers yet (RCL3 / Layer 2)
 
 **Last session work:**
-- Energy-responsive worker ratio — bonus workers when energy caps, hard cap at sources * 4
-- Upgrade job slots scaled to match worker cap — never a bottleneck
-- Extension planner now places one site at a time — controlled build cadence
-- Added plan.containers.js — places controller container adjacent to controller
-- Added rat.warlock.js — Warlock Engineer role, dedicated controller upgrader
-- Wired buildControllerContainer flag through warren.decide.js and warren.act.js
-- Updated rat.hauler.js — fills controller container as delivery priority 4
-- Added traffic.js — full movement coordination layer replacing all direct moveTo calls
-- Updated main.js — Traffic.reset() before ticks, Traffic.resolve() after
-- Updated all rat files — all movement through Traffic.requestMove() / Traffic.pin()
-- Auto-pin for idle creeps in traffic.resolve() — idle creeps no longer invisible blockers
-- Pinned tiles in PathFinder CostMatrix — proactive routing around occupied positions
+- Added warlock body recipe to spawn.bodies.js
+- Added warlock spawn logic to spawn.director.js (lowest priority, gates on container)
+- Fixed rat.miner.js — explicit range check replaces harvest return code for movement
+- Fixed traffic.js — construction sites added to CostMatrix at 0xff
+- Fixed traffic.js — path invalidation when next step pinned by different creep (convoy fix)
+- Fixed traffic.js — pinned tile cost raised 5 → 20
+- Added global.Traffic export — Traffic._pins etc. inspectable from console
+- Fixed job.board.js — controller container build priority 900 > extensions 800
+- Fixed job.board.js — upgrade slots context-sensitive on warlock + build site presence
+- Fixed rat.hauler.js — controller container delivery priority above extensions
+- Fixed rat.worker.js — container gathering uses proximity check (range 5 of controller)
+  instead of job type (which is always null at start of gathering phase)
 
 **Next:**
-- Add warlock body recipe to spawn.bodies.js
-- Add warlock spawn logic to spawn.director.js
-- Observe warren climbing toward RCL3 unassisted with Warlock Engineer active
-- Begin planning Layer 2: source containers, roads, storage energy routing
+- Observe warren climbing toward RCL3 unassisted
+- RCL3: auto-place tower, wire hauler delivery, enable tower auto-attack in warren.act.js
+- Begin road planning: spawn→sources, spawn→controller
+- Begin source container planning
