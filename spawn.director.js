@@ -45,10 +45,17 @@ module.exports = {
 
   /**
    * Spawn decisions based on current population and room state.
+   *
+   * Always passes energyAvailable (not energyCapacityAvailable) to body recipes.
+   * In normal operation extensions are full so the two values are equal — no
+   * difference in body quality. During recovery extensions are empty, so passing
+   * capacity would request a body we can't afford and stall indefinitely.
+   * Passing available means we always spawn the best body we can right now.
    */
   spawnByDemand(room, spawn, creeps) {
     const rcl = room.controller.level;
     const sources = room.find(FIND_SOURCES);
+    const energy = room.energyAvailable;
 
     const miners  = creeps.filter(c => c.memory.role === 'miner');
     const haulers = creeps.filter(c => c.memory.role === 'hauler');
@@ -57,24 +64,24 @@ module.exports = {
     // RCL1 — slaves only
     if (rcl === 1) {
       if (creeps.length < sources.length) {
-        this.spawnRat(spawn, 'slave', Bodies.slave(room.energyCapacityAvailable));
+        this.spawnRat(spawn, 'slave', Bodies.slave(energy));
       }
       return;
     }
 
     // RCL2+ — specialist roles
     if (miners.length < sources.length) {
-      this.spawnRat(spawn, 'miner', Bodies.miner(room.energyCapacityAvailable));
+      this.spawnRat(spawn, 'miner', Bodies.miner(energy));
       return;
     }
 
     if (haulers.length < miners.length) {
-      this.spawnRat(spawn, 'hauler', Bodies.hauler(room.energyCapacityAvailable));
+      this.spawnRat(spawn, 'hauler', Bodies.hauler(energy));
       return;
     }
 
     if (workers.length < miners.length * 2) {
-      this.spawnRat(spawn, 'worker', Bodies.worker(room.energyCapacityAvailable));
+      this.spawnRat(spawn, 'worker', Bodies.worker(energy));
     }
   },
 
