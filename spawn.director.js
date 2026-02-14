@@ -11,6 +11,11 @@
  *   4. Workers until workers == miners * 2
  *
  * At RCL1, only slaves are spawned.
+ *
+ * Emergency note: when all creeps are dead, extensions are empty and only
+ * the spawn's base 300 energy is available. The emergency spawn MUST use
+ * energyAvailable (not energyCapacityAvailable) or it will try to build a
+ * body it can't afford and stall indefinitely.
  */
 
 const Bodies = require('spawn.bodies');
@@ -26,9 +31,12 @@ module.exports = {
 
     const creeps = this.getWarrenCreeps(room);
 
-    // Emergency: warren is completely empty
+    // Emergency: warren is completely empty.
+    // Use energyAvailable (not energyCapacityAvailable) — extensions are empty
+    // when all creeps are dead so capacity is misleading. Spawn whatever we
+    // can actually afford right now to get at least one rat alive.
     if (creeps.length === 0 && room.energyAvailable >= 200) {
-      this.spawnRat(spawn, 'slave', Bodies.slave(room.energyCapacityAvailable));
+      this.spawnRat(spawn, 'slave', Bodies.slave(room.energyAvailable));
       return;
     }
 
