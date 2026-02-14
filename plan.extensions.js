@@ -1,4 +1,4 @@
-const Utils = require('plan.utils');
+const Utils   = require('plan.utils');
 const Scoring = require('plan.scoring');
 
 Room.prototype.planExtensions = function () {
@@ -18,6 +18,12 @@ Room.prototype.planExtensions = function () {
     filter: s => s.structureType === STRUCTURE_EXTENSION
   });
 
+  // Only queue one extension at a time.
+  // Wait for the current site to complete before placing the next.
+  // This prevents workers from over-committing energy to a build backlog
+  // and competing with the hauler over the same energy pile.
+  if (sites.length > 0) return;
+
   const total = existing.length + sites.length;
 
   const max =
@@ -28,8 +34,8 @@ Room.prototype.planExtensions = function () {
   const candidates = Utils.getBuildableTiles(this, spawn.pos, 8);
 
   const scored = candidates.map(tile => ({
-    x: tile.x,
-    y: tile.y,
+    x:     tile.x,
+    y:     tile.y,
     score: Scoring.scoreExtensionTile(this, tile, spawn)
   }));
 
