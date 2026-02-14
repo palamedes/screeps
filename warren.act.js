@@ -5,14 +5,17 @@
  * This is the ONLY phase in the OODA loop where side effects occur.
  * All spawning, building, and job publishing happens here.
  *
+ * Spawn placement is NOT handled here — empire.js watches for Claim flags
+ * and calls planSpawn() directly before the warren OODA loop ever runs.
+ * By the time act() is called, a spawn already exists.
+ *
  * Called by: warren.js (OODA step 5 of 5)
  * Reads:     this._plan
  * Delegates: SpawnDirector, JobBoard, planners
  */
 
-const JobBoard     = require('job.board');
+const JobBoard      = require('job.board');
 const SpawnDirector = require('spawn.director');
-require('plan.spawn');
 require('plan.extensions');
 require('plan.containers');
 
@@ -21,12 +24,6 @@ Room.prototype.act = function () {
   JobBoard.reset(this.name);
 
   const plan = this._plan;
-
-  // Spawn placement fires first — without a spawn nothing else can happen.
-  // The planner self-guards: no-ops if spawn or spawn site already exists.
-  if (plan.buildSpawn) {
-    this.planSpawn();
-  }
 
   if (plan.buildExtensions) {
     this.planExtensions();

@@ -7,6 +7,9 @@
  * The recovery guard runs before the state machine and can hard-override
  * the plan to ensure miners are always replenished first.
  *
+ * Spawn placement is NOT handled here — that's empire.js territory.
+ * By the time a warren.tick() runs, a spawn already exists.
+ *
  * Called by: warren.js (OODA step 4 of 5)
  * Reads:     this.memory.state
  * Writes:    this._plan (in-memory only, not persisted)
@@ -18,7 +21,6 @@ Room.prototype.decide = function () {
 
   // Initialize all flags to false — act() only does what's explicitly enabled
   this._plan = {
-    buildSpawn:               false,
     buildExtensions:          false,
     buildControllerContainer: false,
     publishHarvest:           false,
@@ -27,27 +29,11 @@ Room.prototype.decide = function () {
     publishDefense:           false
   };
 
-  // --- Spawn Placement Guard ---
-  // If no spawn exists and no spawn site exists, score and place the site.
-  // This fires exactly once per room — the planner self-guards after placement.
-  // Runs before everything else because without a spawn nothing works.
-  const hasSpawn = this._snapshot.structures.some(s =>
-    s.structureType === STRUCTURE_SPAWN
-  );
-  const hasSpawnSite = this._snapshot.constructionSites.some(s =>
-    s.structureType === STRUCTURE_SPAWN
-  );
-
-  if (!hasSpawn && !hasSpawnSite) {
-    this._plan.buildSpawn = true;
-    // Don't return — other flags may still matter (e.g. publishHarvest
-    // for any seeded creeps already in the room building the spawn site)
-  }
-
   // --- Economic Recovery Guard ---
   // If miners are below source count, the economy is stalled.
   // Override everything: just publish harvest jobs so the spawn director
   // can see demand and spawn new miners immediately.
+  // Uses homeRoom to match spawn.director.js logic.
   const sources = this.find(FIND_SOURCES);
   const miners = Object.values(Game.creeps).filter(c =>
     c.memory.homeRoom === this.name &&
