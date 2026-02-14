@@ -150,10 +150,19 @@ module.exports = {
 
   publishBuildJobs(room) {
     room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
+
+      // Controller container is the Warlock Engineer's energy supply.
+      // Getting it online unlocks continuous upgrade throughput, so it
+      // outranks extension sites in worker assignment priority.
+      const isControllerContainer =
+        site.structureType === STRUCTURE_CONTAINER &&
+        room.controller &&
+        site.pos.inRangeTo(room.controller, 3);
+
       this.publish(room.name, {
         type:     'BUILD',
         targetId: site.id,
-        priority: 800,
+        priority: isControllerContainer ? 900 : 800,
         slots:    2
       });
     });
