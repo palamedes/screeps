@@ -101,6 +101,31 @@ Creep.prototype.runWorker = function () {
   }
 
   // --- Gathering Phase ---
+
+  // Check tombstones first — dead rats shouldn't waste their energy
+  const tombstone = this.room.find(FIND_TOMBSTONES, {
+    filter: t => t.store[RESOURCE_ENERGY] > 0
+  })[0];
+
+  if (tombstone) {
+    if (this.withdraw(tombstone, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      this.moveTo(tombstone, { visualizePathStyle: {}, ignoreCreeps: true });
+    }
+    return;
+  }
+
+  // Check ruins
+  const ruin = this.room.find(FIND_RUINS, {
+    filter: r => r.store[RESOURCE_ENERGY] > 0
+  })[0];
+
+  if (ruin) {
+    if (this.withdraw(ruin, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      this.moveTo(ruin, { visualizePathStyle: {}, ignoreCreeps: true });
+    }
+    return;
+  }
+
   // Prefer dropped energy (miners drop it at source)
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
     filter: r => r.resourceType === RESOURCE_ENERGY && r.amount > 50
