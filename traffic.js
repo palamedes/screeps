@@ -354,7 +354,10 @@ const Traffic = {
         { pos: new RoomPosition(targetPos.x, targetPos.y, creep.room.name), range },
         {
           plainCost: 2,
-          swampCost: 10,
+          swampCost: 5,   // 10 is technically correct for fatigue ratios but causes
+                          // all creeps to pile into the same narrow plain detour.
+                          // 5 still prefers plains but tolerates a swamp tile rather
+                          // than routing everyone down the same corridor.
           roomCallback(roomName) {
             const room = Game.rooms[roomName];
             if (!room) return;
