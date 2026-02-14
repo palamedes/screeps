@@ -10,6 +10,11 @@
  *
  * Emergency mode: if miners are down, workers harvest directly and
  * feed the spawn so the director can recover the miner population.
+ *
+ * ignoreCreeps: true on all moveTo calls — prevents pathfinder from routing
+ * long detours around stationary creeps (especially miners sitting on sources)
+ * in tight corridors. Creeps still physically block tile-by-tile but will
+ * push through congestion rather than taking the scenic route.
  */
 
 Creep.prototype.runWorker = function () {
@@ -32,7 +37,7 @@ Creep.prototype.runWorker = function () {
       const source = this.pos.findClosestByPath(FIND_SOURCES);
       if (source) {
         if (this.harvest(source) === ERR_NOT_IN_RANGE) {
-          this.moveTo(source, { visualizePathStyle: {} });
+          this.moveTo(source, { visualizePathStyle: {}, ignoreCreeps: true });
         }
       }
       return;
@@ -40,7 +45,7 @@ Creep.prototype.runWorker = function () {
 
     if (spawn) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(spawn, { visualizePathStyle: {} });
+        this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
       }
     }
     return;
@@ -70,7 +75,7 @@ Creep.prototype.runWorker = function () {
       // No job available — idle near controller as a fallback
       // (prevents workers from wandering randomly)
       if (this.room.controller) {
-        this.moveTo(this.room.controller, { range: 3, visualizePathStyle: {} });
+        this.moveTo(this.room.controller, { range: 3, visualizePathStyle: {}, ignoreCreeps: true });
       }
     }
     return;
@@ -84,7 +89,7 @@ Creep.prototype.runWorker = function () {
 
   if (dropped) {
     if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
-      this.moveTo(dropped, { visualizePathStyle: {} });
+      this.moveTo(dropped, { visualizePathStyle: {}, ignoreCreeps: true });
     }
     return;
   }
@@ -94,7 +99,7 @@ Creep.prototype.runWorker = function () {
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(spawn, { visualizePathStyle: {} });
+      this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
     }
     return;
   }
@@ -102,6 +107,6 @@ Creep.prototype.runWorker = function () {
   // Nothing to pick up — wait near the highest-yield source
   const source = this.pos.findClosestByPath(FIND_SOURCES);
   if (source) {
-    this.moveTo(source, { range: 2, visualizePathStyle: {} });
+    this.moveTo(source, { range: 2, visualizePathStyle: {}, ignoreCreeps: true });
   }
 };
