@@ -64,4 +64,24 @@ module.exports = {
     return [WORK, CARRY, MOVE];
   },
 
+  /**
+   * Warlock Engineer body — sits at controller container and upgrades forever.
+   * Heavy on WORK parts for maximum upgrade throughput.
+   * Minimal MOVE — only needs to walk to the controller once on spawn.
+   * Enough CARRY to make each container withdrawal worthwhile.
+   *
+   * Cost check:
+   *   800: 6×100 + 2×50 + 2×50 = 800 ✓
+   *   700: 5×100 + 2×50 + 2×50 = 700 ✓
+   *   550: 4×100 + 2×50 + 1×50 = 550 ✓
+   *   400: 3×100 + 1×50 + 1×50 = 400 ✓
+   */
+  warlock(energyCapacity) {
+    if (energyCapacity >= 800) return [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
+    if (energyCapacity >= 700) return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
+    if (energyCapacity >= 550) return [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
+    if (energyCapacity >= 400) return [WORK, WORK, WORK, CARRY, MOVE];
+    return [WORK, CARRY, MOVE];
+  },
+
 };

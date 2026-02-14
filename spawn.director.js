@@ -9,6 +9,7 @@
  *   2. Miners until all sources are covered (1 miner per source)
  *   3. Haulers until haulers == miners (1 hauler per miner)
  *   4. Workers up to target count (see workerTarget below)
+ *   5. Warlock Engineer — one per warren, only after controller container exists
  *
  * Worker target formula:
  *   Base:  sources * 2      (minimum viable spending capacity)
@@ -19,6 +20,12 @@
  *   the hauler is delivering faster than workers can spend. Spawning an extra
  *   worker drains the surplus. When extensions are no longer full the bonus
  *   disappears and the director stops at the base count.
+ *
+ * Warlock Engineer:
+ *   Spawned only when the controller container exists — the warlock has no
+ *   reliable energy supply until then and would just wander uselessly.
+ *   One per warren. Lowest spawn priority so economy is healthy before
+ *   committing to an expensive dedicated upgrader.
  *
  * At RCL1, only slaves are spawned.
  *
@@ -70,6 +77,7 @@ module.exports = {
     const miners  = creeps.filter(c => c.memory.role === 'miner');
     const haulers = creeps.filter(c => c.memory.role === 'hauler');
     const workers = creeps.filter(c => c.memory.role === 'worker');
+    const warlocks = creeps.filter(c => c.memory.role === 'warlock');
 
     // RCL1 — slaves only
     if (rcl === 1) {
@@ -103,6 +111,23 @@ module.exports = {
 
     if (workers.length < workerTarget) {
       this.spawnRat(spawn, 'worker', Bodies.worker(energy));
+      return;
+    }
+
+    // Warlock Engineer: one per warren, only when controller container exists.
+    // The container must be built first — the warlock has no fallback energy
+    // supply until it is. Once the container is up, one warlock saturates
+    // upgrade throughput and the warren climbs RCL without touching workers.
+    if (warlocks.length === 0) {
+      const controllerContainer = room.find(FIND_STRUCTURES, {
+        filter: s =>
+          s.structureType === STRUCTURE_CONTAINER &&
+          s.pos.inRangeTo(room.controller, 3)
+      })[0];
+
+      if (controllerContainer) {
+        this.spawnRat(spawn, 'warlock', Bodies.warlock(energy));
+      }
     }
   },
 
