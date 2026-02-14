@@ -135,18 +135,26 @@ module.exports = {
   },
 
   publishUpgradeJobs(room) {
-    // When a Warlock Engineer is active, it handles upgrading continuously
-    // and workers should stay on build duty. Reduce upgrade slots to 1 so
-    // workers only upgrade as a last resort when no build jobs exist.
-    // Without a warlock, open up full slots so workers cover upgrading properly.
+    // When a Warlock Engineer is active AND build sites exist, restrict upgrade
+    // slots to 1 — workers should be building, not upgrading. The warlock covers
+    // RCL progression on its own.
+    //
+    // When there is nothing left to build, open upgrade slots fully so all idle
+    // workers pile onto the controller rather than standing around doing nothing.
+    // Without this, workers with no build jobs and slots=1 would have nothing
+    // to do and just idle near the controller burning ticks.
     const warlockActive = Object.values(Game.creeps).some(c =>
       c.memory.homeRoom === room.name &&
       c.memory.role === 'warlock'
     );
 
-    const slots = warlockActive
+    const hasBuildSites = room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
+
+    const fullSlots = Math.max(2, room.find(FIND_SOURCES).length * 4);
+
+    const slots = (warlockActive && hasBuildSites)
       ? 1
-      : Math.max(2, room.find(FIND_SOURCES).length * 4);
+      : fullSlots;
 
     this.publish(room.name, {
       type:     'UPGRADE',
