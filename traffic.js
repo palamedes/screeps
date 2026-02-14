@@ -270,8 +270,32 @@ const Traffic = {
         continue;
       }
 
-      // Uncontested or contested — move the first registrant.
-      mover.creep.move(mover.dir);
+      if (names.length === 1) {
+        // Uncontested — move freely
+        mover.creep.move(mover.dir);
+      } else {
+        // Contested — first registrant wins the tile.
+        // Losers yield sideways rather than waiting in place.
+        //
+        // Without yielding, a losing creep drops its move, recalculates the
+        // same road path next tick, contests the same tile again, and waits
+        // again indefinitely — producing a permanent single-file queue.
+        //
+        // Yielding steps the loser to any adjacent free tile, getting it out
+        // of the road corridor so the creep behind it can advance. Path cache
+        // is wiped so the loser recalculates a fresh route from the yield tile.
+        mover.creep.move(mover.dir);
+
+        for (let i = 1; i < names.length; i++) {
+          const loser    = moves[names[i]].creep;
+          const yieldDir = this._getYieldDir(loser, destinations);
+          if (yieldDir !== null) {
+            loser.move(yieldDir);
+            loser.memory._trafficPath = null; // recalculate from yield position
+          }
+          // No yield tile available — creep waits one tick (rare, boxed in)
+        }
+      }
     }
   },
 
@@ -386,14 +410,17 @@ const Traffic = {
         s.structureType !== STRUCTURE_RAMPART
       );
 
-      // Only hard pins force a reroute. Soft-pinned tiles (idle rats) don't —
-      // resolve() will push them aside rather than making this creep detour.
-      const hardPinnedByOther =
+      // Only hard pins force a reroute. Soft-pinned tiles used to be exempt —
+      // the idea was resolve() would push the idle rat aside. But that creates
+      // a worse problem: the path was calculated routing AROUND the soft-pinned
+      // creep. When that creep gets pushed away, the cached path still detours
+      // around where it used to be, leading creeps on a bad route for many ticks.
+      // Recalculating when a soft pin is in the way gives a fresh direct path.
+      const pinnedByOther =
         this._pins[nextKey] &&
-        !this._softPins[nextKey] &&
         this._pins[nextKey] !== creep.name;
 
-      if (structureBlocked || siteBlocked || hardPinnedByOther) {
+      if (structureBlocked || siteBlocked || pinnedByOther) {
         creep.memory._trafficPath = null;
       }
     }
@@ -409,8 +436,14 @@ const Traffic = {
     // Recalculate if no valid cached path
     if (!creep.memory._trafficPath || !creep.memory._trafficPath.length) {
 
-      // Capture pins at path-calculation time so the closure sees current state.
-      const pins = Object.assign({}, this._pins);
+      // Capture pins and current intent positions at path-calculation time.
+      // Pins: idle creeps that are physically stationary this tick.
+      // Intents: creeps already registered to move somewhere this tick.
+      // Including intent positions at moderate cost creates natural path diversity —
+      // a creep that ticks later sees existing traffic and routes slightly
+      // differently, preventing all creeps from piling onto the exact same tiles.
+      const pins    = Object.assign({}, this._pins);
+      const intents = Object.assign({}, this._intents);
 
       const result = PathFinder.search(
         creep.pos,
@@ -456,17 +489,26 @@ const Traffic = {
 
             // All pinned creep tiles (hard and soft): cost 20.
             // Pathfinder prefers to route around occupied clusters.
-            // Cost 20 vs plain 2 = pathfinder takes up to 10-tile detour
-            // to avoid one pinned creep. Cost 20 (not 0xff) keeps adjacent
-            // tiles reachable for final approach past pinned creeps.
-            // Soft-pinned creeps are included here — the pathfinder still
-            // prefers to avoid them, but if the direct path is best, resolve()
-            // will push them rather than having this creep detour.
+            // Cost 20 vs plain 2 = up to 10-tile detour to avoid one pinned creep.
+            // Cost 20 (not 0xff) keeps adjacent tiles reachable for final approach.
             for (const key of Object.keys(pins)) {
               const [x, y] = key.split(',').map(Number);
               if (costs.get(x, y) < 20) {
                 costs.set(x, y, 20);
               }
+            }
+
+            // Creeps that already registered move intents this tick are
+            // physically present on their current tiles. Adding their positions
+            // at moderate cost (10) creates path diversity — creeps that tick
+            // later see existing traffic and naturally route slightly differently
+            // rather than all computing the exact same path and piling up.
+            // Cost 10 is noticeable but not so high it causes wild detours.
+            for (const intentName of Object.keys(intents)) {
+              const ic = Game.creeps[intentName];
+              if (!ic) continue;
+              const cur = costs.get(ic.pos.x, ic.pos.y);
+              if (cur < 10) costs.set(ic.pos.x, ic.pos.y, 10);
             }
 
             return costs;
@@ -485,7 +527,77 @@ const Traffic = {
   },
 
   /**
-   * Find a direction to push an idle (soft-pinned) blocker.
+   * Find a yield direction for a moving creep that lost a contested tile.
+   *
+   * Prefers tiles that are:
+   *   1. Not the contested destination (don't step into the same fight)
+   *   2. Not hard-pinned
+   *   3. Not a blocking structure or site
+   *   4. Not already claimed by another mover this tick
+   *   5. Walkable terrain
+   *
+   * Prefers perpendicular directions first — stepping sideways off a road
+   * is more useful than stepping backward toward where you came from.
+   *
+   * @param  {Creep}  creep        — the creep that needs to yield
+   * @param  {object} destinations — current tick destination map { toKey: [names] }
+   * @return {number|null}         — direction constant or null if boxed in
+   */
+  _getYieldDir(creep, destinations) {
+    const terrain = creep.room.getTerrain();
+
+    // All 8 directions — perpendicular/diagonal first, backward last.
+    // Stepping sideways off a road corridor is the most useful yield move.
+    const dirs = [TOP_RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, TOP_LEFT, TOP, RIGHT, BOTTOM, LEFT];
+    const offsets = {
+      [TOP]:          { dx:  0, dy: -1 },
+      [TOP_RIGHT]:    { dx:  1, dy: -1 },
+      [RIGHT]:        { dx:  1, dy:  0 },
+      [BOTTOM_RIGHT]: { dx:  1, dy:  1 },
+      [BOTTOM]:       { dx:  0, dy:  1 },
+      [BOTTOM_LEFT]:  { dx: -1, dy:  1 },
+      [LEFT]:         { dx: -1, dy:  0 },
+      [TOP_LEFT]:     { dx: -1, dy: -1 }
+    };
+
+    for (const dir of dirs) {
+      const { dx, dy } = offsets[dir];
+      const nx = creep.pos.x + dx;
+      const ny = creep.pos.y + dy;
+
+      if (nx <= 0 || nx >= 49 || ny <= 0 || ny >= 49) continue;
+      if (terrain.get(nx, ny) === TERRAIN_MASK_WALL) continue;
+
+      const tileKey = `${nx},${ny}`;
+
+      // Don't yield into a hard-pinned tile
+      if (this._pins[tileKey] && !this._softPins[tileKey]) continue;
+
+      // Don't yield into a tile someone else is moving into this tick
+      if (destinations[tileKey]) continue;
+
+      // Don't yield into a blocking structure or site
+      const structures = creep.room.lookForAt(LOOK_STRUCTURES, nx, ny);
+      if (structures.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      )) continue;
+
+      const sites = creep.room.lookForAt(LOOK_CONSTRUCTION_SITES, nx, ny);
+      if (sites.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      )) continue;
+
+      return dir;
+    }
+
+    return null;
+  },
+
+  /**
    *
    * A valid push tile must be:
    *   1. Within room bounds
