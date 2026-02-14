@@ -8,8 +8,14 @@
  * Placement rules:
  *   - Only one controller container is ever placed
  *   - Tile must be walkable and buildable
- *   - Prefer the tile closest to the spawn (minimizes hauler detour)
+ *   - Prefer the tile closest to the spawn (minimizes hauler travel distance)
+ *   - The warlock will stand ON this tile to upgrade — it must be within
+ *     range 1 of the controller so the warlock can also reach upgradeController
+ *     (range 3 from controller is satisfied by any adjacent tile)
  *   - Does nothing if the container or its construction site already exists
+ *
+ * NOTE: If the container is already placed in the wrong location, destroy it
+ * manually in-game — this planner will then re-place it correctly next tick.
  *
  * Called by: warren.act.js (when plan.buildControllerContainer is true)
  * Reads:     room structures, construction sites, terrain
@@ -42,8 +48,10 @@ Room.prototype.planControllerContainer = function () {
 
   if (sites.length > 0) return;
 
-  // Find all walkable tiles adjacent to the controller
-  // Use range 1 — engineer must be able to stand on it and reach the controller
+  // Find all walkable tiles adjacent (range 1) to the controller.
+  // Range 1 means the warlock can stand on this tile, withdraw from the
+  // container, AND reach upgradeController (which requires range 3) —
+  // all from the same position, eliminating travel between refuel and upgrade.
   const candidates = [];
 
   for (let dx = -1; dx <= 1; dx++) {
@@ -61,14 +69,16 @@ Room.prototype.planControllerContainer = function () {
 
   if (!candidates.length) return;
 
-  // Prefer the tile closest to the spawn — minimizes hauler travel distance
+  // Prefer the tile CLOSEST to spawn — minimizes hauler travel distance.
+  // Score is positive distance, sorted ascending so nearest comes first.
+  // (Previous version used negative score + ascending sort = farthest first. Bug.)
   const scored = candidates.map(tile => ({
     x:     tile.x,
     y:     tile.y,
-    score: -spawn.pos.getRangeTo(tile.x, tile.y)
+    score: spawn.pos.getRangeTo(tile.x, tile.y)   // lower = closer = better
   }));
 
-  const sorted = _.sortBy(scored, t => t.score);
+  const sorted = _.sortBy(scored, t => t.score);  // ascending: closest first
 
   for (const tile of sorted) {
     if (this.createConstructionSite(tile.x, tile.y, STRUCTURE_CONTAINER) === OK) {
