@@ -5,13 +5,13 @@
  * Haulers have no WORK parts. They only move energy around.
  *
  * Pickup priority:   dropped resources (largest pile first)
- * Delivery priority: spawn → controller container → extensions → towers
+ * Delivery priority: spawn → extensions → controller container → towers
  *
- * Controller container is prioritized above extensions because the Warlock
- * Engineer upgrading every tick is worth more than slightly better spawn
- * bodies occasionally. An empty container means the warlock wanders and
- * wastes ticks — extensions being slightly less than full costs almost nothing
- * since spawns are infrequent relative to upgrade cycles.
+ * Extensions are prioritized above the controller container because they
+ * directly determine spawn body quality. Empty extensions = every replacement
+ * creep spawns at minimum body (200-300 energy) regardless of capacity.
+ * A warlock with 1 WORK part from a cheap spawn contributes almost nothing.
+ * Fill extensions first so the next spawn always gets the best body possible.
  *
  * Haulers also pick up from tombstones and ruins to recover lost energy.
  *
@@ -54,9 +54,27 @@ Creep.prototype.runHauler = function () {
       return;
     }
 
-    // Priority 2: Controller container — feeds the Warlock Engineer
-    // Prioritized above extensions: the warlock upgrading every tick gives
-    // more value than keeping extensions topped up between infrequent spawns.
+    // Priority 2: Extensions — fill before controller container.
+    // Extensions determine spawn body quality. Empty extensions = cheap bodies
+    // for every replacement creep. This is the highest-leverage use of energy
+    // after keeping the spawn fed.
+    const extension = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_EXTENSION &&
+        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+    });
+
+    if (extension) {
+      if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, extension);
+      }
+      return;
+    }
+
+    // Priority 3: Controller container — feeds the Warlock Engineer.
+    // Only filled after spawn and extensions are topped up. Once extensions
+    // are consistently full, replacement creeps spawn with good bodies and
+    // the warlock gets a well-bodied spawn too — then the container matters.
     const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
@@ -67,20 +85,6 @@ Creep.prototype.runHauler = function () {
     if (controllerContainer) {
       if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, controllerContainer);
-      }
-      return;
-    }
-
-    // Priority 3: Extensions (fill any that aren't full)
-    const extension = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_EXTENSION &&
-        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-    });
-
-    if (extension) {
-      if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, extension);
       }
       return;
     }
