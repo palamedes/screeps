@@ -88,10 +88,13 @@
  * Registered by: all rat files (pin or requestMove)
  */
 
-// How many consecutive ticks a creep must be stuck before we surrender and
-// fall back to native moveTo(). Low enough to unstick quickly, high enough
-// that normal one-tick waits (contested tile, swap resolution) don't trigger it.
+// How many consecutive ticks without movement before triggering the moveTo fallback.
 const STUCK_THRESHOLD = 3;
+
+// How many ticks to stay in moveTo fallback mode once triggered.
+// The creep gets FALLBACK_DURATION full ticks of ignoreCreeps moveTo to break free
+// before traffic resumes control. 3 ticks is usually enough to clear any jam.
+const FALLBACK_DURATION = 3;
 
 const Traffic = {
 
@@ -300,37 +303,49 @@ const Traffic = {
     const targetPos = target.pos || target;
     const targetKey = `${targetPos.x},${targetPos.y},${range}`;
 
-    // --- Stuck detection ---
-    // Compare current position to where we were last tick.
-    // If we haven't moved for STUCK_THRESHOLD ticks, traffic's own resolution
-    // has failed (push logic exhausted, contested tile standoff, etc.).
-    // Fall back to native moveTo which ignores all creep positions and will
-    // physically shove through whatever is blocking.
+    // --- Phase 1: Active fallback ---
+    // If _trafficFallback > 0 we are mid-rescue. Keep using moveTo until the
+    // countdown expires, then hand back to normal traffic control.
+    // The creep gets FALLBACK_DURATION full ticks to bulldoze clear of whatever
+    // jammed it before we go back to being polite about other creeps.
+    if (creep.memory._trafficFallback > 0) {
+      creep.memory._trafficFallback--;
+      creep.moveTo(targetPos.x, targetPos.y, {
+        ignoreCreeps: true,
+        reusePath:    5,
+        visualizePathStyle: { stroke: '#ff4444', opacity: 0.4 }
+      });
+      return null; // resolve() must not double-move this creep
+    }
+
+    // --- Phase 2: Stuck detection ---
+    // Compare current position to last tick. If unchanged for STUCK_THRESHOLD
+    // consecutive ticks, traffic's own resolution has failed — trigger fallback.
     const lastPos = creep.memory._trafficLastPos;
     if (lastPos && lastPos.x === creep.pos.x && lastPos.y === creep.pos.y) {
       creep.memory._trafficStuck = (creep.memory._trafficStuck || 0) + 1;
     } else {
-      // Position changed — we moved successfully, reset counter
-      creep.memory._trafficStuck  = 0;
+      // Moved successfully — reset both counters
+      creep.memory._trafficStuck   = 0;
       creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
     }
 
     if (creep.memory._trafficStuck >= STUCK_THRESHOLD) {
-      // Surrender to native moveTo. Wipe path cache so we get a fresh
-      // calculation next tick once the creep is moving again.
-      creep.memory._trafficPath  = null;
-      creep.memory._trafficStuck = 0;
-      console.log(`[traffic] ${creep.name} stuck ${STUCK_THRESHOLD} ticks — falling back to moveTo`);
+      // Wipe path cache so we recalculate fresh when fallback ends
+      creep.memory._trafficPath    = null;
+      creep.memory._trafficStuck   = 0;
+      creep.memory._trafficFallback = FALLBACK_DURATION;
+      console.log(`[traffic] ${creep.name} stuck — entering moveTo fallback for ${FALLBACK_DURATION} ticks`);
+      // Use moveTo this tick too — don't waste the trigger tick waiting
       creep.moveTo(targetPos.x, targetPos.y, {
-        ignoreCreeps:    true,
-        reusePath:       0,    // no caching — we want a fresh path immediately
+        ignoreCreeps: true,
+        reusePath:    5,
         visualizePathStyle: { stroke: '#ff4444', opacity: 0.4 }
       });
-      return null; // tell resolve() not to also try to move this creep
+      return null;
     }
 
-    // Update last pos for next tick's comparison (after the stuck check so we
-    // don't update-then-immediately-compare on the same tick)
+    // Update last pos for next tick's comparison
     creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
 
     // Invalidate cache if target changed
