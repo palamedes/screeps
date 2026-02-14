@@ -68,6 +68,16 @@
  *   visible to the pathfinder (cost 20 deters routing through) while still
  *   allowing motivated creeps to displace them when necessary.
  *
+ * Stuck detection and moveTo fallback:
+ *   Every tick a creep registers a move intent, its position is compared to
+ *   creep.memory._trafficLastPos. If unchanged for STUCK_THRESHOLD consecutive
+ *   ticks, the traffic system surrenders and calls native moveTo() as an escape
+ *   hatch. moveTo uses ignoreCreeps:true — it will bulldoze through any blocker
+ *   rather than waiting politely. Path cache is wiped on fallback so a fresh
+ *   path is calculated on the next tick once the creep is moving again.
+ *   Counter resets to 0 whenever the creep successfully changes position.
+ *   Memory keys: _trafficLastPos {x,y}, _trafficStuck (tick count)
+ *
  * Future hooks (not yet implemented):
  *   - Priority weighting by role for contested tiles
  *   - Convoy logic for haulers in corridors
@@ -77,6 +87,11 @@
  * Called from: main.js (reset before ticks, resolve after)
  * Registered by: all rat files (pin or requestMove)
  */
+
+// How many consecutive ticks a creep must be stuck before we surrender and
+// fall back to native moveTo(). Low enough to unstick quickly, high enough
+// that normal one-tick waits (contested tile, swap resolution) don't trigger it.
+const STUCK_THRESHOLD = 3;
 
 const Traffic = {
 
@@ -284,6 +299,39 @@ const Traffic = {
   _getNextDir(creep, target, range) {
     const targetPos = target.pos || target;
     const targetKey = `${targetPos.x},${targetPos.y},${range}`;
+
+    // --- Stuck detection ---
+    // Compare current position to where we were last tick.
+    // If we haven't moved for STUCK_THRESHOLD ticks, traffic's own resolution
+    // has failed (push logic exhausted, contested tile standoff, etc.).
+    // Fall back to native moveTo which ignores all creep positions and will
+    // physically shove through whatever is blocking.
+    const lastPos = creep.memory._trafficLastPos;
+    if (lastPos && lastPos.x === creep.pos.x && lastPos.y === creep.pos.y) {
+      creep.memory._trafficStuck = (creep.memory._trafficStuck || 0) + 1;
+    } else {
+      // Position changed — we moved successfully, reset counter
+      creep.memory._trafficStuck  = 0;
+      creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
+    }
+
+    if (creep.memory._trafficStuck >= STUCK_THRESHOLD) {
+      // Surrender to native moveTo. Wipe path cache so we get a fresh
+      // calculation next tick once the creep is moving again.
+      creep.memory._trafficPath  = null;
+      creep.memory._trafficStuck = 0;
+      console.log(`[traffic] ${creep.name} stuck ${STUCK_THRESHOLD} ticks — falling back to moveTo`);
+      creep.moveTo(targetPos.x, targetPos.y, {
+        ignoreCreeps:    true,
+        reusePath:       0,    // no caching — we want a fresh path immediately
+        visualizePathStyle: { stroke: '#ff4444', opacity: 0.4 }
+      });
+      return null; // tell resolve() not to also try to move this creep
+    }
+
+    // Update last pos for next tick's comparison (after the stuck check so we
+    // don't update-then-immediately-compare on the same tick)
+    creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
 
     // Invalidate cache if target changed
     if (creep.memory._trafficTarget !== targetKey) {
