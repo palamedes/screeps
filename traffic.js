@@ -21,13 +21,24 @@
  *                              Calculates next-step direction via cached path.
  *                              Does NOT call creep.move() — resolve() does that.
  *
- *   resolve()                — called once after all creep ticks. Detects
+ *   resolve()                — called once after all creep ticks. Auto-pins
+ *                              any creep that registered no intent (idle creeps
+ *                              are invisible blockers without this). Detects
  *                              swaps, resolves conflicts, executes moves.
  *
  * Path caching:
  *   Paths are stored in creep.memory._trafficPath as {x,y} arrays.
  *   Cache is invalidated when target changes or creep is pushed off-path.
  *   Roads get cost 1 vs plain cost 2 — naturally preferred once built.
+ *   Pinned creep tiles get cost 5 in the CostMatrix — pathfinder routes
+ *   around occupied tiles proactively rather than being blocked reactively.
+ *   Cost 5 (not 0xff) keeps adjacent tiles reachable for final approach.
+ *
+ * Auto-pin:
+ *   Any creep that ends its tick without registering a move intent is
+ *   automatically pinned at its current position. This makes idle creeps
+ *   (haulers waiting for energy, workers with no job) visible to the
+ *   pathfinder so other creeps route around them naturally.
  *
  * Future hooks (not yet implemented):
  *   - Priority weighting by role for contested tiles
@@ -87,6 +98,7 @@ const Traffic = {
    * Called once per tick in main.js after all creep ticks complete.
    *
    * Resolution order:
+   *   0. Auto-pin any creep that registered no intent this tick
    *   1. Skip creeps already in range of their target
    *   2. Calculate next-step direction for each intent (cached paths)
    *   3. Detect and execute mutual swaps
@@ -94,6 +106,17 @@ const Traffic = {
    *   5. Skip contested or pinned destinations (creep waits one tick)
    */
   resolve() {
+
+    // Step 0: Auto-pin idle creeps.
+    // Any creep that didn't register a move intent this tick is stationary.
+    // Pin it so the pathfinder treats its tile as occupied — otherwise idle
+    // creeps are invisible blockers that other creeps' paths route straight
+    // through, causing physical deadlocks every time they meet.
+    for (const name in Game.creeps) {
+      if (!this._intents[name]) {
+        this.pin(Game.creeps[name]);
+      }
+    }
 
     // Step 1 & 2: Calculate next-step direction for each intent
     const moves = {};  // creepName → { creep, dir, fromKey, toKey }
@@ -172,6 +195,8 @@ const Traffic = {
   /**
    * Get the next direction toward target using a cached path.
    * Recalculates when target changes or creep is pushed off-path.
+   * Pinned creep tiles are written into the CostMatrix so the pathfinder
+   * routes around occupied positions proactively.
    */
   _getNextDir(creep, target, range) {
     const targetPos = target.pos || target;
@@ -183,7 +208,7 @@ const Traffic = {
       creep.memory._trafficPath   = null;
     }
 
-    // Invalidate if first cached step is no longer adjacent (got pushed off-path)
+    // Invalidate if first cached step no longer adjacent (pushed off-path)
     const cached = creep.memory._trafficPath;
     if (cached && cached.length) {
       const next = cached[0];
@@ -202,6 +227,12 @@ const Traffic = {
 
     // Recalculate if no valid cached path
     if (!creep.memory._trafficPath || !creep.memory._trafficPath.length) {
+
+      // Capture pins at path-calculation time so the closure sees current state.
+      // This is the key to proactive routing — the pathfinder knows where
+      // every idle creep is sitting before it plans a route around them.
+      const pins = Object.assign({}, this._pins);
+
       const result = PathFinder.search(
         creep.pos,
         { pos: new RoomPosition(targetPos.x, targetPos.y, creep.room.name), range },
@@ -214,18 +245,28 @@ const Traffic = {
 
             const costs = new PathFinder.CostMatrix();
 
+            // Structures: roads cheap, everything else blocked
             room.find(FIND_STRUCTURES).forEach(s => {
               if (s.structureType === STRUCTURE_ROAD) {
-                // Roads are cheap — pathfinder naturally prefers them
+                // Roads are cheap — pathfinder naturally prefers them once built
                 costs.set(s.pos.x, s.pos.y, 1);
               } else if (
                 s.structureType !== STRUCTURE_CONTAINER &&
                 s.structureType !== STRUCTURE_RAMPART
               ) {
-                // Block all other structures
                 costs.set(s.pos.x, s.pos.y, 0xff);
               }
             });
+
+            // Pinned creep tiles: discourage routing through occupied positions.
+            // Cost 5 (not 0xff) — still passable for final approach to adjacent
+            // tiles, just expensive enough that the pathfinder prefers going around.
+            for (const key of Object.keys(pins)) {
+              const [x, y] = key.split(',').map(Number);
+              if (costs.get(x, y) < 5) {
+                costs.set(x, y, 5);
+              }
+            }
 
             return costs;
           }
