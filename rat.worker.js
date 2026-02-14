@@ -11,32 +11,14 @@
  * Emergency mode: if miners are down, workers harvest directly and
  * feed the spawn so the director can recover the miner population.
  *
- * ignoreCreeps: true on all moveTo calls — prevents pathfinder from routing
- * long detours around stationary creeps (especially miners sitting on sources)
- * in tight corridors. Creeps still physically block tile-by-tile but will
- * push through congestion rather than taking the scenic route.
- *
- * Stuck detection: if a worker hasn't moved in 3 ticks, it moves in a random
- * direction to break physical deadlocks in tight corridors.
+ * All movement routed through Traffic.requestMove — no direct moveTo calls.
+ * Stuck detection removed: the traffic manager handles blocked creeps by
+ * resolving conflicts before movement executes.
  */
 
-Creep.prototype.runWorker = function () {
+const Traffic = require('traffic');
 
-  // --- Stuck Detection ---
-  // If we haven't moved in 3 ticks, kick loose with a random move.
-  // Handles physical deadlocks in tight corridors that ignoreCreeps can't solve.
-  const pos = `${this.pos.x},${this.pos.y}`;
-  if (this.memory.lastPos === pos) {
-    this.memory.stuckCount = (this.memory.stuckCount || 0) + 1;
-    if (this.memory.stuckCount >= 3) {
-      this.move(Math.ceil(Math.random() * 8));
-      this.memory.stuckCount = 0;
-      return;
-    }
-  } else {
-    this.memory.lastPos = pos;
-    this.memory.stuckCount = 0;
-  }
+Creep.prototype.runWorker = function () {
 
   const sources = this.room.find(FIND_SOURCES);
 
@@ -56,7 +38,7 @@ Creep.prototype.runWorker = function () {
       const source = this.pos.findClosestByPath(FIND_SOURCES);
       if (source) {
         if (this.harvest(source) === ERR_NOT_IN_RANGE) {
-          this.moveTo(source, { visualizePathStyle: {}, ignoreCreeps: true });
+          Traffic.requestMove(this, source);
         }
       }
       return;
@@ -64,7 +46,7 @@ Creep.prototype.runWorker = function () {
 
     if (spawn) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, spawn);
       }
     }
     return;
@@ -103,7 +85,7 @@ Creep.prototype.runWorker = function () {
       // No job available — idle near controller as a fallback
       // (prevents workers from wandering randomly)
       if (this.room.controller) {
-        this.moveTo(this.room.controller, { range: 3, visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, this.room.controller, { range: 3 });
       }
     }
     return;
@@ -118,7 +100,7 @@ Creep.prototype.runWorker = function () {
 
   if (tombstone) {
     if (this.withdraw(tombstone, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(tombstone, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, tombstone);
     }
     return;
   }
@@ -130,7 +112,7 @@ Creep.prototype.runWorker = function () {
 
   if (ruin) {
     if (this.withdraw(ruin, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(ruin, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, ruin);
     }
     return;
   }
@@ -142,7 +124,7 @@ Creep.prototype.runWorker = function () {
 
   if (dropped) {
     if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
-      this.moveTo(dropped, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, dropped);
     }
     return;
   }
@@ -152,14 +134,23 @@ Creep.prototype.runWorker = function () {
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, spawn);
     }
+    return;
+  }
+
+  // Nothing to gather — spend whatever we're holding rather than idling.
+  // Handles partial-load edge case: worker acquired a small amount of energy
+  // (below the fill threshold) and can't find more. Spend it rather than
+  // oscillating near the source with a useless trickle in store.
+  if (this.store[RESOURCE_ENERGY] > 0) {
+    this.memory.working = true;
     return;
   }
 
   // Nothing to pick up — wait near the highest-yield source
   const source = this.pos.findClosestByPath(FIND_SOURCES);
   if (source) {
-    this.moveTo(source, { range: 2, visualizePathStyle: {}, ignoreCreeps: true });
+    Traffic.requestMove(this, source, { range: 2 });
   }
 };

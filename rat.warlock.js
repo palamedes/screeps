@@ -8,16 +8,21 @@
  * Energy source priority:
  *   1. Controller container (primary — hauler keeps it stocked)
  *   2. Dropped energy near controller (fallback if container isn't built yet)
- *   3. Withdraw from spawn if desperate (last resort, never starve the spawn)
+ *   3. Tombstones near controller
+ *   4. Withdraw from spawn if desperate (last resort, never starve the spawn)
  *
  * The warlock bypasses the job board entirely. Its assignment is permanent —
  * it claimed the controller on spawn and will upgrade it until it dies.
  * Same pattern as rat.miner.js.
  *
+ * Once upgrading, pins its tile so the traffic manager knows it is stationary.
+ *
  * State toggle (memory.working):
  *   false = gathering energy
  *   true  = upgrading controller
  */
+
+const Traffic = require('traffic');
 
 Creep.prototype.runWarlock = function () {
 
@@ -31,8 +36,13 @@ Creep.prototype.runWarlock = function () {
 
   // --- Spending Phase ---
   if (this.memory.working) {
-    if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
-      this.moveTo(this.room.controller, { range: 3, visualizePathStyle: {}, ignoreCreeps: true });
+    const result = this.upgradeController(this.room.controller);
+
+    if (result === ERR_NOT_IN_RANGE) {
+      Traffic.requestMove(this, this.room.controller, { range: 3 });
+    } else {
+      // Seated and upgrading — pin tile so nobody routes through us
+      Traffic.pin(this);
     }
     return;
   }
@@ -49,7 +59,7 @@ Creep.prototype.runWarlock = function () {
 
   if (container) {
     if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(container, { range: 1, visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, container, { range: 1 });
     }
     return;
   }
@@ -64,7 +74,7 @@ Creep.prototype.runWarlock = function () {
 
   if (dropped) {
     if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
-      this.moveTo(dropped, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, dropped);
     }
     return;
   }
@@ -78,7 +88,7 @@ Creep.prototype.runWarlock = function () {
 
   if (tombstone) {
     if (this.withdraw(tombstone, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(tombstone, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, tombstone);
     }
     return;
   }
@@ -88,7 +98,7 @@ Creep.prototype.runWarlock = function () {
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, spawn);
     }
     return;
   }
@@ -96,6 +106,6 @@ Creep.prototype.runWarlock = function () {
   // Nothing available — move to controller and wait in position
   // so we're ready the moment the hauler delivers
   if (this.room.controller) {
-    this.moveTo(this.room.controller, { range: 3, visualizePathStyle: {}, ignoreCreeps: true });
+    Traffic.requestMove(this, this.room.controller, { range: 3 });
   }
 };

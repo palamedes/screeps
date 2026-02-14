@@ -18,7 +18,11 @@
  * has energy left. It stays in delivery mode and finds the next consumer
  * (extension, tower, controller container) rather than heading back to
  * pick up more.
+ *
+ * All movement routed through Traffic.requestMove — no direct moveTo calls.
  */
+
+const Traffic = require('traffic');
 
 Creep.prototype.runHauler = function () {
 
@@ -40,7 +44,7 @@ Creep.prototype.runHauler = function () {
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(spawn, { visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, spawn);
       }
       return;
     }
@@ -54,7 +58,7 @@ Creep.prototype.runHauler = function () {
 
     if (extension) {
       if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(extension, { visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, extension);
       }
       return;
     }
@@ -68,7 +72,7 @@ Creep.prototype.runHauler = function () {
 
     if (tower) {
       if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(tower, { visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, tower);
       }
       return;
     }
@@ -85,7 +89,7 @@ Creep.prototype.runHauler = function () {
 
     if (controllerContainer) {
       if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(controllerContainer, { visualizePathStyle: {}, ignoreCreeps: true });
+        Traffic.requestMove(this, controllerContainer);
       }
       return;
     }
@@ -105,7 +109,7 @@ Creep.prototype.runHauler = function () {
 
   if (tombstone) {
     if (this.withdraw(tombstone, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(tombstone, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, tombstone);
     }
     return;
   }
@@ -117,7 +121,7 @@ Creep.prototype.runHauler = function () {
 
   if (ruin) {
     if (this.withdraw(ruin, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      this.moveTo(ruin, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, ruin);
     }
     return;
   }
@@ -129,7 +133,7 @@ Creep.prototype.runHauler = function () {
 
   if (dropped) {
     if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
-      this.moveTo(dropped, { visualizePathStyle: {}, ignoreCreeps: true });
+      Traffic.requestMove(this, dropped);
     }
     return;
   }
@@ -139,6 +143,6 @@ Creep.prototype.runHauler = function () {
   const sources = this.room.find(FIND_SOURCES);
   if (sources.length) {
     const target = this.pos.findClosestByPath(sources);
-    this.moveTo(target, { range: 2, visualizePathStyle: {}, ignoreCreeps: true });
+    Traffic.requestMove(this, target, { range: 2 });
   }
 };

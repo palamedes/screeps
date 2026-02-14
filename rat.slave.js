@@ -17,7 +17,11 @@
  *   When the warren reaches RCL2, slaves are immediately promoted to worker.
  *   All slave-specific memory is cleared on promotion so the worker
  *   starts with a clean slate.
+ *
+ * All movement routed through Traffic.requestMove — no direct moveTo calls.
  */
+
+const Traffic = require('traffic');
 
 Creep.prototype.runSlave = function () {
 
@@ -48,7 +52,7 @@ Creep.prototype.runSlave = function () {
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        this.moveTo(spawn, { visualizePathStyle: {} });
+        Traffic.requestMove(this, spawn);
       }
       return;
     }
@@ -56,7 +60,7 @@ Creep.prototype.runSlave = function () {
     // Priority 2: Upgrade the controller — getting to RCL2 is the entire goal
     if (this.room.controller) {
       if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
-        this.moveTo(this.room.controller, { visualizePathStyle: {} });
+        Traffic.requestMove(this, this.room.controller, { range: 3 });
       }
     }
 
@@ -67,7 +71,7 @@ Creep.prototype.runSlave = function () {
   const source = this.pos.findClosestByPath(FIND_SOURCES);
   if (source) {
     if (this.harvest(source) === ERR_NOT_IN_RANGE) {
-      this.moveTo(source, { visualizePathStyle: {} });
+      Traffic.requestMove(this, source);
     }
   }
 };

@@ -2,15 +2,18 @@ require('rat.worker');
 require('rat.miner');
 require('rat.hauler');
 require('rat.slave');
+require('rat.warlock');
 
+const Traffic  = require('traffic');
 const JobBoard = require('job.board');
 
 Creep.prototype.tick = function () {
   switch (this.memory.role) {
-    case 'miner': return this.runMiner();
-    case 'hauler': return this.runHauler();
-    case 'worker': return this.runWorker();
-    case 'slave': return this.runSlave();
+    case 'miner':   return this.runMiner();
+    case 'hauler':  return this.runHauler();
+    case 'worker':  return this.runWorker();
+    case 'slave':   return this.runSlave();
+    case 'warlock': return this.runWarlock();
   }
 };
 
@@ -19,7 +22,7 @@ Creep.prototype.findJob = function () {
 };
 
 Creep.prototype.runJob = function () {
-  const job = this.memory.job;
+  const job    = this.memory.job;
   const target = Game.getObjectById(job.targetId);
 
   if (!target) {
@@ -30,13 +33,13 @@ Creep.prototype.runJob = function () {
   switch (job.type) {
     case 'UPGRADE':
       if (this.upgradeController(target) === ERR_NOT_IN_RANGE) {
-        this.moveTo(target);
+        Traffic.requestMove(this, target, { range: 3 });
       }
       break;
 
     case 'BUILD':
       if (this.build(target) === ERR_NOT_IN_RANGE) {
-        this.moveTo(target);
+        Traffic.requestMove(this, target);
       }
       break;
   }

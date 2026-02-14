@@ -8,14 +8,20 @@ require('empire');
 require('warren');
 require('rat');
 
+const Traffic = require('traffic');
+
 /**
  * Main game loop.
- * Orchestrates empire → rooms → creeps.
+ * Orchestrates empire → rooms → creeps → traffic resolution.
  * Contains no strategy logic.
  */
 module.exports.loop = function () {
 
   cleanupMemory();
+
+  // Clear all movement intents and pins from last tick.
+  // Must happen before any room or creep ticks register new ones.
+  Traffic.reset();
 
   Empire.tick();
 
@@ -29,6 +35,11 @@ module.exports.loop = function () {
   for (const name in Game.creeps) {
     Game.creeps[name].tick();
   }
+
+  // Execute all movement registered this tick.
+  // Runs after all creep ticks so the full picture of intent is known
+  // before any creep actually moves.
+  Traffic.resolve();
 };
 
 /**
