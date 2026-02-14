@@ -182,9 +182,14 @@ else                   → STABLE
 BOOTSTRAP  → publishHarvest + publishUpgrade
 GROW       → buildExtensions + publishHarvest + publishBuild + publishUpgrade
 WAR        → publishDefense
-STABLE     → publishUpgrade (default)
+STABLE     → buildExtensions + publishUpgrade
 FORTIFY    → (not yet implemented)
 ```
+
+Note: `buildExtensions` runs in STABLE as well as GROW. The extension planner is
+self-guarding (energy ratio + RCL cap checks) and safe to call every tick. Without
+this, the warren deadlocks: workers drain spawn just enough to prevent `energyCapped`
+from firing, so GROW state never triggers and extensions never get placed.
 
 ---
 
@@ -209,6 +214,12 @@ RCL2+:
   haulers < miners.length       → spawn hauler
   workers < miners.length * 2   → spawn worker
 ```
+
+**CRITICAL:** All spawn calls use `room.energyAvailable` (not `room.energyCapacityAvailable`)
+when building body recipes. During normal operation extensions are full so both values are
+equal — no body quality difference. During recovery, extensions are empty and capacity is
+misleading: passing capacity requests a body the spawn cannot afford and stalls indefinitely.
+Always use available, always get the best body we can actually build right now.
 
 ### Body Recipes (spawn.bodies.js)
 All body recipes are pure functions: `createBody(role, energyCapacity) → bodyArray`.
@@ -250,6 +261,12 @@ worker + UPGRADE  = +100
 slave  + UPGRADE  = +50
 ```
 
+**canDo rules:**
+- Workers are explicitly excluded from HARVEST jobs. Workers have their own gathering
+  phase (pickup dropped energy). Letting workers harvest from sources means they sit
+  on sources instead of consuming the dropped pile, which breaks the miner → hauler →
+  worker energy chain.
+
 ---
 
 ## Planner Contracts
@@ -270,18 +287,52 @@ All `plan.*` files are pure calculation engines. They:
 
 ## Known Sharp Edges / Open Issues
 
+**[RESOLVED] warren.decide.js — STABLE state never triggered extension placement**
+Workers withdrew from spawn just enough to prevent `energyCapped` from firing, so
+GROW state never triggered. Extensions never got placed. Fix: `buildExtensions` now
+runs in STABLE state too. The planner's own guards make it safe to call every tick.
+
+**[RESOLVED] spawn.director.js — emergency and demand spawns used energyCapacityAvailable**
+After total population collapse, extensions are empty so spawn only has 300 base energy.
+Requesting a body sized to full capacity silently fails every tick — spawn never fires.
+Fix: all spawn calls now use `energyAvailable` so they build the best body actually
+affordable right now. During normal operation both values are equal so quality is unchanged.
+
+**[RESOLVED] rat.hauler.js — partial delivery caused premature flip to gather phase**
+Hauler delivered to a full spawn (which took less than a full load), still had energy
+remaining, but flipped back to gathering because `getFreeCapacity() > 0`. Extra energy
+was never delivered to extensions. Fix: hauler now uses a `memory.delivering` state
+toggle — full triggers delivery, completely empty triggers gathering. Same pattern as
+rat.worker.js.
+
+**[RESOLVED] rat.worker.js — stale HARVEST job after slave promotion**
+Slaves grab HARVEST jobs from the job board. On RCL2 promotion the role flips to worker
+but `memory.job` persists. `findJob()` only fires when job is null, so the worker kept
+running the stale HARVEST job indefinitely. Fix: job validation check at top of spending
+phase clears any HARVEST job a worker is holding before the spending phase runs.
+
+**[RESOLVED] job.board.js — workers could be assigned HARVEST jobs**
+HARVEST priority * 100 score dominated role preference penalty. Workers would grab
+HARVEST jobs and sit on sources instead of consuming the dropped pile. Fix: `canDo()`
+now explicitly excludes workers from HARVEST jobs.
+
 **orient.js — "any construction site forces GROW"**
 Currently any construction site (road, wall, container, anything) triggers GROW state.
 This can cause over-planning. Future fix: only extension sites should trigger GROW, or
 gate on energy saturation as a secondary condition.
 
-**hauler.js — delivery targets**
-Currently haulers only deliver to spawn. Extensions and towers go unfilled.
-Future: hauler should fill spawn → extensions → towers → storage in priority order.
+**rat.worker.js / rat.hauler.js — tight corridor blocking**
+Stationary miners in tight corridors (2-tile wide passages) cause other creeps to
+oscillate back and forth unable to pass. Partial mitigation: `ignoreCreeps: true` on
+all `moveTo` calls prevents long detours but doesn't solve physical tile occupation.
+Stuck detection in rat.worker.js (3-tick threshold → random move) provides emergency
+escape. Real fix: roads (Layer 2). Road tiles cause `moveTo` to naturally prefer them,
+reducing corridor congestion significantly.
 
-**worker.js — energy state toggle**
-Workers need a `this.memory.working` boolean flag to properly toggle between
-harvesting and spending. Without it, workers with 0 energy try to run jobs and stall.
+**hauler.js — delivery targets**
+Hauler fills spawn → extensions → towers in priority order. Storage not yet handled
+(Layer 2 feature). When all consumers are full, hauler clears `delivering` flag and
+returns to gathering rather than freezing.
 
 **spawn.director.js — getRoomCreeps uses room.name filter**
 Works correctly for single-room play. Will need updating for multi-room when creeps
@@ -302,6 +353,8 @@ should be cleared when structures change significantly.
 - **Log with context.** `console.log(`[warren:${room.name}] spawning miner`)` not `console.log('spawning')`.
 - **Comments explain WHY, not WHAT.** The code says what. Comments say why.
 - **Skaven names in logs and comments.** `rat`, `warren`, `slave`, `miner` — not `creep`, `room`, `worker1`.
+- **Always use energyAvailable for spawn body sizing.** Never energyCapacityAvailable.
+  See spawn.director.js notes above.
 
 ---
 
@@ -318,7 +371,31 @@ A Layer 1 warren is complete when:
 ---
 
 ## Current Status
-Layer: 1 — Economic Engine
-Last session: Renamed all files to warren/rat/spawn/plan convention.
-Fixed rat.slave, rat.worker, rat.hauler, warren.decide.
-Next: Deploy to fresh room and observe bootstrap behavior.
+
+**Layer:** 1 — Economic Engine
+**RCL:** 2
+**Room:** Single warren, one source, one spawn (HQ)
+
+**Current population:**
+- 1 Miner — locked on source, mining continuously
+- 1 Hauler — picking up dropped pile, delivering to spawn and extensions
+- 2 Workers — building construction sites and upgrading controller
+
+**Infrastructure:**
+- 5 Extensions built and full — energy capacity at 550
+- No roads yet (Layer 2)
+- No containers yet (Layer 2)
+
+**Last session fixes:**
+- Fixed STABLE state deadlock preventing extension placement (warren.decide.js)
+- Fixed emergency and demand spawns using wrong energy value (spawn.director.js)
+- Fixed hauler partial-delivery flip-to-gather bug (rat.hauler.js)
+- Fixed worker inheriting stale HARVEST job after slave promotion (rat.worker.js)
+- Fixed workers being assigned HARVEST jobs from job board (job.board.js)
+- Added ignoreCreeps + stuck detection to rat.worker.js for tight corridor relief
+- Added tombstone + ruin pickup to rat.worker.js gathering phase
+
+**Next:**
+- Observe warren climbing toward RCL3 unassisted
+- Watch for any new edge cases in the hauler delivery cycle
+- Begin planning Layer 2 features: containers, roads, storage energy routing
