@@ -28,7 +28,7 @@ Creep.prototype.drawRole = function () {
   // Colored circle centered on the creep
   visual.circle(this.pos, {
     fill:    spec.color,
-    radius:  0.30,
+    radius:  0.25,
     opacity: 0.85,
     stroke:  'rgba(0,0,0,0.4)',
     strokeWidth: 0.05
