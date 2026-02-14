@@ -2,40 +2,36 @@
  * spawn.bodies.js
  *
  * Pure body part recipes for each rat role.
- * All functions are stateless — they take energy capacity and return a body array.
+ * All functions are stateless — they take available energy and return a body array.
  * No Memory reads. No Game object access. No side effects.
  *
- * Body arrays are ordered intentionally: tough parts first so they die last,
- * MOVE parts last so they survive longest.
+ * All recipes are formulaic — they scale continuously with available energy
+ * rather than using discrete tiers. No thresholds to miscalibrate, no tiers
+ * to add when a new extension unlocks. The body is always the best possible
+ * given exactly the energy provided.
  *
- * Threshold calibration rule:
- *   Each tier's threshold should be the actual body cost plus a small buffer (~50).
- *   This ensures the spawn can always afford the body it requests.
- *   Do NOT set thresholds significantly higher than body cost — that causes
- *   the cheaper tier to fire even when extensions are full and the better
- *   body is completely affordable.
+ * Body array ordering convention:
+ *   Parts are ordered so the most expendable die first.
+ *   WORK/CARRY first → MOVE last.
+ *   MOVE surviving longest keeps the creep mobile even when damaged.
+ *   (Screeps deals damage from the front of the body array.)
  *
  * Part costs (for reference):
  *   WORK  = 100
  *   CARRY = 50
  *   MOVE  = 50
- *   ATTACK = 80
- *   RANGED_ATTACK = 150
- *   HEAL = 250
- *   TOUGH = 10
- *   CLAIM = 600
  */
 
 module.exports = {
 
   /**
    * Slave body — RCL1 bootstrap generalist.
-   * Scales up with available energy but always starts with the minimum viable body.
-   * Prioritizes WORK parts to maximize harvest/upgrade throughput.
+   * Already formulaic: starts with minimum [WORK, CARRY, MOVE] and
+   * stacks additional WORK parts with any remaining energy.
    */
-  slave(energyCapacity) {
+  slave(energy) {
     const body = [WORK, CARRY, MOVE];
-    let remaining = energyCapacity - 200;
+    let remaining = energy - 200;
 
     while (remaining >= 100 && body.length < 50) {
       body.unshift(WORK);
@@ -46,81 +42,107 @@ module.exports = {
   },
 
   /**
-   * Miner body — sits on a source and never moves.
-   * 5x WORK = 10 energy/tick, exactly drains a source.
-   * Only needs 1 MOVE to get to the source initially.
+   * Miner body — sits on source, never moves after arrival.
+   * Maximize WORK parts (2 energy/tick each) with exactly 1 MOVE to walk there.
+   * Hard cap at 5 WORK — that's 10 energy/tick which exactly drains a source.
+   * Beyond 5 WORK is pure waste.
    *
-   * Costs: 550 / 450 / 250 / 150
-   * Thresholds match actual costs.
+   * Formula: reserve 50 for MOVE, rest → WORK parts, capped at 5.
+   * Min viable: 150 energy → [WORK, MOVE]
+   * Full drain:  550 energy → [WORK, WORK, WORK, WORK, WORK, MOVE]
    */
-  miner(energyCapacity) {
-    if (energyCapacity >= 550) return [WORK, WORK, WORK, WORK, WORK, MOVE];
-    if (energyCapacity >= 450) return [WORK, WORK, WORK, WORK, MOVE];
-    if (energyCapacity >= 300) return [WORK, WORK, MOVE];
-    return [WORK, MOVE];
+  miner(energy) {
+    const MOVE_COST = 50;
+    const workCount = Math.min(
+      Math.floor((energy - MOVE_COST) / 100),
+      5  // 5 WORK = 10 energy/tick = full source drain, more is wasteful
+    );
+
+    if (workCount < 1) return [WORK, MOVE]; // absolute floor
+
+    const body = [];
+    for (let i = 0; i < workCount; i++) body.push(WORK);
+    body.push(MOVE);
+    return body;
   },
 
   /**
-   * Hauler body — pure energy transport.
-   * Needs CARRY and MOVE only. No WORK parts.
-   * 1 CARRY + 1 MOVE ratio keeps it moving at full speed when loaded.
+   * Hauler body — pure energy transport, no WORK parts.
+   * Equal CARRY and MOVE so it moves at full speed when loaded.
    *
-   * Costs: 600 / 400 / 200 / 100
-   * Thresholds match actual costs.
+   * Formula: pairs of [CARRY + MOVE] = 100 each.
+   * Each pair carries 50 energy per trip and moves without fatigue penalty.
+   * Min viable: 100 energy → [CARRY, MOVE]
    */
-  hauler(energyCapacity) {
-    if (energyCapacity >= 600) return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-    if (energyCapacity >= 400) return [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
-    if (energyCapacity >= 200) return [CARRY, CARRY, MOVE, MOVE];
-    return [CARRY, MOVE];
+  hauler(energy) {
+    const pairs = Math.min(
+      Math.floor(energy / 100),
+      25  // 25 pairs = 50 parts (Screeps body part limit)
+    );
+
+    if (pairs < 1) return [CARRY, MOVE]; // absolute floor
+
+    const body = [];
+    for (let i = 0; i < pairs; i++) body.push(CARRY);
+    for (let i = 0; i < pairs; i++) body.push(MOVE);
+    return body;
   },
 
   /**
    * Worker body — builds and upgrades.
-   * Needs WORK + CARRY + MOVE.
-   * Balanced ratio: enough CARRY to make trips worthwhile, enough WORK to spend fast.
+   * Balanced sets of [WORK + CARRY + MOVE] = 200 each.
+   * Each set contributes 1 WORK action per trip and moves without penalty.
    *
-   * Costs:
-   *   [WORK×3, CARRY×3, MOVE×3] = 300+150+150 = 600
-   *   [WORK×2, CARRY×2, MOVE×2] = 200+100+100 = 400
-   *   [WORK,   CARRY,   MOVE  ] = 100+ 50+ 50 = 200
-   *
-   * IMPORTANT: Thresholds are set just above actual body costs (~+50 buffer).
-   * Previous thresholds (800 / 550 / 300) were 150-200 higher than body costs,
-   * causing the cheap 3-part body to spawn even when extensions were full and
-   * the better body was completely affordable.
-   *
-   * Example of the old failure:
-   *   RCL2, 5 extensions, 3 filled → energyAvailable = 450
-   *   Bodies.worker(450) with old threshold 550 → fell through to >= 300 → 3 parts
-   *   Bodies.worker(450) with new threshold 450 → hits >= 450 → 6 parts ✓
+   * Formula: sets of 200 energy → one WORK + one CARRY + one MOVE.
+   * Ordering within array: all WORKs, then all CARRYs, then all MOVEs.
+   * Min viable: 200 energy → [WORK, CARRY, MOVE]
    */
-  worker(energyCapacity) {
-    if (energyCapacity >= 650) return [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
-    if (energyCapacity >= 450) return [WORK, WORK, CARRY, CARRY, MOVE, MOVE];
-    if (energyCapacity >= 200) return [WORK, CARRY, MOVE];
-    return [WORK, CARRY, MOVE];
+  worker(energy) {
+    const sets = Math.min(
+      Math.floor(energy / 200),
+      16  // 16 sets = 48 parts, leaves 2 slots — stays safely under 50 limit
+    );
+
+    if (sets < 1) return [WORK, CARRY, MOVE]; // absolute floor
+
+    const body = [];
+    for (let i = 0; i < sets; i++) body.push(WORK);
+    for (let i = 0; i < sets; i++) body.push(CARRY);
+    for (let i = 0; i < sets; i++) body.push(MOVE);
+    return body;
   },
 
   /**
-   * Warlock Engineer body — sits at controller container and upgrades forever.
-   * Heavy on WORK parts for maximum upgrade throughput.
-   * Minimal MOVE — only needs to walk to the controller once on spawn.
-   * Enough CARRY to make each container withdrawal worthwhile.
+   * Warlock Engineer body — sits at controller, upgrades forever.
+   * Maximize WORK parts for upgrade throughput. Fixed CARRY and MOVE
+   * since the warlock only needs to walk to the controller once.
    *
-   * Costs:
-   *   800: 6×100 + 2×50 + 2×50 = 800 ✓
-   *   700: 5×100 + 2×50 + 2×50 = 700 ✓
-   *   550: 4×100 + 2×50 + 1×50 = 550 ✓
-   *   400: 3×100 + 1×50 + 1×50 = 400 ✓
-   * Thresholds match actual costs.
+   * Formula: reserve fixed overhead for CARRY + MOVE, stack WORK with the rest.
+   *   2 CARRY = 100 (enough to make each container withdrawal worthwhile)
+   *   2 MOVE  = 100 (gets to controller, can nudge position if needed)
+   *   Overhead = 200 energy reserved
+   *   Remaining → WORK parts
+   *
+   * Min viable: 300 energy → [WORK, CARRY, CARRY, MOVE, MOVE]
+   * At 800 energy → [WORK×6, CARRY×2, MOVE×2] (same as old hardcoded top tier)
    */
-  warlock(energyCapacity) {
-    if (energyCapacity >= 800) return [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
-    if (energyCapacity >= 700) return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE];
-    if (energyCapacity >= 550) return [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
-    if (energyCapacity >= 400) return [WORK, WORK, WORK, CARRY, MOVE];
-    return [WORK, CARRY, MOVE];
+  warlock(energy) {
+    const CARRY_COUNT = 2;
+    const MOVE_COUNT  = 2;
+    const OVERHEAD    = (CARRY_COUNT * 50) + (MOVE_COUNT * 50); // 200
+
+    const workCount = Math.min(
+      Math.floor((energy - OVERHEAD) / 100),
+      50 - CARRY_COUNT - MOVE_COUNT  // respect 50-part body limit
+    );
+
+    if (workCount < 1) return [WORK, CARRY, MOVE]; // absolute floor
+
+    const body = [];
+    for (let i = 0; i < workCount; i++) body.push(WORK);
+    for (let i = 0; i < CARRY_COUNT; i++) body.push(CARRY);
+    for (let i = 0; i < MOVE_COUNT; i++) body.push(MOVE);
+    return body;
   },
 
 };
