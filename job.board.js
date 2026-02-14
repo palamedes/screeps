@@ -68,7 +68,12 @@ module.exports = {
     switch (job.type) {
 
       case 'HARVEST':
-        return creep.getActiveBodyparts(WORK) > 0;
+        // Workers have their own gathering phase for picking up dropped energy.
+        // Harvesting directly from a source is miners and slaves only — letting
+        // workers harvest means they sit on sources instead of consuming the
+        // dropped pile, which disrupts the miner → hauler → worker energy chain.
+        return creep.memory.role !== 'worker' &&
+          creep.getActiveBodyparts(WORK) > 0;
 
       case 'BUILD':
       case 'UPGRADE':
