@@ -234,13 +234,20 @@ const Traffic = {
       }
     }
 
-    // Invalidate if the next cached step is now blocked by a structure
-    // or construction site that didn't exist when the path was calculated.
-    // Catches the case where an extension gets built (or placed as a site)
-    // on a tile the cached path runs through — without this the creep tries
-    // to step onto the tile every tick and creep.move() fails silently forever.
+    // Invalidate if the next cached step is now blocked by a structure,
+    // construction site, or a pinned creep that wasn't there when the path
+    // was calculated.
+    //
+    // The pinned-creep check is critical for the "convoy" case: two creeps
+    // follow the same cached path to the same target. The leading creep
+    // reaches range and pins. The trailing creep's next step is now the
+    // pinned tile — resolve() will block the move every tick and the creep
+    // freezes. Invalidating here forces a fresh path that routes around the
+    // now-occupied tile.
     if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
       const next = creep.memory._trafficPath[0];
+      const nextKey = `${next.x},${next.y}`;
+
       const structures = creep.room.lookForAt(LOOK_STRUCTURES, next.x, next.y);
       const sites      = creep.room.lookForAt(LOOK_CONSTRUCTION_SITES, next.x, next.y);
 
@@ -256,7 +263,11 @@ const Traffic = {
         s.structureType !== STRUCTURE_RAMPART
       );
 
-      if (structureBlocked || siteBlocked) {
+      // Pinned by a different creep — recalculate so we route around them
+      const pinnedByOther = this._pins[nextKey] &&
+        this._pins[nextKey] !== creep.name;
+
+      if (structureBlocked || siteBlocked || pinnedByOther) {
         creep.memory._trafficPath = null;
       }
     }
