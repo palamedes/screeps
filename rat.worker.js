@@ -15,9 +15,28 @@
  * long detours around stationary creeps (especially miners sitting on sources)
  * in tight corridors. Creeps still physically block tile-by-tile but will
  * push through congestion rather than taking the scenic route.
+ *
+ * Stuck detection: if a worker hasn't moved in 3 ticks, it moves in a random
+ * direction to break physical deadlocks in tight corridors.
  */
 
 Creep.prototype.runWorker = function () {
+
+  // --- Stuck Detection ---
+  // If we haven't moved in 3 ticks, kick loose with a random move.
+  // Handles physical deadlocks in tight corridors that ignoreCreeps can't solve.
+  const pos = `${this.pos.x},${this.pos.y}`;
+  if (this.memory.lastPos === pos) {
+    this.memory.stuckCount = (this.memory.stuckCount || 0) + 1;
+    if (this.memory.stuckCount >= 3) {
+      this.move(Math.ceil(Math.random() * 8));
+      this.memory.stuckCount = 0;
+      return;
+    }
+  } else {
+    this.memory.lastPos = pos;
+    this.memory.stuckCount = 0;
+  }
 
   const sources = this.room.find(FIND_SOURCES);
 
