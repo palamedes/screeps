@@ -108,26 +108,12 @@ module.exports = {
 
     // RCL2+ — specialist roles
 
-    // Miners are always urgent — a dead miner stalls the entire economy
-    // (energy stops flowing → hauler idles → workers starve → upgrading stops).
-    // Spawn a replacement immediately with whatever energy is available.
-    // A cheaper miner now is better than a perfect miner in 10 ticks.
+    // Miners are always urgent — a dead miner stalls the entire economy.
+    // Spawn immediately with whatever energy is available.
     if (miners.length < sources.length) {
       this.spawnRat(spawn, 'miner', Bodies.miner(energy));
       return;
     }
-
-    // All other roles: wait until extensions are well-stocked before spawning.
-    // This is the fix for cheap 3-part bodies. The sequence that causes them:
-    //   1. Creep dies
-    //   2. Extensions are empty (hauler hasn't refilled yet)
-    //   3. spawn.energyAvailable = 300 (spawn base only)
-    //   4. Director fires → Bodies() returns cheapest tier → 3-part body
-    //   5. Hauler fills extensions 2 ticks later — too late
-    // By waiting for the threshold, we give the hauler time to fill extensions
-    // and every replacement gets the best body the warren can actually afford.
-    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
-    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
     // Hauler target scales with infrastructure.
     //
@@ -146,10 +132,21 @@ module.exports = {
 
     const haulerTarget = sourceContainerCount > 0 ? sourceContainerCount : 1;
 
+    // Haulers are also exempt from the energy threshold — the hauler IS the
+    // thing that fills extensions. If it's dead and we wait for 90% energy
+    // before spawning it, we deadlock: extensions never fill, threshold never
+    // clears, hauler never spawns. Spawn it immediately on whatever is available.
     if (haulers.length < haulerTarget) {
       this.spawnRat(spawn, 'hauler', Bodies.hauler(energy));
       return;
     }
+
+    // Workers and warlock: wait until extensions are well-stocked before spawning.
+    // Miners and hauler are already live (handled above), so extensions are being
+    // filled right now. Waiting for 90% means the next worker/warlock spawn gets
+    // the best body the warren can afford rather than a cheap 3-part body.
+    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
+    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
     // Worker target is energy-responsive.
     // Base count handles normal operation.
