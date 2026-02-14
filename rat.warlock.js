@@ -2,24 +2,24 @@
  * rat.warlock.js
  *
  * Warlock Engineer behavior — sits on the controller container and upgrades forever.
- * The highest-caste specialist in the warren. Never leaves its tile.
+ * The highest-caste specialist in the warren. Never leaves its tile once seated.
  *
  * Position strategy:
  *   The warlock targets the controller container tile and stands ON it.
  *   From that tile it can:
  *     - Withdraw from the container (range 0 satisfies withdraw's range-1 requirement)
  *     - Upgrade the controller (container is always placed within range 3 of controller)
- *   This means zero travel between refueling and upgrading — the warlock
- *   never moves once it reaches the container.
+ *   Zero travel between refueling and upgrading once seated.
  *
- * State toggle (memory.working):
- *   false = empty, need to withdraw from container
- *   true  = full, upgrading controller
+ * Energy gathering priority:
+ *   1. Controller container (stand on it, withdraw directly)
+ *   2. Dropped energy near controller (pre-container window, or while hauler is en route)
+ *   3. Tombstones near controller
+ *   4. Spawn surplus (last resort, >250 only)
  *
- * Fallback energy sources (if container not yet built or empty):
- *   1. Dropped energy near controller
- *   2. Tombstones near controller
- *   3. Spawn surplus (last resort, >250 only)
+ * KEY FIX: When the container exists but is empty, the warlock must fall through
+ * to other energy sources rather than pinning and waiting. ERR_NOT_ENOUGH_RESOURCES
+ * from withdraw() means "empty right now" — not "stay put forever."
  *
  * The warlock bypasses the job board entirely — same pattern as rat.miner.js.
  * All movement routed through Traffic.requestMove / Traffic.pin.
@@ -27,8 +27,7 @@
 
 const Traffic = require('traffic');
 
-// Must match plan.containers.js placement range
-const CONTROLLER_CONTAINER_RANGE = 3;
+const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.containers.js
 
 Creep.prototype.runWarlock = function () {
 
@@ -40,52 +39,47 @@ Creep.prototype.runWarlock = function () {
     this.memory.working = true;
   }
 
-  // --- Find controller container ---
-  // Look for it every tick (it could be built mid-life).
-  // If found, the container tile IS our permanent position.
-  const container = this.pos.findClosestByPath(FIND_STRUCTURES, {
-    filter: s =>
-      s.structureType === STRUCTURE_CONTAINER &&
-      s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
-  });
-
   // --- Spending Phase ---
   if (this.memory.working) {
     const result = this.upgradeController(this.room.controller);
 
     if (result === ERR_NOT_IN_RANGE) {
-      // Not at controller yet — move toward it
       Traffic.requestMove(this, this.room.controller, { range: 3 });
     } else {
-      // Upgrading — pin our tile so nobody routes through us
       Traffic.pin(this);
     }
     return;
   }
 
   // --- Gathering Phase ---
+  // Use room.find for the container — do NOT use findClosestByPath.
+  // findClosestByPath returns null silently when the room is congested and
+  // it can't calculate a path. We want the object reference so the traffic
+  // manager can handle the actual pathing. Separating target lookup from
+  // pathing is the correct pattern.
+  const container = this.room.find(FIND_STRUCTURES, {
+    filter: s =>
+      s.structureType === STRUCTURE_CONTAINER &&
+      s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
+  })[0];
 
-  // Priority 1: Container — stand on it and withdraw.
-  // Moving TO the container tile (range 0) means we withdraw and upgrade
-  // from the same spot with no travel between the two actions.
-  if (container) {
-    if (!this.pos.isEqualTo(container.pos)) {
-      // Not on the container yet — walk to it
-      Traffic.requestMove(this, container.pos, { range: 0 });
-      return;
-    }
-
-    // Standing on the container — withdraw directly
-    const result = this.withdraw(container, RESOURCE_ENERGY);
-    if (result === OK || result === ERR_NOT_ENOUGH_RESOURCES) {
-      // Either withdrew successfully or container is empty — pin and wait
+  // Priority 1: Container exists AND has energy — stand on it and withdraw.
+  // Explicitly check store amount before committing to walk there.
+  // If container is empty we fall through immediately to other sources
+  // rather than walking to it and then discovering it's empty.
+  if (container && container.store[RESOURCE_ENERGY] > 0) {
+    if (this.pos.isEqualTo(container.pos)) {
+      // Already on the container — withdraw directly
+      this.withdraw(container, RESOURCE_ENERGY);
       Traffic.pin(this);
+    } else {
+      Traffic.requestMove(this, container.pos, { range: 0 });
     }
     return;
   }
 
-  // Priority 2: Dropped energy near controller
-  // Handles the window before the container is built or while hauler is en route
+  // Priority 2: Dropped energy near controller.
+  // Handles: pre-container window, hauler en route, container temporarily empty.
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
     filter: r =>
       r.resourceType === RESOURCE_ENERGY &&
@@ -113,8 +107,7 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 4: Last resort — spawn surplus only
-  // Never starve the spawn. Only touch it if well above spawning threshold.
+  // Priority 4: Spawn surplus — last resort only
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -123,9 +116,14 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Nothing available — move to controller and wait in position
+  // Nothing available anywhere — hold position at container if built,
+  // otherwise wait near controller to be ready when hauler arrives.
   if (container) {
-    Traffic.requestMove(this, container.pos, { range: 0 });
+    if (!this.pos.isEqualTo(container.pos)) {
+      Traffic.requestMove(this, container.pos, { range: 0 });
+    } else {
+      Traffic.pin(this);
+    }
   } else if (this.room.controller) {
     Traffic.requestMove(this, this.room.controller, { range: 3 });
   }
