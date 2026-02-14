@@ -5,7 +5,13 @@
  * Haulers have no WORK parts. They only move energy around.
  *
  * Pickup priority:   dropped resources (largest pile first)
- * Delivery priority: spawn → extensions → towers → controller container → (storage, future)
+ * Delivery priority: spawn → controller container → extensions → towers
+ *
+ * Controller container is prioritized above extensions because the Warlock
+ * Engineer upgrading every tick is worth more than slightly better spawn
+ * bodies occasionally. An empty container means the warlock wanders and
+ * wastes ticks — extensions being slightly less than full costs almost nothing
+ * since spawns are infrequent relative to upgrade cycles.
  *
  * Haulers also pick up from tombstones and ruins to recover lost energy.
  *
@@ -16,8 +22,7 @@
  * The delivering flag ensures haulers don't flip back to gathering when
  * partially full after a deliver — e.g. spawn takes 50% and hauler still
  * has energy left. It stays in delivery mode and finds the next consumer
- * (extension, tower, controller container) rather than heading back to
- * pick up more.
+ * rather than heading back to pick up more.
  *
  * All movement routed through Traffic.requestMove — no direct moveTo calls.
  */
@@ -40,7 +45,7 @@ Creep.prototype.runHauler = function () {
   // --- Delivery Phase ---
   if (this.memory.delivering) {
 
-    // Priority 1: Spawn
+    // Priority 1: Spawn — must stay fed so the director can spawn reinforcements
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -49,7 +54,24 @@ Creep.prototype.runHauler = function () {
       return;
     }
 
-    // Priority 2: Extensions (fill any that aren't full)
+    // Priority 2: Controller container — feeds the Warlock Engineer
+    // Prioritized above extensions: the warlock upgrading every tick gives
+    // more value than keeping extensions topped up between infrequent spawns.
+    const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        s.pos.inRangeTo(this.room.controller, 3) &&
+        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+    });
+
+    if (controllerContainer) {
+      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, controllerContainer);
+      }
+      return;
+    }
+
+    // Priority 3: Extensions (fill any that aren't full)
     const extension = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_EXTENSION &&
@@ -63,7 +85,7 @@ Creep.prototype.runHauler = function () {
       return;
     }
 
-    // Priority 3: Towers (keep them loaded for defense)
+    // Priority 4: Towers (keep them loaded for defense)
     const tower = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -73,23 +95,6 @@ Creep.prototype.runHauler = function () {
     if (tower) {
       if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, tower);
-      }
-      return;
-    }
-
-    // Priority 4: Controller container — feeds the Warlock Engineer
-    // Only fills it if it isn't already full, so hauler doesn't waste
-    // trips when the engineer is keeping up with delivery.
-    const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(this.room.controller, 3) &&
-        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-    });
-
-    if (controllerContainer) {
-      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, controllerContainer);
       }
       return;
     }
