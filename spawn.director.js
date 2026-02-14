@@ -7,9 +7,18 @@
  * Spawn priority order (RCL2+):
  *   1. Emergency slave if warren is empty
  *   2. Miners until all sources are covered (1 miner per source)
- *   3. Haulers until haulers == miners (1 hauler per miner)
- *   4. Workers up to target count (see workerTarget below)
+ *   3. Haulers up to haulerTarget (see below)
+ *   4. Workers up to workerTarget (see below)
  *   5. Warlock Engineer — one per warren, only after controller container exists
+ *
+ * Hauler target formula:
+ *   No source containers (RCL2 baseline):  1 hauler per warren.
+ *     One hauler is enough to keep spawn and extensions topped up.
+ *     More haulers just compete with workers for the same dropped pile
+ *     and clog up traffic near the sources with idle rats.
+ *   Source containers present (Layer 2):   1 hauler per source container.
+ *     The pipeline is now container → hauler → consumers, which is
+ *     efficient enough to justify scaling back up to 1 hauler per source.
  *
  * Worker target formula:
  *   Base:  sources * 2      (minimum viable spending capacity)
@@ -94,7 +103,24 @@ module.exports = {
       return;
     }
 
-    if (haulers.length < miners.length) {
+    // Hauler target scales with infrastructure.
+    //
+    // Without source containers (RCL2 baseline), one hauler per warren is enough.
+    // The single hauler handles spawn → extensions → controller container delivery.
+    // Extra haulers just compete with workers for the same dropped pile and idle
+    // near sources waiting for energy that workers are already picking up.
+    //
+    // With source containers (Layer 2), miners drop into containers and haulers
+    // pull from them. The pipeline can support one hauler per source container.
+    const sourceContainerCount = room.find(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        sources.some(src => s.pos.inRangeTo(src, 2))
+    }).length;
+
+    const haulerTarget = sourceContainerCount > 0 ? sourceContainerCount : 1;
+
+    if (haulers.length < haulerTarget) {
       this.spawnRat(spawn, 'hauler', Bodies.hauler(energy));
       return;
     }
