@@ -135,16 +135,24 @@ module.exports = {
   },
 
   publishUpgradeJobs(room) {
-    // Slot count matches the worker hard cap (sources * 4) so the upgrade
-    // job is never the bottleneck regardless of how many workers are active.
-    // In practice only as many workers as exist will ever fill these slots —
-    // unused slots cost nothing.
-    const slots = room.find(FIND_SOURCES).length * 4;
+    // When a Warlock Engineer is active, it handles upgrading continuously
+    // and workers should stay on build duty. Reduce upgrade slots to 1 so
+    // workers only upgrade as a last resort when no build jobs exist.
+    // Without a warlock, open up full slots so workers cover upgrading properly.
+    const warlockActive = Object.values(Game.creeps).some(c =>
+      c.memory.homeRoom === room.name &&
+      c.memory.role === 'warlock'
+    );
+
+    const slots = warlockActive
+      ? 1
+      : Math.max(2, room.find(FIND_SOURCES).length * 4);
+
     this.publish(room.name, {
       type:     'UPGRADE',
       targetId: room.controller.id,
       priority: 50,
-      slots:    Math.max(2, slots)
+      slots
     });
   },
 
