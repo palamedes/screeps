@@ -5,17 +5,27 @@
  * Called exclusively from warren.act.js — nothing else should call this.
  *
  * Spawn priority order (RCL2+):
- *   1. Emergency slave if warren is empty
- *   2. Miners until all sources are covered (1 miner per source)
- *   3. Haulers up to haulerTarget (see below)
- *   4. Workers up to workerTarget (see below)
- *   5. Warlock Engineer — one per warren, only after controller container exists
+ *   1. Emergency slave if warren is completely empty
+ *   2. Miners until all sources are covered — spawns immediately (economy stalls fast)
+ *   3. All other roles — only after SPAWN_ENERGY_THRESHOLD is met (see below)
+ *   4. Haulers up to haulerTarget
+ *   5. Workers up to workerTarget
+ *   6. Warlock Engineer — one per warren, only after controller container exists
+ *
+ * Spawn readiness threshold (SPAWN_ENERGY_THRESHOLD):
+ *   Non-emergency, non-miner spawns wait until energyAvailable is at least
+ *   90% of energyCapacityAvailable. This prevents the most common failure mode:
+ *   a creep dies → spawn has 300 base energy → director fires immediately →
+ *   Bodies() returns the cheapest 3-part tier → hauler fills extensions 2 ticks
+ *   later, too late to matter.
+ *   Waiting a few ticks for extensions to fill means every replacement creep
+ *   spawns at the best body the warren can afford, not just the bare minimum.
  *
  * Hauler target formula:
  *   No source containers (RCL2 baseline):  1 hauler per warren.
  *     One hauler is enough to keep spawn and extensions topped up.
  *     More haulers just compete with workers for the same dropped pile
- *     and clog up traffic near the sources with idle rats.
+ *     and clog traffic near sources with idle rats.
  *   Source containers present (Layer 2):   1 hauler per source container.
  *     The pipeline is now container → hauler → consumers, which is
  *     efficient enough to justify scaling back up to 1 hauler per source.
@@ -24,11 +34,6 @@
  *   Base:  sources * 2      (minimum viable spending capacity)
  *   Bonus: +sources         (if energy is currently capped — economy is saturated)
  *   Cap:   sources * 4      (hard ceiling, prevents runaway spawning)
- *
- *   The bonus fires when energyAvailable == energyCapacityAvailable, meaning
- *   the hauler is delivering faster than workers can spend. Spawning an extra
- *   worker drains the surplus. When extensions are no longer full the bonus
- *   disappears and the director stops at the base count.
  *
  * Warlock Engineer:
  *   Spawned only when the controller container exists — the warlock has no
@@ -45,6 +50,11 @@
  */
 
 const Bodies = require('spawn.bodies');
+
+// Wait until extensions are this full before spawning non-critical roles.
+// At RCL2 with 5 extensions (550 capacity): 0.9 × 550 = 495 energy required.
+// Hauler fills extensions within a few ticks — worth the wait for a good body.
+const SPAWN_ENERGY_THRESHOLD = 0.9;
 
 module.exports = {
 
@@ -83,9 +93,9 @@ module.exports = {
     const sources = room.find(FIND_SOURCES);
     const energy  = room.energyAvailable;
 
-    const miners  = creeps.filter(c => c.memory.role === 'miner');
-    const haulers = creeps.filter(c => c.memory.role === 'hauler');
-    const workers = creeps.filter(c => c.memory.role === 'worker');
+    const miners   = creeps.filter(c => c.memory.role === 'miner');
+    const haulers  = creeps.filter(c => c.memory.role === 'hauler');
+    const workers  = creeps.filter(c => c.memory.role === 'worker');
     const warlocks = creeps.filter(c => c.memory.role === 'warlock');
 
     // RCL1 — slaves only
@@ -98,10 +108,26 @@ module.exports = {
 
     // RCL2+ — specialist roles
 
+    // Miners are always urgent — a dead miner stalls the entire economy
+    // (energy stops flowing → hauler idles → workers starve → upgrading stops).
+    // Spawn a replacement immediately with whatever energy is available.
+    // A cheaper miner now is better than a perfect miner in 10 ticks.
     if (miners.length < sources.length) {
       this.spawnRat(spawn, 'miner', Bodies.miner(energy));
       return;
     }
+
+    // All other roles: wait until extensions are well-stocked before spawning.
+    // This is the fix for cheap 3-part bodies. The sequence that causes them:
+    //   1. Creep dies
+    //   2. Extensions are empty (hauler hasn't refilled yet)
+    //   3. spawn.energyAvailable = 300 (spawn base only)
+    //   4. Director fires → Bodies() returns cheapest tier → 3-part body
+    //   5. Hauler fills extensions 2 ticks later — too late
+    // By waiting for the threshold, we give the hauler time to fill extensions
+    // and every replacement gets the best body the warren can actually afford.
+    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
+    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
     // Hauler target scales with infrastructure.
     //
