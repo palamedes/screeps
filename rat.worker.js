@@ -8,21 +8,23 @@
  *   false = gathering energy (pickup dropped resources)
  *   true  = spending energy (running assigned job)
  *
- * Gathering priority depends on current job:
- *   Upgrading: controller container first (already at controller, no travel cost)
- *              then tombstones → ruins → dropped pile → spawn fallback
- *   Building:  tombstones → ruins → dropped pile → spawn fallback
- *              (don't trek to controller container and back for a build site elsewhere)
+ * Gathering priority:
+ *   If worker is near the controller (range 5), check the controller container
+ *   first — it's right there, zero travel cost. This covers both the upgrading
+ *   case (worker stationed at controller) and the case where a worker happens
+ *   to be nearby between jobs.
+ *   Otherwise: tombstones → ruins → dropped pile → spawn fallback.
  *
  * Emergency mode: if miners are down, workers harvest directly and
  * feed the spawn so the director can recover the miner population.
  *
  * All movement routed through Traffic.requestMove — no direct moveTo calls.
- * Stuck detection removed: the traffic manager handles blocked creeps by
- * resolving conflicts before movement executes.
  */
 
 const Traffic = require('traffic');
+
+const CONTROLLER_CONTAINER_RANGE = 3;  // must match plan.containers.js placement range
+const WORKER_CONTAINER_USE_RANGE  = 5;  // how close a worker must be to prefer the container
 
 Creep.prototype.runWorker = function () {
 
@@ -73,8 +75,6 @@ Creep.prototype.runWorker = function () {
   // --- Job Validation ---
   // Clear any job type a worker should never be running.
   // Can happen when a slave promotes mid-job and inherits a stale HARVEST.
-  // findJob() only fires when memory.job is null so without this the worker
-  // runs its old job forever and never re-evaluates.
   if (this.memory.job && this.memory.job.type === 'HARVEST') {
     this.memory.job = null;
   }
@@ -89,7 +89,6 @@ Creep.prototype.runWorker = function () {
       this.runJob();
     } else {
       // No job available — idle near controller as a fallback
-      // (prevents workers from wandering randomly)
       if (this.room.controller) {
         Traffic.requestMove(this, this.room.controller, { range: 3 });
       }
@@ -99,15 +98,18 @@ Creep.prototype.runWorker = function () {
 
   // --- Gathering Phase ---
 
-  // If current job is UPGRADE, try the controller container first.
-  // The worker is already standing at the controller — withdrawing from the
-  // adjacent container costs zero travel ticks vs running back to the source
-  // drop pile. Workers building elsewhere skip this to avoid a detour.
-  if (this.memory.job && this.memory.job.type === 'UPGRADE') {
+  // If worker is near the controller, prefer the controller container.
+  // Checking proximity rather than job type because memory.job is null
+  // at the start of the gathering phase (cleared when energy ran out).
+  // A worker standing at the controller shouldn't run across the map to
+  // the source drop pile when there's a full container right next to them.
+  if (this.room.controller &&
+    this.pos.inRangeTo(this.room.controller, WORKER_CONTAINER_USE_RANGE)) {
+
     const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(this.room.controller, 3) &&
+        s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE) &&
         s.store[RESOURCE_ENERGY] > 0
     });
 
@@ -174,7 +176,7 @@ Creep.prototype.runWorker = function () {
     return;
   }
 
-  // Nothing to pick up — wait near the highest-yield source
+  // Nothing to pick up — wait near the closest source
   const source = this.pos.findClosestByPath(FIND_SOURCES);
   if (source) {
     Traffic.requestMove(this, source, { range: 2 });
