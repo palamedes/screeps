@@ -68,8 +68,13 @@ Room.prototype.decide = function () {
 
     case ROOM_STATE.STABLE:
     default:
-      // Normal operation: just keep upgrading the controller
-      this._plan.publishUpgrade = true;
+      // Normal operation: keep upgrading and opportunistically build extensions.
+      // The extension planner is self-guarding (energy ratio + RCL cap checks)
+      // so it's safe to call every tick — it will no-op if conditions aren't met.
+      // Without this, the warren deadlocks: workers drain spawn just enough to
+      // prevent energyCapped from firing, so GROW state never triggers.
+      this._plan.buildExtensions = true;
+      this._plan.publishUpgrade  = true;
       break;
   }
 };
