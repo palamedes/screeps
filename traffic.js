@@ -28,11 +28,19 @@
  *
  * Path caching:
  *   Paths are stored in creep.memory._trafficPath as {x,y} arrays.
- *   Cache is invalidated when target changes or creep is pushed off-path.
+ *   Cache is invalidated when:
+ *     - target changes
+ *     - creep is pushed off-path
+ *     - next cached step is now blocked by a structure or construction site
  *   Roads get cost 1 vs plain cost 2 — naturally preferred once built.
- *   Pinned creep tiles get cost 5 in the CostMatrix — pathfinder routes
- *   around occupied tiles proactively rather than being blocked reactively.
- *   Cost 5 (not 0xff) keeps adjacent tiles reachable for final approach.
+ *   Pinned creep tiles get cost 20 in the CostMatrix — strong enough signal
+ *   that the pathfinder routes around occupied clusters rather than threading
+ *   through them. Cost 20 (not 0xff) keeps adjacent tiles reachable for
+ *   final approach to a target that is itself adjacent to a pinned creep.
+ *   Construction sites for blocking structures get cost 0xff — they are
+ *   physically impassable even though they aren't structures yet, and the
+ *   pathfinder must treat them as walls or it will plan routes through them
+ *   that creep.move() will silently fail to execute every tick.
  *
  * Auto-pin:
  *   Any creep that ends its tick without registering a move intent is
@@ -194,9 +202,18 @@ const Traffic = {
 
   /**
    * Get the next direction toward target using a cached path.
-   * Recalculates when target changes or creep is pushed off-path.
-   * Pinned creep tiles are written into the CostMatrix so the pathfinder
-   * routes around occupied positions proactively.
+   * Recalculates when:
+   *   - target changes
+   *   - creep is pushed off-path
+   *   - next cached step is now blocked by a structure or construction site
+   *
+   * Pinned creep tiles are written into the CostMatrix at cost 20 so the
+   * pathfinder routes around occupied clusters proactively.
+   *
+   * Construction sites for blocking structures are written at cost 0xff —
+   * they are physically impassable even though they aren't structures yet.
+   * Without this, the pathfinder plans routes through them that creep.move()
+   * silently fails to execute, freezing the creep indefinitely.
    */
   _getNextDir(creep, target, range) {
     const targetPos = target.pos || target;
@@ -213,6 +230,33 @@ const Traffic = {
     if (cached && cached.length) {
       const next = cached[0];
       if (Math.abs(next.x - creep.pos.x) > 1 || Math.abs(next.y - creep.pos.y) > 1) {
+        creep.memory._trafficPath = null;
+      }
+    }
+
+    // Invalidate if the next cached step is now blocked by a structure
+    // or construction site that didn't exist when the path was calculated.
+    // Catches the case where an extension gets built (or placed as a site)
+    // on a tile the cached path runs through — without this the creep tries
+    // to step onto the tile every tick and creep.move() fails silently forever.
+    if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
+      const next = creep.memory._trafficPath[0];
+      const structures = creep.room.lookForAt(LOOK_STRUCTURES, next.x, next.y);
+      const sites      = creep.room.lookForAt(LOOK_CONSTRUCTION_SITES, next.x, next.y);
+
+      const structureBlocked = structures.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      );
+
+      const siteBlocked = sites.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      );
+
+      if (structureBlocked || siteBlocked) {
         creep.memory._trafficPath = null;
       }
     }
@@ -245,7 +289,7 @@ const Traffic = {
 
             const costs = new PathFinder.CostMatrix();
 
-            // Structures: roads cheap, everything else blocked
+            // Structures: roads cheap, blocking structures impassable
             room.find(FIND_STRUCTURES).forEach(s => {
               if (s.structureType === STRUCTURE_ROAD) {
                 // Roads are cheap — pathfinder naturally prefers them once built
@@ -258,13 +302,30 @@ const Traffic = {
               }
             });
 
-            // Pinned creep tiles: discourage routing through occupied positions.
-            // Cost 5 (not 0xff) — still passable for final approach to adjacent
-            // tiles, just expensive enough that the pathfinder prefers going around.
+            // Construction sites for blocking structures are impassable.
+            // creep.move() silently fails when trying to step onto these tiles,
+            // so the pathfinder must treat them as walls to avoid planning
+            // routes that can never execute.
+            room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
+              if (
+                site.structureType !== STRUCTURE_ROAD &&
+                site.structureType !== STRUCTURE_CONTAINER &&
+                site.structureType !== STRUCTURE_RAMPART
+              ) {
+                costs.set(site.pos.x, site.pos.y, 0xff);
+              }
+            });
+
+            // Pinned creep tiles: strongly discourage routing through occupied
+            // positions. Cost 20 makes even a single pinned tile expensive enough
+            // that the pathfinder prefers a detour. Cost 20 vs plain cost 2 means
+            // the pathfinder will take up to a 10-tile detour to avoid one pinned
+            // creep — enough to break up dense clusters near spawn without making
+            // final approach to adjacent targets impossible.
             for (const key of Object.keys(pins)) {
               const [x, y] = key.split(',').map(Number);
-              if (costs.get(x, y) < 5) {
-                costs.set(x, y, 5);
+              if (costs.get(x, y) < 20) {
+                costs.set(x, y, 20);
               }
             }
 
@@ -327,5 +388,9 @@ const Traffic = {
   }
 
 };
+
+// Expose as global so Traffic._pins, Traffic._intents etc. are inspectable
+// from the Screeps console without needing require().
+global.Traffic = Traffic;
 
 module.exports = Traffic;
