@@ -83,6 +83,12 @@ Empire detects when a Warren is saturated. Spawns a Grey Seer to claim a new roo
 New Burrow bootstraps itself using the same Layer 1 engine. Empire coordinates energy
 transfers between rooms if needed.
 
+**Claim flag workflow (current manual bridge until Grey Seer exists):**
+1. Find a room you want. Place a flag named exactly `"Claim"` anywhere in it.
+2. Claim the controller manually (one click).
+3. Empire detects flag + owned controller → calls `planSpawn()` → site placed → flag removed.
+4. Seed one creep to build the spawn site. Everything after that is autonomous.
+
 ### Layer 4 — Combat and Domination
 Rat Ogres defend. Gutter Runners scout enemy rooms. Jezzails provide ranged fire.
 Empire plans and executes raids. Rooms can be taken, held, and exploited.
@@ -108,8 +114,10 @@ main.js                  Entry point only. Requires + game loop. Zero logic.
 
 traffic.js               Movement coordination layer. All creep movement goes through here.
                          Replaces direct moveTo calls across all rat files.
+                         Exposed as global.Traffic for console inspection.
 
-empire.js                Global tick. Multi-room coordination. Mostly stub for now.
+empire.js                Global tick. Multi-room coordination.
+                         Watches for "Claim" flags → triggers planSpawn() on owned rooms.
 empire.memory.js         Empire-level memory schema and init helpers.
 
 warren.js                Room.prototype.tick — OODA orchestrator.
@@ -138,6 +146,8 @@ spawn.bodies.js          Body part recipes per role per energy tier. Pure functi
 job.board.js             Runtime job coordination. Fully ephemeral. No Memory writes. Ever.
 job.types.js             Job type constants, canDo() rules, role preference weights.
 
+plan.spawn.js            Scores room tiles and places spawn construction site.
+                         Called by empire.js on Claim flag detection. Fires once per room ever.
 plan.extensions.js       Extension placement logic. One site at a time.
 plan.containers.js       Container placement logic. Controller container only for now.
 plan.roads.js            Road planning. (future)
@@ -146,6 +156,7 @@ plan.utils.js            Shared planner math: buildable tiles, range, bounds, ad
 
 architecture/            Documentation only. No code files here.
   ARCHITECTURE.md        This file.
+  CHANGELOG.md           Resolved issues archive. Not needed in new chat context.
   warren.md              OODA loop contract and state machine detail.
   rats.md                Creep role definitions, body philosophy, transition rules.
   empire.md              Multi-room design intent (stub).
@@ -184,7 +195,7 @@ warren.tick()
 
 ```
 Traffic.reset()          ← wipe all intents and pins from last tick
-Empire.tick()
+Empire.tick()            ← watches Claim flags, triggers planSpawn() when appropriate
 room.tick() × N          ← OODA per owned room (spawning, planning, job publishing)
 creep.tick() × N         ← roles register move intents with Traffic
 Traffic.resolve()        ← execute all movement, handle conflicts, after all ticks
@@ -304,7 +315,7 @@ console without needing `require()`. Invaluable for debugging movement issues.
     - Roads: cost 1 (naturally preferred once built — Layer 2 hook already in place)
     - Pinned creep tiles: cost 20 (strong deterrent — pathfinder takes up to 10-tile
       detour to avoid a single pinned creep, breaking up dense clusters near spawn)
-    - Construction sites for blocking structures: cost 0xff (impassable — see sharp edges)
+    - Construction sites for blocking structures: cost 0xff (impassable — see conventions)
     - Other structures: cost 0xff (impassable)
 - Mutual swaps are detected and executed cleanly (A wants B's tile, B wants A's tile)
 - Contested tiles: first registrant wins (future: weight by role priority)
@@ -349,14 +360,14 @@ UPGRADE                        50
 
 **Upgrade job slots** are context-sensitive:
 ```
-warlock active + build sites exist  → slots: 1   (workers should be building)
-warlock active + no build sites     → slots: sources * 4  (nothing to build, pile on)
-no warlock                          → slots: sources * 4  (workers cover upgrading)
+warlock active + build sites exist  → slots: 1             (workers should be building)
+warlock active + no build sites     → slots: sources * 4   (nothing to build, pile on)
+no warlock                          → slots: sources * 4   (workers cover upgrading)
 ```
 This ensures workers snap onto build jobs when the warlock covers upgrading, but flood
 onto the controller when there's nothing left to build.
 
-**Role preference weights (job.types.js):**
+**Role preference weights:**
 ```
 miner  + HARVEST  = +500   (miners must never do anything else)
 hauler + HAUL     = +500   (haulers must never do anything else)
@@ -386,6 +397,15 @@ All `plan.*` files are pure calculation engines. They:
 - Return early if conditions are not met (energy ratio too low, already at cap, etc.)
 - Never write to Memory except for path caches in `plan.utils.js`
 
+**Spawn planner (plan.spawn.js):**
+- Called by `empire.js` when a Claim flag is detected on an owned room with no spawn
+- Scores every buildable tile in a radius-20 search from room center
+- Hard rejects: tiles within 8 of any edge, tiles with any adjacent wall
+- Scoring weights: source proximity 40%, open space for extensions 30%,
+  controller proximity 20%, edge distance 10%
+- Places one site, logs coordinates and score, never runs again after site is placed
+- Self-guards: no-ops if spawn or spawn site already exists
+
 **Extension planner guard conditions:**
 - Only runs when `energyAvailable / energyCapacityAvailable >= 0.7`
 - Counts both existing extensions AND extension construction sites against the RCL cap
@@ -406,14 +426,14 @@ All `plan.*` files are pure calculation engines. They:
 ```
 RCL2 (current):
   Miner → drops on ground at source
-  Hauler → picks up pile → spawn → controller container → extensions → towers
+  Hauler → picks up pile → spawn → extensions → controller container → towers
   Worker (building) → picks up dropped pile → builds
   Worker (upgrading, near controller) → withdraws from controller container → upgrades
   Warlock Engineer → withdraws from controller container → upgrades forever
 
 RCL2 (with source containers, Layer 2):
   Miner → drops into source container
-  Hauler → withdraws from source container → spawn → controller container → extensions → towers
+  Hauler → withdraws from source container → spawn → extensions → controller container → towers
   Worker → withdraws from source container OR picks up dropped pile
   Warlock Engineer → withdraws from controller container → upgrades forever
 
@@ -424,11 +444,18 @@ RCL4+ (with storage, Layer 2):
 **Hauler delivery priority:**
 ```
 1. Spawn
-2. Controller container   (warlock needs continuous supply — more valuable than extensions)
-3. Extensions (closest first)
+2. Extensions     (fill before container — extensions determine spawn body quality)
+3. Controller container
 4. Towers
 5. (Storage — Layer 2)
 ```
+
+**Why extensions before controller container:**
+Extensions determine spawn body quality. Empty extensions mean every replacement creep
+spawns at minimum body (200-300 energy) regardless of capacity. A warlock with 1 WORK
+part from a cheap spawn contributes almost nothing. Fill extensions first so the next
+spawn always gets the best body possible. Once extensions are consistently full, the
+warlock gets a good body on respawn and the container matters.
 
 **Worker energy gathering priority:**
 ```
@@ -444,6 +471,7 @@ Otherwise:
   3. Dropped pile
   4. Spawn fallback (>250 energy only)
 ```
+Proximity check used (not job type) because `memory.job` is null at start of gathering phase.
 
 ---
 
@@ -454,8 +482,7 @@ Otherwise:
 - `plan.towers.js` — new planner, places one tower site at RCL3 if none exists.
 - Warren state machine: WAR state should activate towers via `room.find(FIND_MY_STRUCTURES,
   {filter: s => s.structureType === STRUCTURE_TOWER})` and call `tower.attack(hostile)`.
-- Hauler delivery priority: towers slot between extensions and storage (after controller
-  container — keep the warlock fed first).
+- Hauler delivery priority: towers slot after controller container.
 - Tower auto-attack should live in `warren.act.js` — it's a side effect, not a job.
   No need to route through the job board; towers act independently of creeps.
 
@@ -493,9 +520,9 @@ Currently any construction site (road, wall, container, anything) triggers GROW 
 This can cause over-planning. Future fix: only extension sites should trigger GROW, or
 gate on energy saturation as a secondary condition.
 
-**hauler.js — delivery targets**
-Storage not yet handled (Layer 2 feature). When all consumers are full, hauler clears
-`delivering` flag and returns to gathering rather than freezing.
+**hauler.js — storage not yet handled**
+Storage is a Layer 2 feature. When all consumers are full, hauler clears `delivering`
+flag and returns to gathering rather than freezing.
 
 **spawn.director.js — getRoomCreeps uses room.name filter**
 Works correctly for single-room play. Will need updating for multi-room when creeps
@@ -516,6 +543,14 @@ Low risk — paths naturally re-route to roads once they appear in the CostMatri
 next recalculation. Road preference (cost 1) will attract paths to new roads without
 requiring explicit invalidation.
 
+**empire.js — Claim flag requires manual controller claim**
+The Grey Seer role (Layer 3) will handle claiming autonomously. Until then, player must
+manually claim the controller after placing the Claim flag.
+
+**empire.js — Claim flag requires seeded creep to build spawn**
+After planSpawn() places the site, a creep must exist to build it. Currently player must
+seed one creep manually. Grey Seer + Layer 3 expansion solves this permanently.
+
 **Future — population rebalancing**
 No mechanism yet to kill a surplus worker and spawn a needed hauler. When haulers are
 undersupplied relative to miners, energy piles up at sources and decays. Detection:
@@ -530,7 +565,7 @@ spawn director fills hauler gap. Layer 2 feature at earliest.
 - **No Memory writes in observe/orient/decide.** If you're writing Memory outside of act(), stop.
 - **Fail gracefully.** Every function that touches a Game object must null-check it.
   `Game.getObjectById()` returns null. Creeps die. Spawns get destroyed. Code for it.
-- **Log with context.** `console.log(`[warren:${room.name}] spawning miner`)` not `console.log('spawning')`.
+- **Log with context.** `console.log('[warren:${room.name}] spawning miner')` not `console.log('spawning')`.
 - **Comments explain WHY, not WHAT.** The code says what. Comments say why.
 - **Skaven names in logs and comments.** `rat`, `warren`, `slave`, `miner` — not `creep`, `room`, `worker1`.
 - **Always use energyAvailable for spawn body sizing.** Never energyCapacityAvailable.
@@ -541,6 +576,8 @@ spawn director fills hauler gap. Layer 2 feature at earliest.
 - **Do not use harvest() return code to decide movement.** Use explicit `pos.inRangeTo()`
   checks. Transient harvest errors (cooldown, fatigue) return non-ERR_NOT_IN_RANGE codes
   that would cause the old else-pin pattern to freeze the creep indefinitely.
+- **Spawn placement belongs to empire.js, not the warren OODA loop.** The warren assumes
+  a spawn already exists. planSpawn() is called by empire before the warren ever ticks.
 
 ---
 
@@ -552,7 +589,7 @@ spawn director fills hauler gap. Layer 2 feature at earliest.
 
 **Current population (target):**
 - 2 Miners — locked on sources, mining continuously
-- 2 Haulers — picking up dropped pile, delivering spawn → container → extensions
+- 2 Haulers — picking up dropped pile, delivering spawn → extensions → container
 - 4 Workers — building extension sites one at a time, upgrading controller when idle
 - 1 Warlock Engineer — sits at controller container, upgrades forever
 
@@ -569,16 +606,22 @@ spawn director fills hauler gap. Layer 2 feature at earliest.
 - Fixed rat.miner.js — explicit range check replaces harvest return code for movement
 - Fixed traffic.js — construction sites added to CostMatrix at 0xff
 - Fixed traffic.js — path invalidation when next step pinned by different creep (convoy fix)
+- Fixed traffic.js — path invalidation when next step blocked by new structure or site
 - Fixed traffic.js — pinned tile cost raised 5 → 20
 - Added global.Traffic export — Traffic._pins etc. inspectable from console
 - Fixed job.board.js — controller container build priority 900 > extensions 800
 - Fixed job.board.js — upgrade slots context-sensitive on warlock + build site presence
-- Fixed rat.hauler.js — controller container delivery priority above extensions
+- Fixed rat.hauler.js — extensions above controller container in delivery priority
+  (extensions determine spawn body quality — empty extensions = underpowered horde)
 - Fixed rat.worker.js — container gathering uses proximity check (range 5 of controller)
   instead of job type (which is always null at start of gathering phase)
+- Added plan.spawn.js — scores room tiles and places spawn site automatically
+- Updated empire.js — watches for "Claim" flags, triggers planSpawn() on owned rooms
+- Updated warren.decide.js — removed buildSpawn flag (spawn placement is empire's job)
+- Updated warren.act.js — removed plan.spawn require (no longer called from warren)
 
 **Next:**
-- Observe warren climbing toward RCL3 unassisted
+- Observe warren climbing toward RCL3 unassisted with correct hauler priority
 - RCL3: auto-place tower, wire hauler delivery, enable tower auto-attack in warren.act.js
 - Begin road planning: spawn→sources, spawn→controller
 - Begin source container planning
