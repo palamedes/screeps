@@ -23,6 +23,7 @@ Room.prototype.decide = function () {
   this._plan = {
     buildExtensions:          false,
     buildControllerContainer: false,
+    buildRoads:               false,
     publishHarvest:           false,
     publishBuild:             false,
     publishUpgrade:           false,
@@ -60,10 +61,11 @@ Room.prototype.decide = function () {
       break;
 
     case ROOM_STATE.GROW:
-      // Actively expanding: build extensions, keep economy flowing,
-      // build construction sites, and keep upgrading
+      // Actively expanding: build extensions, roads, keep economy flowing,
+      // build construction sites, and keep upgrading.
       this._plan.buildExtensions           = true;
       this._plan.buildControllerContainer  = true;
+      this._plan.buildRoads                = true;
       this._plan.publishHarvest            = true;
       this._plan.publishBuild              = true;
       this._plan.publishUpgrade            = true;
@@ -76,13 +78,13 @@ Room.prototype.decide = function () {
 
     case ROOM_STATE.STABLE:
     default:
-      // Normal operation: keep upgrading and opportunistically build extensions.
-      // The extension planner is self-guarding (energy ratio + RCL cap checks)
-      // so it's safe to call every tick — it will no-op if conditions aren't met.
-      // Without this, the warren deadlocks: workers drain spawn just enough to
-      // prevent energyCapped from firing, so GROW state never triggers.
+      // Normal operation: keep upgrading and opportunistically build
+      // extensions and roads. All three planners are self-guarding so
+      // it's safe to call them every tick — they no-op if conditions
+      // aren't met (energy ratio, RCL cap, existing sites, etc.).
       this._plan.buildExtensions           = true;
       this._plan.buildControllerContainer  = true;
+      this._plan.buildRoads                = true;
       this._plan.publishUpgrade            = true;
       break;
   }

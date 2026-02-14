@@ -18,6 +18,7 @@ const JobBoard      = require('job.board');
 const SpawnDirector = require('spawn.director');
 require('plan.extensions');
 require('plan.containers');
+require('plan.roads');
 
 Room.prototype.act = function () {
 
@@ -31,6 +32,10 @@ Room.prototype.act = function () {
 
   if (plan.buildControllerContainer) {
     this.planControllerContainer();
+  }
+
+  if (plan.buildRoads) {
+    this.planRoads();
   }
 
   if (plan.publishHarvest) {
