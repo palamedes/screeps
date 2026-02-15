@@ -74,9 +74,10 @@ const BlackBox = {
       case 'report': return this._recorderReport();
       case 'status': return this._recorderStatus();
       case 'clear':  return this._recorderClear();
+      case 'snapshot': return this._snapshot();
       default:
         console.log('[blackbox] unknown command: ' + cmd +
-          '. Use: blackbox() | blackbox("stop") | blackbox("report") | blackbox("status") | blackbox("clear")');
+          '. Use: blackbox() | blackbox("stop") | blackbox("report") | blackbox("status") | blackbox("clear") | blackbox("snapshot")');
     }
   },
 
@@ -97,6 +98,98 @@ const BlackBox = {
   },
 
   // ─────────────────────────────────────────────── Rolling recorder commands ──
+  // ─────────────────────────────────────────────────────────────── Snapshot ──
+
+  _snapshot() {
+    const rooms = {};
+
+    for (const roomName in Game.rooms) {
+      const room = Game.rooms[roomName];
+      if (!room.controller || !room.controller.my) continue;
+
+      const creeps   = Object.values(Game.creeps).filter(c => c.memory.homeRoom === roomName);
+      const byRole   = {};
+      creeps.forEach(c => { byRole[c.memory.role] = (byRole[c.memory.role] || 0) + 1; });
+      const structs  = room.find(FIND_MY_STRUCTURES);
+      const structCount = {};
+      structs.forEach(s => { structCount[s.structureType] = (structCount[s.structureType] || 0) + 1; });
+      const sites    = room.find(FIND_MY_CONSTRUCTION_SITES);
+      const siteCount = {};
+      sites.forEach(s => { siteCount[s.structureType] = (siteCount[s.structureType] || 0) + 1; });
+      const sources    = room.find(FIND_SOURCES);
+      const containers = room.find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_CONTAINER});
+      const roads      = room.find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_ROAD});
+      const dropped    = room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType === RESOURCE_ENERGY});
+      const spawns     = room.find(FIND_MY_SPAWNS);
+      const towers     = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_TOWER});
+      const hostiles   = room.find(FIND_HOSTILE_CREEPS);
+
+      rooms[roomName] = {
+        rcl:   room.controller.level,
+        state: ["BOOTSTRAP","STABLE","GROW","FORTIFY","WAR"][room.memory.state] || "unknown",
+        controller: {
+          progress:      room.controller.progress,
+          progressTotal: room.controller.progressTotal,
+          pct:           Math.round(room.controller.progress / room.controller.progressTotal * 100)
+        },
+        energy: {
+          available: room.energyAvailable,
+          capacity:  room.energyCapacityAvailable,
+          pct:       Math.round(room.energyAvailable / room.energyCapacityAvailable * 100)
+        },
+        spawns: spawns.map(s => ({
+          name:     s.name,
+          spawning: s.spawning ? {name: s.spawning.name, ticksLeft: s.spawning.remainingTime} : null
+        })),
+        structures: structCount,
+        sites:      Object.keys(siteCount).length ? siteCount : null,
+        containers: containers.map(c => ({
+          energy:   c.store[RESOURCE_ENERGY],
+          capacity: c.store.getCapacity(RESOURCE_ENERGY),
+          pct:      Math.round(c.store[RESOURCE_ENERGY] / c.store.getCapacity(RESOURCE_ENERGY) * 100),
+          hits:     c.hits, hitsMax: c.hitsMax,
+          hitsPct:  Math.round(c.hits / c.hitsMax * 100),
+          type:     c.pos.inRangeTo(room.controller, 3) ? "controller"
+            : sources.some(src => c.pos.inRangeTo(src, 2)) ? "source" : "other"
+        })),
+        roads: {
+          total:    roads.length,
+          damaged:  roads.filter(r => r.hits < r.hitsMax * 0.5).length,
+          critical: roads.filter(r => r.hits < r.hitsMax * 0.25).length
+        },
+        towers: towers.map(t => ({
+          energy:   t.store[RESOURCE_ENERGY],
+          capacity: t.store.getCapacity(RESOURCE_ENERGY),
+          pct:      Math.round(t.store[RESOURCE_ENERGY] / t.store.getCapacity(RESOURCE_ENERGY) * 100)
+        })),
+        creeps: {
+          total:  creeps.length,
+          byRole,
+          dying:  creeps
+            .filter(c => c.ticksToLive < 200)
+            .map(c => ({name: c.name, role: c.memory.role, ttl: c.ticksToLive}))
+            .sort((a, b) => a.ttl - b.ttl)
+        },
+        sources:      sources.length,
+        droppedEnergy: {
+          total: dropped.reduce((sum, r) => sum + r.amount, 0),
+          piles: dropped.length
+        },
+        hostiles: hostiles.length
+      };
+    }
+
+    const out = {
+      tick: Game.time,
+      cpu:  { used: parseFloat(Game.cpu.getUsed().toFixed(2)), limit: Game.cpu.limit, bucket: Game.cpu.bucket },
+      gcl:  { level: Game.gcl.level, progress: Game.gcl.progress, progressTotal: Game.gcl.progressTotal, pct: Math.round(Game.gcl.progress / Game.gcl.progressTotal * 100) },
+      market: { credits: Math.round(Game.market.credits), orders: Object.keys(Game.market.orders).length },
+      rooms
+    };
+
+    console.log(JSON.stringify(out, null, 2));
+  },
+
 
   _recorderStart() {
     this._ensureMemory();
@@ -443,8 +536,8 @@ const BlackBox = {
           }));
           console.log('[blackbox] ⚠️  ANOMALY tick ' + Game.time + ' — ' +
             (energyCrash  ? 'energy crash (' + Math.round(energyRatio * 100) + '% vs avg ' + Math.round(avgEnergy * 100) + '%)' :
-             droppedSpike ? 'dropped spike (' + droppedTotal + ')' :
-                            'miner gap (' + miners.length + '/' + sources.length + ')'));
+              droppedSpike ? 'dropped spike (' + droppedTotal + ')' :
+                'miner gap (' + miners.length + '/' + sources.length + ')'));
         }
       }
     }
@@ -650,7 +743,7 @@ const BlackBox = {
         avg:        Math.round(droppedSum / totalTicks),
         max:        droppedMax,
         assessment: droppedSum / totalTicks < 200 ? 'healthy' :
-                    droppedSum / totalTicks < 500 ? 'mild backlog' : 'thralls overwhelmed'
+          droppedSum / totalTicks < 500 ? 'mild backlog' : 'thralls overwhelmed'
       },
 
       roads: {
@@ -659,7 +752,7 @@ const BlackBox = {
         criticalEnd:   last.roadCriticalEnd,
         decayRate:     parseFloat(((last.roadDamagedEnd - first.roadDamagedStart) / totalTicks).toFixed(4)),
         assessment:    last.roadDamagedEnd > first.roadDamagedStart ? 'deteriorating' :
-                       last.roadDamagedEnd < first.roadDamagedStart ? 'improving' : 'stable'
+          last.roadDamagedEnd < first.roadDamagedStart ? 'improving' : 'stable'
       },
 
       cpu: {
@@ -710,12 +803,12 @@ const BlackBox = {
         entry.ticksLived = Game.time - entry.spawnTick;
         this._logEvent(bb, entry.homeRoom || '?',
           wasKilled ? 'DEATH_KILLED' : 'DEATH_NATURAL', {
-          name:       name,
-          role:       entry.role,
-          ticksLived: entry.ticksLived,
-          lastTTL:    entry.lastTTL,
-          body:       entry.body
-        });
+            name:       name,
+            role:       entry.role,
+            ticksLived: entry.ticksLived,
+            lastTTL:    entry.lastTTL,
+            body:       entry.body
+          });
       } else {
         entry.lastTTL = Game.creeps[name].ticksToLive;
       }
@@ -793,21 +886,21 @@ const BlackBox = {
         activeWorkParts: minerWork, targetWorkParts: srcMax,
         utilizationPct:  Math.round(minerWork / srcMax * 100),
         assessment:      minerWork >= srcMax ? 'full drain' :
-                         minerWork >= srcMax * 0.6 ? 'partial drain' : 'severely undersourced'
+          minerWork >= srcMax * 0.6 ? 'partial drain' : 'severely undersourced'
       },
       transport: {
         activeCarryParts: thrallCarry, estimatedDemand: estThrallDemand,
         utilizationPct:   Math.round(thrallCarry / estThrallDemand * 100),
         assessment:       thrallCarry >= estThrallDemand ? 'sufficient' :
-                          thrallCarry >= estThrallDemand * 0.7 ? 'mild shortage' : 'bottleneck'
+          thrallCarry >= estThrallDemand * 0.7 ? 'mild shortage' : 'bottleneck'
       },
       spending: {
         clanratWorkParts: clanratWork, warlockWorkParts: warlockWork,
         totalSpendWork:   clanratWork + warlockWork,
         vsProductionRate: srcRate > 0 ? parseFloat(((clanratWork + warlockWork) / srcRate).toFixed(2)) : null,
         assessment:       (clanratWork + warlockWork) < srcRate * 0.5 ? 'underutilizing production' :
-                          (clanratWork + warlockWork) < srcRate        ? 'slight underspend' :
-                          (clanratWork + warlockWork) < srcRate * 1.5  ? 'balanced' : 'aggressive spending'
+          (clanratWork + warlockWork) < srcRate        ? 'slight underspend' :
+            (clanratWork + warlockWork) < srcRate * 1.5  ? 'balanced' : 'aggressive spending'
       }
     };
   },
