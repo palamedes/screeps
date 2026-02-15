@@ -110,11 +110,14 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 4: Spawn surplus — last resort only.
-  // Threshold lowered to 150: early RCL2 spawn rarely holds much surplus,
-  // but we still don't want to starve the spawn of its spawn-cost buffer.
+  // Priority 4: Spawn — DIRE EMERGENCY ONLY.
+  // Threshold of > 280 out of 300 capacity means the spawn is essentially full
+  // and has genuine surplus above any reasonable spawn cost. This should almost
+  // never trigger in normal operation. Workers are forbidden from touching the
+  // spawn entirely — the warlock gets this one last-resort tap only because it
+  // is pinned at the controller and physically cannot go elsewhere.
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
-  if (spawn && spawn.store[RESOURCE_ENERGY] > 150) {
+  if (spawn && spawn.store[RESOURCE_ENERGY] > 280) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, spawn);
     }
