@@ -24,7 +24,6 @@ module.exports.loop = function () {
   // BlackBox: always-on rolling 300-tick recorder. Start with blackbox().
   // Profiler: manual 300-tick deep-dive run.    Start with profile().
   BlackBox.tick();
-  Profiler.tick();
 
   // Clear all movement intents and pins from last tick.
   Traffic.reset();
