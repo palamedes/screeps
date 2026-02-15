@@ -118,3 +118,75 @@ global.status = function () {
   console.log('END SNAPSHOT');
   console.log(sep + '\n');
 };
+
+
+
+global.status1 = function () {
+  var report = {};
+
+  report.time = Game.time;
+  report.cpu = {
+    bucket: Game.cpu.bucket,
+    limit: Game.cpu.limit,
+    used: Game.cpu.getUsed()
+  };
+
+  report.gcl = {
+    level: Game.gcl.level,
+    progress: Game.gcl.progress,
+    progressTotal: Game.gcl.progressTotal
+  };
+
+  report.rooms = Object.keys(Game.rooms).map(function (name) {
+    var room = Game.rooms[name];
+    var controller = room.controller;
+    var creeps = room.find(FIND_MY_CREEPS);
+    var hostiles = room.find(FIND_HOSTILE_CREEPS);
+    var structures = room.find(FIND_MY_STRUCTURES);
+    var construction = room.find(FIND_MY_CONSTRUCTION_SITES);
+    var roleCounts = _.countBy(creeps, function (c) {
+      return c.memory.role || "unknown";
+    });
+
+    var structureCounts = _.countBy(structures, function (s) {
+      return s.structureType;
+    });
+
+    var storedEnergy = 0;
+
+    if (room.storage && room.storage.store[RESOURCE_ENERGY]) {
+      storedEnergy += room.storage.store[RESOURCE_ENERGY];
+    }
+
+    if (room.terminal && room.terminal.store[RESOURCE_ENERGY]) {
+      storedEnergy += room.terminal.store[RESOURCE_ENERGY];
+    }
+
+    return {
+      name: room.name,
+      rcl: controller ? controller.level : null,
+      controllerProgress: controller ? controller.progress : null,
+      controllerProgressTotal: controller ? controller.progressTotal : null,
+      energyAvailable: room.energyAvailable,
+      energyCapacity: room.energyCapacityAvailable,
+      storedEnergy: storedEnergy,
+      sources: room.find(FIND_SOURCES).length,
+      creeps: roleCounts,
+      structures: structureCounts,
+      constructionSites: construction.length,
+      hostiles: hostiles.length
+    };
+  });
+  report.totalCreeps = Object.keys(Game.creeps).length;
+  report.creepRoles = _.countBy(Game.creeps, function (c) {
+    return c.memory.role || "unknown";
+  });
+  report.constructionSites = Object.keys(Game.constructionSites).length;
+  report.market = {
+    credits: Game.market.credits,
+    orders: Object.keys(Game.market.orders).length
+  };
+  console.log(JSON.stringify(report, null, 2));
+};
+
+
