@@ -3,15 +3,11 @@ require('rat.miner');
 require('rat.hauler');
 require('rat.slave');
 require('rat.warlock');
-require('rat.visual');
 
 const Traffic  = require('traffic');
 const JobBoard = require('job.board');
 
 Creep.prototype.tick = function () {
-  // Draw role indicator every tick — purely cosmetic, zero game state impact
-  this.drawRole();
-
   switch (this.memory.role) {
     case 'miner':   return this.runMiner();
     case 'hauler':  return this.runHauler();
