@@ -9,7 +9,6 @@ require('warren');
 require('rat');
 
 const Traffic  = require('traffic');
-const Profiler = require('warren.profiler');
 const BlackBox = require('warren.blackbox');
 
 /**
