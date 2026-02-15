@@ -52,3 +52,60 @@ function cleanupMemory() {
     }
   }
 }
+
+
+
+
+global.status = function () {
+  const report = {};
+
+  report.time = Game.time;
+  report.cpu = {
+    bucket: Game.cpu.bucket,
+    limit: Game.cpu.limit,
+    used: Game.cpu.getUsed()
+  };
+
+  report.gcl = {
+    level: Game.gcl.level,
+    progress: Game.gcl.progress,
+    progressTotal: Game.gcl.progressTotal
+  };
+
+  report.rooms = Object.values(Game.rooms).map(room => {
+    const controller = room.controller;
+    const creeps = room.find(FIND_MY_CREEPS);
+    const hostiles = room.find(FIND_HOSTILE_CREEPS);
+    const structures = room.find(FIND_MY_STRUCTURES);
+    const construction = room.find(FIND_MY_CONSTRUCTION_SITES);
+    const roleCounts = _.countBy(creeps, c => c.memory.role || "unknown");
+    const structureCounts = _.countBy(structures, s => s.structureType);
+
+    return {
+      name: room.name,
+      rcl: controller ? controller.level : null,
+      controllerProgress: controller ? controller.progress : null,
+      controllerProgressTotal: controller ? controller.progressTotal : null,
+      energyAvailable: room.energyAvailable,
+      energyCapacity: room.energyCapacityAvailable,
+      storedEnergy:
+        (room.storage?.store[RESOURCE_ENERGY] || 0) +
+        (room.terminal?.store[RESOURCE_ENERGY] || 0),
+      sources: room.find(FIND_SOURCES).length,
+      creeps: roleCounts,
+      structures: structureCounts,
+      constructionSites: construction.length,
+      hostiles: hostiles.length
+    };
+  });
+
+  report.totalCreeps = Object.keys(Game.creeps).length;
+  report.creepRoles = _.countBy(Game.creeps, c => c.memory.role || "unknown");
+  report.constructionSites = Object.keys(Game.constructionSites).length;
+  report.market = {
+    credits: Game.market.credits,
+    orders: Object.keys(Game.market.orders).length
+  };
+
+  console.log(JSON.stringify(report, null, 2));
+};
