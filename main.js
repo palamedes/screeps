@@ -10,6 +10,7 @@ require('rat');
 
 const Traffic  = require('traffic');
 const Profiler = require('warren.profiler');
+const BlackBox = require('warren.blackbox');
 
 /**
  * Main game loop.
@@ -20,11 +21,13 @@ module.exports.loop = function () {
 
   cleanupMemory();
 
-  // Profiler runs first — captures CPU before any game logic runs
+  // Instrumentation runs first — captures CPU before any game logic skews it.
+  // BlackBox: always-on rolling 300-tick recorder. Start with blackbox().
+  // Profiler: manual 300-tick deep-dive run.    Start with profile().
+  BlackBox.tick();
   Profiler.tick();
 
   // Clear all movement intents and pins from last tick.
-  // Must happen before any room or creep ticks register new ones.
   Traffic.reset();
 
   Empire.tick();
@@ -41,8 +44,6 @@ module.exports.loop = function () {
   }
 
   // Execute all movement registered this tick.
-  // Runs after all creep ticks so the full picture of intent is known
-  // before any creep actually moves.
   Traffic.resolve();
 };
 

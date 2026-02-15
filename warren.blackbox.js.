@@ -1,0 +1,768 @@
+/**
+ * warren.blackbox.js
+ *
+ * Always-on rolling flight data recorder for the Skaven warren.
+ * Continuously maintains the last 300 ticks (~5 minutes) of data so that
+ * if something goes wrong you can dump the evidence without having to
+ * anticipate the problem and start a manual profiler run.
+ *
+ * Design: bucket system
+ *   Rather than storing 300 raw tick snapshots (Memory expensive), data is
+ *   aggregated into 60-tick buckets. The last 5 completed buckets are kept,
+ *   plus the current in-progress bucket. That gives 300+ ticks of history
+ *   at a fraction of the memory cost of raw storage.
+ *
+ *   Bucket lifecycle:
+ *     - currentBucket: running aggregates for the current 60-tick window
+ *     - Every 60 ticks: finalize currentBucket → push to buckets[] → drop oldest
+ *     - buckets[]: array of last 5 completed buckets (oldest index 0)
+ *     - At report time: combine all buckets + current partial for full picture
+ *
+ *   Event log: timestamped, auto-pruned to last 300 ticks.
+ *   Anomaly log: last 5 snapshots, kept regardless of age.
+ *   Creep registry: alive creeps + recent deaths (last 300 ticks only).
+ *
+ * Console commands:
+ *   blackbox()           — start the recorder
+ *   blackbox('stop')     — stop the recorder
+ *   blackbox('report')   — dump last ~300 ticks of data
+ *   blackbox('status')   — is it running, how many buckets collected
+ *   blackbox('clear')    — wipe all stored data
+ *
+ * Called from: main.js — BlackBox.tick() once per tick, before game logic.
+ *
+ * Memory key: Memory.blackbox
+ */
+
+const BUCKET_SIZE    = 60;   // ticks per bucket
+const MAX_BUCKETS    = 5;    // keep last 5 completed buckets = 300 ticks
+const MAX_EVENTS     = 100;  // max event log entries (pruned by age)
+const MAX_ANOMALIES  = 5;    // max anomaly snapshots kept
+
+const BlackBox = {
+
+  // -------------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------------
+
+  command(cmd) {
+    if (!cmd) return this.start();
+    switch (cmd) {
+      case 'stop':   return this.stop();
+      case 'report': return this.report();
+      case 'status': return this.status();
+      case 'clear':  return this.clear();
+      default:
+        console.log('[blackbox] unknown command: ' + cmd +
+          '. Use: blackbox() | blackbox("stop") | blackbox("report") | blackbox("status") | blackbox("clear")');
+    }
+  },
+
+  start() {
+    if (Memory.blackbox && Memory.blackbox.active) {
+      console.log('[blackbox] already running. Use blackbox("status") to check or blackbox("report") to dump data.');
+      return;
+    }
+
+    if (!Memory.blackbox) {
+      Memory.blackbox = {
+        active:        false,
+        startedAt:     null,
+        totalTicks:    0,
+        buckets:       {},   // roomName → [bucket, ...]
+        currentBucket: {},   // roomName → bucket-in-progress
+        eventLog:      [],
+        anomalyLog:    [],
+        creepRegistry: {}
+      };
+    }
+
+    Memory.blackbox.active    = true;
+    Memory.blackbox.startedAt = Game.time;
+
+    // Seed creep registry
+    for (const name in Game.creeps) {
+      if (!Memory.blackbox.creepRegistry[name]) {
+        Memory.blackbox.creepRegistry[name] = this._registerCreep(Game.creeps[name], false);
+      }
+    }
+
+    // Initialize room structures
+    for (const roomName in Game.rooms) {
+      const room = Game.rooms[roomName];
+      if (!room.controller || !room.controller.my) continue;
+      if (!Memory.blackbox.buckets[roomName])       Memory.blackbox.buckets[roomName]       = [];
+      if (!Memory.blackbox.currentBucket[roomName]) Memory.blackbox.currentBucket[roomName] = this._initBucket(room);
+    }
+
+    console.log('[blackbox] ▶ recorder started at tick ' + Game.time +
+      '. Type blackbox("report") any time to see the last ~5 min.');
+  },
+
+  stop() {
+    if (!Memory.blackbox || !Memory.blackbox.active) {
+      console.log('[blackbox] not running.');
+      return;
+    }
+    Memory.blackbox.active = false;
+    console.log('[blackbox] ■ recorder stopped. Data retained. blackbox("report") to view.');
+  },
+
+  status() {
+    if (!Memory.blackbox) {
+      console.log('[blackbox] no data. Run blackbox() to start.');
+      return;
+    }
+    const bb = Memory.blackbox;
+    const bucketsStr = Object.entries(bb.buckets)
+      .map(([room, b]) => room + ':' + b.length + ' buckets')
+      .join(', ');
+    console.log('[blackbox] ' + (bb.active ? '▶ running' : '■ stopped') +
+      ' — started tick ' + bb.startedAt +
+      ' — total ticks: ' + bb.totalTicks +
+      ' — history: ' + (bucketsStr || 'none yet') +
+      ' — events: ' + bb.eventLog.length +
+      ' — anomalies: ' + bb.anomalyLog.length);
+  },
+
+  clear() {
+    delete Memory.blackbox;
+    console.log('[blackbox] data cleared.');
+  },
+
+  report() {
+    if (!Memory.blackbox) {
+      console.log('[blackbox] no data. Run blackbox() to start.');
+      return;
+    }
+
+    const bb = Memory.blackbox;
+
+    if (bb.totalTicks === 0) {
+      console.log('[blackbox] no ticks collected yet.');
+      return;
+    }
+
+    const output = {
+      meta: {
+        startedAt:    bb.startedAt,
+        currentTick:  Game.time,
+        active:       bb.active,
+        totalTicks:   bb.totalTicks,
+        windowTicks:  Math.min(bb.totalTicks, MAX_BUCKETS * BUCKET_SIZE),
+        windowMin:    parseFloat((Math.min(bb.totalTicks, MAX_BUCKETS * BUCKET_SIZE) / 60).toFixed(1))
+      },
+      rooms:         {},
+      eventLog:      bb.eventLog,
+      anomalyLog:    bb.anomalyLog,
+      creepRegistry: this._summarizeRegistry(bb.creepRegistry)
+    };
+
+    for (const roomName in bb.buckets) {
+      const completedBuckets = bb.buckets[roomName];
+      const currentBucket    = bb.currentBucket[roomName];
+
+      // Combine all buckets into a unified report
+      const allBuckets = currentBucket
+        ? [...completedBuckets, this._partialBucket(currentBucket)]
+        : completedBuckets;
+
+      if (!allBuckets.length) continue;
+
+      output.rooms[roomName] = this._combineRoomBuckets(roomName, allBuckets, bb);
+    }
+
+    console.log(JSON.stringify(output, null, 2));
+  },
+
+  // -------------------------------------------------------------------------
+  // Per-tick collection
+  // -------------------------------------------------------------------------
+
+  tick() {
+    if (!Memory.blackbox || !Memory.blackbox.active) return;
+
+    const bb      = Memory.blackbox;
+    const cpuUsed = Game.cpu.getUsed();
+
+    bb.totalTicks++;
+
+    // Track creep lifecycle
+    this._trackCreepLifecycle(bb);
+
+    // Prune event log to last 300 ticks
+    const cutoff = Game.time - (MAX_BUCKETS * BUCKET_SIZE);
+    bb.eventLog  = bb.eventLog.filter(e => e.tick > cutoff);
+
+    // Prune dead creeps older than 300 ticks from registry
+    for (const name in bb.creepRegistry) {
+      const e = bb.creepRegistry[name];
+      if (e.outcome !== 'alive' && e.deathTick && e.deathTick < cutoff) {
+        delete bb.creepRegistry[name];
+      }
+    }
+
+    for (const roomName in bb.currentBucket) {
+      const room = Game.rooms[roomName];
+      if (!room) continue;
+
+      const bucket  = bb.currentBucket[roomName];
+
+      // Finalize bucket if it's full
+      if (bb.totalTicks > 0 && bucket.ticks >= BUCKET_SIZE) {
+        this._finalizeBucket(bb, roomName);
+      }
+
+      this._collectTick(bb, roomName, room, cpuUsed);
+    }
+
+    // Initialize any new rooms
+    for (const roomName in Game.rooms) {
+      const room = Game.rooms[roomName];
+      if (!room.controller || !room.controller.my) continue;
+      if (!bb.currentBucket[roomName]) {
+        bb.currentBucket[roomName] = this._initBucket(room);
+        bb.buckets[roomName]       = bb.buckets[roomName] || [];
+      }
+    }
+  },
+
+  // -------------------------------------------------------------------------
+  // Bucket management
+  // -------------------------------------------------------------------------
+
+  _collectTick(bb, roomName, room, cpuUsed) {
+    const bucket  = bb.currentBucket[roomName];
+    const sources = room.find(FIND_SOURCES);
+    const spawns  = room.find(FIND_MY_SPAWNS);
+    const dropped = room.find(FIND_DROPPED_RESOURCES, {
+      filter: d => d.resourceType === RESOURCE_ENERGY
+    });
+    const droppedTotal = dropped.reduce((s, d) => s + d.amount, 0);
+    const roads        = room.find(FIND_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_ROAD
+    });
+    const containers = room.find(FIND_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_CONTAINER
+    });
+    const creeps  = Object.values(Game.creeps).filter(c => c.memory.homeRoom === roomName);
+    const miners  = creeps.filter(c => c.memory.role === 'miner');
+
+    const energyRatio   = room.energyAvailable / room.energyCapacityAvailable;
+    const damagedRoads  = roads.filter(r => r.hits < r.hitsMax * 0.5).length;
+    const criticalRoads = roads.filter(r => r.hits < r.hitsMax * 0.25).length;
+
+    bucket.ticks++;
+    bucket.tickEnd = Game.time;
+
+    // Energy
+    bucket.energyRatioSum += energyRatio;
+    bucket.energyRatioMin  = Math.min(bucket.energyRatioMin, energyRatio);
+    bucket.energyRatioMax  = Math.max(bucket.energyRatioMax, energyRatio);
+    if (energyRatio >= 1.0) bucket.energyCapEvents++;
+    if (energyRatio < 0.2)  bucket.energyDroughtEvents++;
+
+    // Spawn
+    spawns.forEach(spawn => {
+      if (spawn.spawning) {
+        bucket.spawnBusyTicks++;
+        if (spawn.spawning.remainingTime === 1) {
+          bucket.spawnCount++;
+          bucket.spawnEnergySum += room.energyAvailable;
+        }
+      }
+    });
+
+    // Controller
+    bucket.controllerProgressEnd   = room.controller.progress;
+    bucket.controllerProgressTotal = room.controller.progressTotal;
+    bucket.rclEnd                  = room.controller.level;
+
+    // Dropped energy
+    bucket.droppedSum += droppedTotal;
+    bucket.droppedMax  = Math.max(bucket.droppedMax, droppedTotal);
+
+    // Roads (end state updated each tick)
+    bucket.roadDamagedEnd  = damagedRoads;
+    bucket.roadCriticalEnd = criticalRoads;
+
+    // Containers
+    containers.forEach(c => {
+      const fillPct = Math.round(c.store[RESOURCE_ENERGY] / c.store.getCapacity(RESOURCE_ENERGY) * 100);
+      if (c.pos.inRangeTo(room.controller, 3)) {
+        bucket.containerControllerSum += fillPct;
+        bucket.containerControllerTicks++;
+      } else if (sources.some(src => c.pos.inRangeTo(src, 2))) {
+        bucket.containerSourceSum += fillPct;
+        bucket.containerSourceTicks++;
+      }
+    });
+
+    // CPU
+    bucket.cpuSum += cpuUsed;
+    bucket.cpuMax  = Math.max(bucket.cpuMax, cpuUsed);
+
+    // Creep snapshot
+    const byRole = {};
+    creeps.forEach(c => { byRole[c.memory.role] = (byRole[c.memory.role] || 0) + 1; });
+    bucket.creepsEnd = byRole;
+
+    // Role gaps
+    const hasGap = miners.length < sources.length;
+    if (hasGap) bucket.roleGapTicks++;
+
+    // Extensions
+    const exts = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_EXTENSION});
+    bucket.extensionsBuilt = exts.length;
+    bucket.extensionsMax   = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller.level] || 0;
+
+    // Anomaly detection — check every 10 ticks against a rolling baseline
+    if (bucket.ticks % 10 === 0 && bucket.ticks > 10) {
+      const avgEnergy = bucket.energyRatioSum / bucket.ticks;
+      const energyCrash = energyRatio < avgEnergy - 0.25;
+      const droppedSpike = droppedTotal > 500;
+      const minerGap = miners.length < sources.length;
+
+      if ((energyCrash || droppedSpike || minerGap) && bb.anomalyLog.length < MAX_ANOMALIES) {
+        // Check we don't already have an anomaly from the last 20 ticks
+        const recentAnomaly = bb.anomalyLog.length > 0 &&
+          (Game.time - bb.anomalyLog[bb.anomalyLog.length - 1].tick) < 20;
+
+        if (!recentAnomaly) {
+          bb.anomalyLog.push(this._captureAnomalySnapshot(room, roomName, creeps, containers, spawns, droppedTotal, {
+            trigger:      energyCrash ? 'energy_crash' : droppedSpike ? 'dropped_spike' : 'miner_gap',
+            energyRatio:  Math.round(energyRatio * 100),
+            avgEnergyPct: Math.round(avgEnergy * 100),
+            droppedTotal,
+            minerCount:   miners.length,
+            sourceCount:  sources.length
+          }));
+          console.log('[blackbox] ⚠️  ANOMALY tick ' + Game.time +
+            ' — ' + (energyCrash ? 'energy crash (' + Math.round(energyRatio*100) + '%)' :
+                     droppedSpike ? 'dropped spike (' + droppedTotal + ')' :
+                     'miner gap (' + miners.length + '/' + sources.length + ')'));
+        }
+      }
+    }
+
+    // Trend point at end of each bucket
+    if (bucket.ticks === BUCKET_SIZE) {
+      bucket.sample = {
+        tick:                Game.time,
+        energyPct:           Math.round(energyRatio * 100),
+        energyAvgPct:        Math.round(bucket.energyRatioSum / bucket.ticks * 100),
+        droppedEnergy:       droppedTotal,
+        droppedAvg:          Math.round(bucket.droppedSum / bucket.ticks),
+        creepCount:          creeps.length,
+        byRole:              Object.assign({}, byRole),
+        cpuAvg:              parseFloat((bucket.cpuSum / bucket.ticks).toFixed(2)),
+        damagedRoads,
+        spawnBusyPct:        Math.round(bucket.spawnBusyTicks / bucket.ticks * 100),
+        containerController: (() => {
+          const cc = containers.find(c => c.pos.inRangeTo(room.controller, 3));
+          return cc ? Math.round(cc.store[RESOURCE_ENERGY] / cc.store.getCapacity(RESOURCE_ENERGY) * 100) : null;
+        })()
+      };
+    }
+  },
+
+  _finalizeBucket(bb, roomName) {
+    const bucket = bb.currentBucket[roomName];
+    const room   = Game.rooms[roomName];
+
+    // Add pipeline snapshot at bucket boundary
+    bucket.pipeline = this._analyzePipeline(roomName, bb.creepRegistry);
+
+    // Push to completed list, drop oldest if over limit
+    bb.buckets[roomName].push(bucket);
+    if (bb.buckets[roomName].length > MAX_BUCKETS) {
+      bb.buckets[roomName].shift();
+    }
+
+    // Start new bucket
+    bb.currentBucket[roomName] = room
+      ? this._initBucket(room, bucket.controllerProgressEnd, bucket.rclEnd)
+      : this._initBucket(null);
+  },
+
+  _partialBucket(bucket) {
+    // Return a read-only view of the in-progress bucket for report combining
+    return Object.assign({}, bucket, { partial: true });
+  },
+
+  _combineRoomBuckets(roomName, buckets, bb) {
+    if (!buckets.length) return null;
+
+    const first = buckets[0];
+    const last  = buckets[buckets.length - 1];
+    const totalTicks = buckets.reduce((s, b) => s + b.ticks, 0);
+
+    // Aggregate across all buckets
+    let energyRatioSum = 0, energyRatioMin = Infinity, energyRatioMax = 0;
+    let energyCapEvents = 0, energyDroughtEvents = 0;
+    let spawnBusyTicks = 0, spawnCount = 0, spawnEnergySum = 0;
+    let droppedSum = 0, droppedMax = 0;
+    let cpuSum = 0, cpuMax = 0;
+    let roleGapTicks = 0;
+    let containerControllerSum = 0, containerControllerTicks = 0;
+    let containerSourceSum = 0, containerSourceTicks = 0;
+
+    buckets.forEach(b => {
+      energyRatioSum        += b.energyRatioSum;
+      energyRatioMin         = Math.min(energyRatioMin, b.energyRatioMin);
+      energyRatioMax         = Math.max(energyRatioMax, b.energyRatioMax);
+      energyCapEvents       += b.energyCapEvents;
+      energyDroughtEvents   += b.energyDroughtEvents;
+      spawnBusyTicks        += b.spawnBusyTicks;
+      spawnCount            += b.spawnCount;
+      spawnEnergySum        += b.spawnEnergySum;
+      droppedSum            += b.droppedSum;
+      droppedMax             = Math.max(droppedMax, b.droppedMax);
+      cpuSum                += b.cpuSum;
+      cpuMax                 = Math.max(cpuMax, b.cpuMax);
+      roleGapTicks          += b.roleGapTicks;
+      containerControllerSum  += b.containerControllerSum;
+      containerControllerTicks += b.containerControllerTicks;
+      containerSourceSum    += b.containerSourceSum;
+      containerSourceTicks  += b.containerSourceTicks;
+    });
+
+    const progressDelta = last.controllerProgressEnd - first.controllerProgressStart;
+    const ratePerTick   = totalTicks > 0 ? progressDelta / totalTicks : 0;
+    const remaining     = last.controllerProgressTotal - last.controllerProgressEnd;
+    const estTicks      = ratePerTick > 0 ? Math.round(remaining / ratePerTick) : null;
+
+    const spawnedCount = bb.eventLog
+      .filter(e => e.type === 'SPAWN' && e.room === roomName && e.tick > first.tickStart)
+      .reduce((acc, e) => { acc[e.role] = (acc[e.role] || 0) + 1; return acc; }, {});
+
+    return {
+      rcl: last.rclEnd,
+      windowTicks: totalTicks,
+      bucketCount: buckets.length,
+
+      extensions: {
+        built:             last.extensionsBuilt,
+        rclMax:            last.extensionsMax,
+        missing:           Math.max(0, last.extensionsMax - last.extensionsBuilt),
+        energyCapacityLost: Math.max(0, last.extensionsMax - last.extensionsBuilt) * 50
+      },
+
+      energy: {
+        avgPct:        Math.round(energyRatioSum / totalTicks * 100),
+        minPct:        Math.round(energyRatioMin * 100),
+        maxPct:        Math.round(energyRatioMax * 100),
+        capEvents:     energyCapEvents,
+        droughtEvents: energyDroughtEvents,
+        capPct:        Math.round(energyCapEvents / totalTicks * 100),
+        droughtPct:    Math.round(energyDroughtEvents / totalTicks * 100)
+      },
+
+      spawn: {
+        utilizationPct:   Math.round(spawnBusyTicks / totalTicks * 100),
+        idleTicks:        totalTicks - spawnBusyTicks,
+        spawnedCount,
+        avgEnergyAtSpawn: spawnCount > 0 ? Math.round(spawnEnergySum / spawnCount) : null
+      },
+
+      controller: {
+        progressStart:   first.controllerProgressStart,
+        progressEnd:     last.controllerProgressEnd,
+        delta:           progressDelta,
+        ratePerTick:     parseFloat(ratePerTick.toFixed(2)),
+        estTicksToLevel: estTicks,
+        estHoursToLevel: estTicks ? parseFloat((estTicks / 3600).toFixed(1)) : null
+      },
+
+      containers: {
+        controller: containerControllerTicks > 0
+          ? { avgPct: Math.round(containerControllerSum / containerControllerTicks) } : null,
+        source: containerSourceTicks > 0
+          ? { avgPct: Math.round(containerSourceSum / containerSourceTicks) } : null
+      },
+
+      droppedEnergy: {
+        avg:        Math.round(droppedSum / totalTicks),
+        max:        droppedMax,
+        assessment: droppedSum / totalTicks < 200 ? 'healthy' :
+                    droppedSum / totalTicks < 500 ? 'mild backlog' : 'thralls overwhelmed'
+      },
+
+      roads: {
+        damagedStart:  first.roadDamagedStart,
+        damagedEnd:    last.roadDamagedEnd,
+        criticalEnd:   last.roadCriticalEnd,
+        decayRate:     parseFloat(((last.roadDamagedEnd - first.roadDamagedStart) / totalTicks).toFixed(4)),
+        assessment:    last.roadDamagedEnd > first.roadDamagedStart ? 'deteriorating' :
+                       last.roadDamagedEnd < first.roadDamagedStart ? 'improving' : 'stable'
+      },
+
+      cpu: {
+        avg: parseFloat((cpuSum / totalTicks).toFixed(2)),
+        max: parseFloat(cpuMax.toFixed(2))
+      },
+
+      creeps: {
+        start:        first.creepsStart,
+        end:          last.creepsEnd,
+        roleGapTicks,
+        roleGapPct:   Math.round(roleGapTicks / totalTicks * 100)
+      },
+
+      // Pipeline from the most recent bucket boundary
+      pipeline: last.pipeline || null,
+
+      // Trend — one entry per completed bucket (chronological)
+      trend: buckets
+        .filter(b => b.sample)
+        .map(b => b.sample)
+    };
+  },
+
+  // -------------------------------------------------------------------------
+  // Creep lifecycle (same pattern as manual profiler)
+  // -------------------------------------------------------------------------
+
+  _trackCreepLifecycle(bb) {
+    const registry = bb.creepRegistry;
+
+    for (const name in Game.creeps) {
+      if (!registry[name]) {
+        const c = Game.creeps[name];
+        registry[name] = this._registerCreep(c, true);
+        this._logEvent(bb, c.memory.homeRoom || '?', 'SPAWN', {
+          name:       c.name,
+          role:       c.memory.role,
+          body:       registry[name].body,
+          energyCost: registry[name].energyCost,
+          ttl:        c.ticksToLive
+        });
+      }
+    }
+
+    for (const name in registry) {
+      const entry = registry[name];
+      if (entry.outcome !== 'alive') continue;
+      if (!Game.creeps[name]) {
+        const wasKilled    = entry.lastTTL > 50;
+        entry.outcome      = wasKilled ? 'died_killed' : 'died_natural';
+        entry.deathTick    = Game.time;
+        entry.ticksLived   = Game.time - entry.spawnTick;
+        this._logEvent(bb, entry.homeRoom || '?',
+          wasKilled ? 'DEATH_KILLED' : 'DEATH_NATURAL', {
+          name:       name,
+          role:       entry.role,
+          ticksLived: entry.ticksLived,
+          lastTTL:    entry.lastTTL,
+          body:       entry.body
+        });
+      } else {
+        entry.lastTTL = Game.creeps[name].ticksToLive;
+      }
+    }
+  },
+
+  _registerCreep(creep, spawnedDuringRun) {
+    const body     = {};
+    const partCost = {
+      [WORK]: 100, [CARRY]: 50, [MOVE]: 50,
+      [ATTACK]: 80, [RANGED_ATTACK]: 150,
+      [TOUGH]: 10, [HEAL]: 250, [CLAIM]: 600
+    };
+
+    let energyCost = 0;
+    creep.body.forEach(part => {
+      body[part.type] = (body[part.type] || 0) + 1;
+      energyCost += partCost[part.type] || 0;
+    });
+
+    const nameParts = creep.name.split('_');
+    const spawnTick = nameParts.length > 1 ? parseInt(nameParts[nameParts.length - 1]) : Game.time;
+
+    return {
+      role:              creep.memory.role,
+      homeRoom:          creep.memory.homeRoom,
+      body,
+      energyCost,
+      spawnTick,
+      lastTTL:           creep.ticksToLive,
+      spawnedDuringRun,
+      outcome:           'alive',
+      deathTick:         null,
+      ticksLived:        null
+    };
+  },
+
+  _summarizeRegistry(registry) {
+    const summary = { byRole: {}, deaths: [], kills: [], alive: [] };
+
+    for (const name in registry) {
+      const e = registry[name];
+      summary.byRole[e.role] = summary.byRole[e.role] ||
+        { count: 0, spawnedDuringRun: 0, avgEnergyCost: 0, _costSum: 0 };
+      const rb = summary.byRole[e.role];
+      rb.count++;
+      rb._costSum += e.energyCost;
+      rb.avgEnergyCost = Math.round(rb._costSum / rb.count);
+      if (e.spawnedDuringRun) rb.spawnedDuringRun++;
+
+      if      (e.outcome === 'died_natural') summary.deaths.push({name, role: e.role, ticksLived: e.ticksLived, body: e.body});
+      else if (e.outcome === 'died_killed')  summary.kills.push({name, role: e.role, ticksLived: e.ticksLived, lastTTL: e.lastTTL, body: e.body});
+      else                                   summary.alive.push({name, role: e.role, ttlRemaining: e.lastTTL, body: e.body});
+    }
+
+    for (const role in summary.byRole) delete summary.byRole[role]._costSum;
+    return summary;
+  },
+
+  // -------------------------------------------------------------------------
+  // Anomaly snapshot
+  // -------------------------------------------------------------------------
+
+  _captureAnomalySnapshot(room, roomName, creeps, containers, spawns, droppedTotal, meta) {
+    return Object.assign({ tick: Game.time }, meta, {
+      energy: {
+        available: room.energyAvailable,
+        capacity:  room.energyCapacityAvailable,
+        pct:       Math.round(room.energyAvailable / room.energyCapacityAvailable * 100)
+      },
+      spawn: spawns.map(s => ({
+        name:     s.name,
+        spawning: s.spawning
+          ? { name: s.spawning.name, role: s.spawning.name.split('_')[0], ticksLeft: s.spawning.remainingTime }
+          : null
+      })),
+      containers: containers.map(c => ({
+        type:    c.pos.inRangeTo(room.controller, 3) ? 'controller' : 'source',
+        energy:  c.store[RESOURCE_ENERGY],
+        pct:     Math.round(c.store[RESOURCE_ENERGY] / c.store.getCapacity(RESOURCE_ENERGY) * 100)
+      })),
+      creeps: creeps.map(c => ({
+        name:    c.name,
+        role:    c.memory.role,
+        ttl:     c.ticksToLive,
+        working: c.memory.working || c.memory.delivering || null,
+        store:   c.store[RESOURCE_ENERGY]
+      })).sort((a, b) => a.ttl - b.ttl)
+    });
+  },
+
+  // -------------------------------------------------------------------------
+  // Pipeline analysis
+  // -------------------------------------------------------------------------
+
+  _analyzePipeline(roomName, registry) {
+    const room = Game.rooms[roomName];
+    if (!room) return null;
+
+    const sources = room.find(FIND_SOURCES);
+    const srcMax  = sources.length * 5;
+    const srcRate = sources.length * 10;
+
+    let minerWork = 0, thrallCarry = 0, clanratWork = 0, warlockWork = 0;
+
+    for (const name in registry) {
+      const e = registry[name];
+      if (e.outcome !== 'alive' || e.homeRoom !== roomName) continue;
+      const b = e.body;
+      switch (e.role) {
+        case 'miner':   minerWork   += b[WORK]  || 0; break;
+        case 'thrall':  thrallCarry += b[CARRY] || 0; break;
+        case 'clanrat': clanratWork += b[WORK]  || 0; break;
+        case 'warlock': warlockWork += b[WORK]  || 0; break;
+      }
+    }
+
+    const estThrallDemand = Math.ceil(srcRate / 1.25);
+
+    return {
+      mining: {
+        activeWorkParts: minerWork,
+        targetWorkParts: srcMax,
+        utilizationPct:  Math.round(minerWork / srcMax * 100),
+        assessment:      minerWork >= srcMax ? 'full drain' :
+                         minerWork >= srcMax * 0.6 ? 'partial drain' : 'severely undersourced'
+      },
+      transport: {
+        activeCarryParts:  thrallCarry,
+        estimatedDemand:   estThrallDemand,
+        utilizationPct:    Math.round(thrallCarry / estThrallDemand * 100),
+        assessment:        thrallCarry >= estThrallDemand ? 'sufficient' :
+                           thrallCarry >= estThrallDemand * 0.7 ? 'mild shortage' : 'bottleneck'
+      },
+      spending: {
+        clanratWorkParts: clanratWork,
+        warlockWorkParts: warlockWork,
+        totalSpendWork:   clanratWork + warlockWork,
+        vsProductionRate: srcRate > 0
+          ? parseFloat(((clanratWork + warlockWork) / srcRate).toFixed(2))
+          : null,
+        assessment: (clanratWork + warlockWork) < srcRate * 0.5 ? 'underutilizing production' :
+                    (clanratWork + warlockWork) < srcRate        ? 'slight underspend' :
+                    (clanratWork + warlockWork) < srcRate * 1.5  ? 'balanced' : 'aggressive spending'
+      }
+    };
+  },
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+
+  _initBucket(room, controllerProgressStart, rclStart) {
+    const roads  = room ? room.find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_ROAD}) : [];
+    const creeps = room ? Object.values(Game.creeps).filter(c => c.memory.homeRoom === room.name) : [];
+    const byRole = {};
+    creeps.forEach(c => { byRole[c.memory.role] = (byRole[c.memory.role] || 0) + 1; });
+
+    return {
+      tickStart:                Game.time,
+      tickEnd:                  Game.time,
+      ticks:                    0,
+      rclStart:                 rclStart || (room ? room.controller.level : 0),
+      rclEnd:                   rclStart || (room ? room.controller.level : 0),
+      energyRatioSum:           0,
+      energyRatioMin:           Infinity,
+      energyRatioMax:           0,
+      energyCapEvents:          0,
+      energyDroughtEvents:      0,
+      spawnBusyTicks:           0,
+      spawnCount:               0,
+      spawnEnergySum:           0,
+      controllerProgressStart:  controllerProgressStart || (room ? room.controller.progress : 0),
+      controllerProgressEnd:    controllerProgressStart || (room ? room.controller.progress : 0),
+      controllerProgressTotal:  room ? room.controller.progressTotal : 0,
+      extensionsBuilt:          0,
+      extensionsMax:            0,
+      containerControllerSum:   0,
+      containerControllerTicks: 0,
+      containerSourceSum:       0,
+      containerSourceTicks:     0,
+      droppedSum:               0,
+      droppedMax:               0,
+      roadDamagedStart:         roads.filter(r => r.hits < r.hitsMax * 0.5).length,
+      roadDamagedEnd:           roads.filter(r => r.hits < r.hitsMax * 0.5).length,
+      roadCriticalEnd:          roads.filter(r => r.hits < r.hitsMax * 0.25).length,
+      cpuSum:                   0,
+      cpuMax:                   0,
+      creepsStart:              byRole,
+      creepsEnd:                byRole,
+      roleGapTicks:             0,
+      spawned:                  {},
+      sample:                   null,
+      pipeline:                 null
+    };
+  },
+
+  _logEvent(bb, roomName, type, data) {
+    if (bb.eventLog.length >= MAX_EVENTS) {
+      bb.eventLog.shift(); // drop oldest when full
+    }
+    bb.eventLog.push(Object.assign({ tick: Game.time, type, room: roomName }, data));
+  }
+
+};
+
+global.BlackBox = BlackBox;
+global.blackbox = function(cmd) { return BlackBox.command(cmd); };
+
+module.exports = BlackBox;
