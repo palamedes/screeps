@@ -13,15 +13,19 @@
  *
  * Energy gathering priority:
  *   1. Controller container (stand on it, withdraw directly)
- *   2. Dropped energy near controller (pre-container window, or while hauler is en route)
- *   3. Tombstones near controller
- *   4. Spawn surplus (last resort, >250 only)
+ *   2. Dropped energy — near controller if container exists, whole room if not.
+ *      Early RCL2 has no container yet and miners drop at source tiles, so
+ *      restricting search to controller range 5 means the warlock sees nothing.
+ *   3. Tombstones — same radius logic as dropped energy
+ *   4. Spawn surplus (last resort, >150 only)
  *
- * KEY FIX: When the container exists but is empty, the warlock must fall through
- * to other energy sources rather than pinning and waiting. ERR_NOT_ENOUGH_RESOURCES
- * from withdraw() means "empty right now" — not "stay put forever."
+ * KEY FIX 1: Empty container falls through immediately to other sources.
+ * KEY FIX 2: Dropped/tombstone search covers whole room when no container exists.
+ * KEY FIX 3: "Spend what you have" fallback — if gathering finds nothing but the
+ *   warlock is holding any energy, flip to working rather than idling. The old code
+ *   only flipped to working when completely full, so partial pickups caused the
+ *   warlock to sit idle with energy in store.
  *
- * The warlock bypasses the job board entirely — same pattern as rat.miner.js.
  * All movement routed through Traffic.requestMove / Traffic.pin.
  */
 
@@ -53,10 +57,6 @@ Creep.prototype.runWarlock = function () {
 
   // --- Gathering Phase ---
   // Use room.find for the container — do NOT use findClosestByPath.
-  // findClosestByPath returns null silently when the room is congested and
-  // it can't calculate a path. We want the object reference so the traffic
-  // manager can handle the actual pathing. Separating target lookup from
-  // pathing is the correct pattern.
   const container = this.room.find(FIND_STRUCTURES, {
     filter: s =>
       s.structureType === STRUCTURE_CONTAINER &&
@@ -65,11 +65,8 @@ Creep.prototype.runWarlock = function () {
 
   // Priority 1: Container exists AND has energy — stand on it and withdraw.
   // Explicitly check store amount before committing to walk there.
-  // If container is empty we fall through immediately to other sources
-  // rather than walking to it and then discovering it's empty.
   if (container && container.store[RESOURCE_ENERGY] > 0) {
     if (this.pos.isEqualTo(container.pos)) {
-      // Already on the container — withdraw directly
       this.withdraw(container, RESOURCE_ENERGY);
       Traffic.pin(this);
     } else {
@@ -78,12 +75,16 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 2: Dropped energy near controller.
-  // Handles: pre-container window, hauler en route, container temporarily empty.
+  // Priority 2: Dropped energy.
+  // If a container exists, stay near the controller (hauler is en route).
+  // If NO container exists yet (early RCL2), search the whole room —
+  // miners are dropping at source tiles which may be far from the controller.
+  const droppedFilter = container
+    ? r => r.resourceType === RESOURCE_ENERGY && r.pos.inRangeTo(this.room.controller, 8)
+    : r => r.resourceType === RESOURCE_ENERGY;
+
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
-    filter: r =>
-      r.resourceType === RESOURCE_ENERGY &&
-      r.pos.inRangeTo(this.room.controller, 5)
+    filter: droppedFilter
   }).sort((a, b) => b.amount - a.amount)[0];
 
   if (dropped) {
@@ -93,11 +94,13 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 3: Tombstones near controller
+  // Priority 3: Tombstones — same radius logic as dropped energy.
+  const tombstoneFilter = container
+    ? t => t.store[RESOURCE_ENERGY] > 0 && t.pos.inRangeTo(this.room.controller, 8)
+    : t => t.store[RESOURCE_ENERGY] > 0;
+
   const tombstone = this.room.find(FIND_TOMBSTONES, {
-    filter: t =>
-      t.store[RESOURCE_ENERGY] > 0 &&
-      t.pos.inRangeTo(this.room.controller, 5)
+    filter: tombstoneFilter
   })[0];
 
   if (tombstone) {
@@ -107,16 +110,27 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 4: Spawn surplus — last resort only
+  // Priority 4: Spawn surplus — last resort only.
+  // Threshold lowered to 150: early RCL2 spawn rarely holds much surplus,
+  // but we still don't want to starve the spawn of its spawn-cost buffer.
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
-  if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
+  if (spawn && spawn.store[RESOURCE_ENERGY] > 150) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, spawn);
     }
     return;
   }
 
-  // Nothing available anywhere — hold position at container if built,
+  // --- Spend partial load rather than idling ---
+  // If we've exhausted all gather options but are holding any energy,
+  // flip to working and spend it. The old code only flipped on getFreeCapacity() === 0,
+  // so partial pickups (e.g. 40/100) left the warlock idle with energy in store.
+  if (this.store[RESOURCE_ENERGY] > 0) {
+    this.memory.working = true;
+    return;
+  }
+
+  // Truly nothing available — hold position at container if built,
   // otherwise wait near controller to be ready when hauler arrives.
   if (container) {
     if (!this.pos.isEqualTo(container.pos)) {
