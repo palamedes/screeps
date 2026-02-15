@@ -1,10 +1,72 @@
 # Skaven Warren — Architecture Reference
 
+## Working with an AI Assistant
+
+Before asking for any code changes, diagnosis, or planning help, always provide
+**both** of the following. Without them, diagnosis is guesswork.
+
+### 1. Current Snapshot
+```javascript
+blackbox('snapshot')
+```
+
+### 2. BlackBox Report
+The blackbox recorder is the **primary diagnostic tool** for the warren.
+It runs continuously in the background, maintaining a rolling ~5 minute window
+of aggregated data. If something goes wrong, the evidence is already recorded —
+you do not need to anticipate the problem and start a run first.
+
+Start it once and leave it running:
+```javascript
+blackbox()             // start the rolling recorder — do this once after deploy
+blackbox('status')     // check that it's running and how much history exists
+blackbox('report')     // dump last ~5 min as JSON — paste this for AI diagnosis
+blackbox('stop')       // pause (data retained)
+blackbox('clear')      // wipe all data
+blackbox('snapshot')   // current point-in-time state (use before asking for help)
+```
+
+The blackbox report contains:
+- Energy stability (avg/min/max %, cap/drought events)
+- Spawn utilization and what was spawned at what energy level
+- Controller progress rate and ETA to next level
+- Dropped energy avg/max (pipeline health)
+- Road damage trend (improving / stable / deteriorating)
+- CPU avg/max
+- Creep population stability and role gap ticks
+- Pipeline analysis (WORK parts vs source capacity, CARRY vs demand)
+- Event log (spawns, deaths, role gaps — timestamped)
+- Anomaly log (frozen snapshots auto-captured when energy crashes, dropped spikes,
+  or miner gaps are detected)
+- Creep registry (every creep seen: body composition, TTL, outcome)
+- 60-tick trend buckets
+
+**The blackbox should always be running.** If you ask for help without a blackbox
+report, expect to be asked for one before any diagnosis proceeds.
+
+### Manual Profile Run
+For a focused 300-tick (~5 min) deep-dive with a completion alert:
+```javascript
+profile()              // start — walk away for ~5 min
+profile('status')      // check progress
+profile('report')      // get results (also works mid-run)
+profile('stop')        // cancel early
+```
+
+Profile and blackbox share the same data infrastructure — no duplication,
+no extra Memory cost. Both are implemented in `warren.blackbox.js`.
+
+---
+
 ## Philosophy
 
-Screeps is an economy simulation before it is a game. Every design decision flows from one principle: **maximize energy throughput, minimize CPU and creep overhead**. Fewer, larger creeps beat many small creeps. Specialist roles beat generalists. Infrastructure (roads, containers, storage) beats throwing more bodies at a problem.
+Screeps is an economy simulation before it is a game. Every design decision flows
+from one principle: **maximize energy throughput, minimize CPU and creep overhead**.
+Fewer, larger creeps beat many small creeps. Specialist roles beat generalists.
+Infrastructure (roads, containers, storage) beats throwing more bodies at a problem.
 
-The codebase is organized around a single warren per room. Multi-room expansion (empire layer) is deferred until the single-warren economy is solid.
+The codebase is organized around a single warren per room. Multi-room expansion
+(empire layer) is deferred until the single-warren economy is solid.
 
 ---
 
@@ -14,15 +76,16 @@ The codebase is organized around a single warren per room. Multi-room expansion 
 Slaves only. Harvest, upgrade, survive. No specialization.
 Transition to Layer 1 when RCL2 is reached.
 
-### Layer 1 — Economic Engine (RCL2–3) ← current
-Specialist roles: miners, haulers, workers, warlock.
+### Layer 1 — Economic Engine (RCL2–3)
+Specialist roles: miners, thralls, clanrats, warlock engineer.
 Source containers and roads being built.
 Transition to Layer 2 when source containers are built and RCL4 is approaching.
 
-### Layer 2 — Infrastructure (RCL4–5)
-Storage, tower network, source containers fully operational.
+### Layer 2 — Infrastructure (RCL4–5) ← current
+Controller container online. Extensions at or near RCL cap.
+Warlock Engineer permanently seated.
 Hauler routing shifts from dropped pile → container → storage → consumers.
-Not yet implemented.
+Road repair system needed (roads decay without active maintenance).
 
 ### Layer 3 — Expansion (RCL6+)
 Remote mining, multi-room claims, military.
@@ -48,9 +111,20 @@ Act      → warren.act.js       executes the plan (only place side effects occu
 
 ## Creep Roles
 
+### Hierarchy (lowest to highest caste)
+```
+Slave → Thrall → Clanrat → Miner / Warlock Engineer
+                         → Stormvermin / Gutter Runner / Jezzail / Rat Ogre (combat, not yet implemented)
+```
+
+---
+
 ### Slave (`rat.slave.js`)
 RCL1 generalist. Harvests, upgrades, builds. Replaced by specialists at RCL2.
+Also used in emergency recovery when miners are down (promoted temporarily).
 Body: `[WORK×N, CARRY, MOVE]` — scales with available energy.
+
+---
 
 ### Miner (`rat.miner.js`)
 Sits on a source tile and harvests every tick. Never moves after seating.
@@ -58,32 +132,83 @@ Bypasses job board — hardcoded behavior.
 Body: maximize WORK up to 5 (10 energy/tick = full source drain), 1 MOVE.
 Pin type: **hard pin** — traffic manager never displaces a miner.
 
-### Hauler (`rat.hauler.js`)
-Moves energy from dropped piles / containers to consumers.
-No WORK parts — pure transport.
-Delivery priority: spawn → extensions → controller container → towers.
-Body: equal CARRY+MOVE pairs, scales with energy.
-**Uses `room.find` + `findClosestByRange` for all consumer lookups.**
-`findClosestByPath` was deliberately removed — it returns null silently on
-congested paths, causing haulers to silently skip delivery targets.
+---
 
-### Worker (`rat.worker.js`)
-Builds construction sites and upgrades controller.
-Draws energy from dropped piles and tombstones.
-Uses job board for task assignment.
+### Thrall (`rat.thrall.js`)
+*Formerly: hauler*
+Bound servant of the warren. Pure energy transport — no WORK parts.
+Picks up dropped energy and delivers it to consumers.
+
+Pickup priority:   tombstones → ruins → dropped pile (largest first)
+Delivery priority: spawn → extensions → controller container → towers
+
+**Do NOT withdraw from spawn.** Thralls fill the spawn; they must never drain it.
+Uses `room.find` + `findClosestByRange` for all consumer lookups.
+`findClosestByPath` was deliberately removed — it returns null silently on
+congested paths, causing thralls to silently skip delivery targets.
+
+Body: equal CARRY+MOVE pairs, scales with energy.
+
+---
+
+### Clanrat (`rat.clanrat.js`)
+*Formerly: worker*
+Rank-and-file backbone of the warren. Builds construction sites and upgrades
+the controller. Does NOT harvest from sources directly. Does NOT withdraw from spawn.
+
+Gather priority: controller container (if nearby) → tombstones → ruins →
+dropped pile → wait near source
+
+If all gather sources are dry and clanrat holds any energy, it flips to spending
+mode rather than idling (partial-load edge case).
+
+Emergency mode: if miners are down, clanrats harvest directly and feed the spawn
+so the director can recover the miner population.
+
 Body: equal WORK+CARRY+MOVE sets, scales with energy.
+
+---
 
 ### Warlock Engineer (`rat.warlock.js`)
 Dedicated upgrader. Stands ON the controller container tile permanently.
 From that position it can both withdraw (range 0) and upgrade (range ≤ 3).
 Zero travel between refuel and upgrade once seated.
 Bypasses job board — hardcoded behavior.
-Energy priority: container (if has energy) → dropped near controller →
-tombstones near controller → spawn surplus (>250 only).
-**Key behavior: checks `container.store[RESOURCE_ENERGY] > 0` before
-committing to walk to container. Empty container falls through immediately
-to other sources — does not pin and wait.**
+One per warren. Only spawns after controller container exists.
+
+Energy priority:
+1. Controller container (stand on it, withdraw directly)
+2. Dropped energy — whole room if no container, range 8 from controller if container exists
+3. Tombstones — same radius logic
+4. Spawn — **DIRE EMERGENCY ONLY** (>280 of 300 capacity)
+
+The spawn threshold of >280 is intentionally set so high it almost never fires.
+The warlock gets this one last-resort tap because it is pinned at the controller
+and physically cannot go elsewhere for energy.
+
+**Key behavior:** checks `container.store[RESOURCE_ENERGY] > 0` before committing
+to walk to the container. Empty container falls through immediately — does not
+pin and wait.
+
 Body: maximize WORK, fixed 2 CARRY + 2 MOVE overhead.
+
+---
+
+### Stormvermin (`rat.stormvermin.js`) — STUB
+Elite melee shock troops. Heavy ATTACK, TOUGH for survivability.
+**Not yet implemented.**
+
+### Gutter Runner (`rat.gutterrunner.js`) — STUB
+Fast scouts and raiders. High MOVE ratio, hit-and-run attacks.
+**Not yet implemented.**
+
+### Jezzail (`rat.jezzail.js`) — STUB
+Long-range snipers. Maximize RANGED_ATTACK, kite to maintain distance.
+**Not yet implemented.**
+
+### Rat Ogre (`rat.ratogre.js`) — STUB
+Massive brutes. Heavy ATTACK and TOUGH, minimal MOVE. No retreat.
+**Not yet implemented.**
 
 ---
 
@@ -92,47 +217,56 @@ Body: maximize WORK, fixed 2 CARRY + 2 MOVE overhead.
 ### `spawn.bodies.js`
 Purely formulaic body recipes — no discrete tiers.
 Each role scales continuously with available energy:
+- **Slave**: `[WORK×N, CARRY, MOVE]` — stacks WORK with remaining energy
 - **Miner**: `floor((energy - 50) / 100)` WORK parts, capped at 5, plus 1 MOVE
-- **Hauler**: `floor(energy / 100)` CARRY+MOVE pairs
-- **Worker**: `floor(energy / 200)` WORK+CARRY+MOVE sets
+- **Thrall**: `floor(energy / 100)` CARRY+MOVE pairs
+- **Clanrat**: `floor(energy / 200)` WORK+CARRY+MOVE sets
 - **Warlock**: maximize WORK with 200 energy overhead reserved for 2 CARRY+2 MOVE
-
-This means a 550-energy spawn produces exactly the same body as the old top tier,
-but a 450-energy spawn also produces a good body instead of falling through to
-a 3-part minimum. No thresholds to miscalibrate.
+- **Combat roles**: stubbed with minimum viable bodies pending implementation
 
 ### `spawn.director.js`
 Priority order:
-1. Emergency slave (warren empty) — no threshold, uses `energyAvailable`
+1. Emergency slave (warren empty) — no threshold
 2. Miners — no threshold (dead miner stalls entire economy)
-3. Haulers — no threshold (**haulers fill extensions — gating them on extension fill creates a deadlock**)
-4. Workers — waits for `energyAvailable / energyCapacityAvailable >= 0.9`
+3. Thralls — no threshold (**thralls fill extensions — gating them creates a deadlock**)
+4. Clanrats — waits for `energyAvailable / energyCapacityAvailable >= 0.9`
 5. Warlock — same threshold, only spawns when controller container exists
 
-Hauler target:
+Thrall target:
 - Source containers present: 1 per source container
-- RCL3+, no containers: 2 haulers (10+ extensions overwhelm a single hauler)
-- RCL2, no containers: 1 hauler
+- RCL3+, no containers: 2 thralls (10+ extensions overwhelm a single thrall)
+- RCL2, no containers: 1 thrall
 
-Worker target:
+Clanrat target:
 - Base: `sources * 2`
-- Bonus: `+sources` when energy is capped (economy saturated, add spending capacity)
+- Bonus: `+sources` when energy is capped (economy saturated)
 - Cap: `sources * 4`
 
 **Known limitation / next redesign:**
-Creep count is the wrong metric at higher RCL. What matters is:
-- Total WORK parts mining vs `sources * 5` (full drain)
-- Total CARRY capacity hauling vs demand
-- Total WORK parts spending (building + upgrading) vs energy production rate
-  See "What's Next" section — this is the priority redesign for the next session.
+Creep count is the wrong metric at higher RCL. What matters is total parts.
+See "What's Next" — parts-based spawn director is the priority redesign.
+
+---
+
+## Spawn Buffer Rules
+
+The spawn's 300-energy buffer is **sacrosanct**. Violating it causes undersized
+replacement creeps and stalls economic recovery.
+
+| Role      | May withdraw from spawn? |
+|-----------|--------------------------|
+| Slave     | Yes (emergency harvest → transfer, never withdraw) |
+| Miner     | Never |
+| Thrall    | Never (thralls fill it, never drain it) |
+| Clanrat   | **Never** |
+| Warlock   | Yes — DIRE EMERGENCY ONLY (>280 stored) |
 
 ---
 
 ## Traffic Manager (`traffic.js`)
 
 All movement is coordinated through the traffic layer.
-No rat file ever calls `creep.moveTo()` directly — all movement goes through
-`Traffic.requestMove()` or `Traffic.pin()`.
+No rat file ever calls `creep.moveTo()` directly.
 
 ### API
 ```javascript
@@ -142,152 +276,164 @@ Traffic.resolve()                           // called once after all creep ticks
 ```
 
 ### Pin Types
-**Hard pin** (`_pins` only): explicit `pin()` call. Miners and warlocks.
-Traffic never routes through, never displaces.
-
-**Soft pin** (`_pins` + `_softPins`): auto-assigned in `resolve()` to any creep
-that registered no intent. Idle rats. A motivated moving creep that needs their
-tile will push them to any adjacent free tile rather than waiting.
+**Hard pin**: explicit `pin()` call. Miners and warlocks. Never displaced.
+**Soft pin**: auto-assigned in `resolve()` to any creep that registered no intent.
+A motivated moving creep that needs their tile will push them to any adjacent
+free tile rather than waiting.
 
 ### Path Caching
 Paths stored in `creep.memory._trafficPath` as `{x,y}` arrays.
 Cache invalidated when:
 - Target changes
-- Creep is pushed off-path (next step no longer adjacent)
-- Next step has **any** pin on it (hard or soft) — recalculate for fresh routing
+- Creep is pushed off-path
+- Next step has any pin on it (hard or soft)
 - Next step blocked by structure or construction site
-
-**Important:** Both hard and soft pins now invalidate the cache. Previously
-only hard pins did. Stale paths that routed around a now-moved soft-pinned creep
-were causing convoys to follow wrong routes for many ticks.
 
 ### CostMatrix
 - Roads: cost 1
 - Plains: cost 2
-- Swamp: cost 5 (not 10 — high swamp cost funnels all creeps into the same narrow plain corridor)
-- Blocking structures / sites: cost 0xff
+- Swamp: cost 5
+- Blocking structures/sites: cost 0xff
 - Hard + soft pinned tiles: cost 20
-- **Creeps with active move intents: cost 10** — later-ticking creeps see existing
-  traffic and naturally compute slightly different paths, preventing all creeps
-  from piling onto the exact same road tiles
+- Creeps with active move intents: cost 10
 
-### Stuck Detection & Fallback
-Every tick a creep registers a move intent, its position is compared to
-`creep.memory._trafficLastPos`. If unchanged for `STUCK_THRESHOLD = 3` ticks,
-a `FALLBACK_DURATION = 3` tick countdown begins.
-During fallback: native `creep.moveTo(ignoreCreeps: true)` with red path visualization.
-After fallback: path cache wiped, traffic resumes with a fresh calculation.
-Memory keys: `_trafficLastPos`, `_trafficStuck`, `_trafficFallback`
+### Stuck Detection
+If position unchanged for `STUCK_THRESHOLD = 3` ticks, a `FALLBACK_DURATION = 3`
+tick countdown begins. During fallback: native `moveTo(ignoreCreeps: true)` with
+red path visualization. After fallback: cache wiped, traffic resumes fresh.
 
 ---
 
 ## Planners
 
-All planners follow the same discipline:
-- One construction site placed per call (at most)
-- Self-guarding: check for existing structures/sites before placing
-- Energy ratio guard: don't build during economic recovery
-- Called by `warren.act.js` based on `_plan` flags
+All planners: one site placed at a time, self-guarding, energy ratio guarded,
+called by `warren.act.js` only.
 
 ### `plan.extensions.js`
 Places extensions up to RCL cap. Energy ratio guard: 0.7.
-Placement logic: spiral outward from spawn, pick buildable tiles.
+Uses passability guard — hard rejects tiles with fewer than 2 open cardinal
+neighbours. Prevents impassable clusters.
 
 ### `plan.containers.js`
-Places one controller container on the tile adjacent to the controller
-that is **closest to spawn** (minimizes hauler travel distance).
-Warlock stands ON this tile permanently.
-**Bug fixed:** previous version sorted by negative distance ascending = farthest
-tile first. Now sorts by positive distance ascending = closest tile first.
+Controller container placed on the tile adjacent to the controller closest to
+spawn (minimizes thrall travel). Warlock stands ON this tile permanently.
 
 ### `plan.roads.js`
-Places road sites along spawn→source and spawn→controller paths.
-One site at a time, source paths complete before controller path starts.
-**Uses `PathFinder.search` with the same CostMatrix as `traffic.js`** —
-this guarantees roads are placed on tiles creeps actually walk, not tiles
-a different algorithm happens to prefer. Previous version used `room.findPath`
-which sometimes disagreed with the traffic manager's routing.
-Paths cached in `room.memory._roadPaths` (terrain is static).
+Roads along spawn→source and spawn→controller paths.
+Uses `PathFinder.search` with the same CostMatrix as `traffic.js` — roads are
+placed on tiles creeps actually walk.
+
+### `plan.scoring.js`
+Scoring logic for extension placement. Passability guard replaces the old
+clustering feedback loop that caused impassable walls.
 
 ---
 
-## Visual Layer (`rat.visual.js`)
+## Job Board (`job.board.js`)
 
-Draws colored role indicators above each creep every tick via `RoomVisual`.
-Pure cosmetic — no game state, no memory, no side effects.
+Fully ephemeral — reset and repopulated every tick.
+No stale job assignments survive between ticks.
 
-| Symbol | Color  | Role    |
-|--------|--------|---------|
-| ⚙      | Grey   | Slave   |
-| ⛏      | Gold   | Miner   |
-| ⬆      | Blue   | Hauler  |
-| 🔨     | Green  | Worker  |
-| ⚡     | Purple | Warlock |
+Job types: `HARVEST`, `BUILD`, `UPGRADE`, `REPAIR`, `HAUL`, `DEFEND`
 
-Called from `Creep.prototype.tick` in `rat.js` before role dispatch.
+Role preferences are wired in `rolePreference()`:
+- Miners strongly prefer HARVEST
+- Thralls strongly prefer HAUL
+- Clanrats prefer BUILD, then UPGRADE
+- Clanrats are explicitly excluded from HARVEST (they have their own gather phase)
+
+---
+
+## Instrumentation (`warren.blackbox.js`)
+
+Single file. Two modes. One Memory key (`Memory.blackbox`).
+
+**Rolling recorder** — always-on, 5-bucket rolling window (300 ticks total).
+**Profile run** — manual fixed 300-tick snapshot with completion alert.
+
+Both modes share: creep registry, event log, anomaly log. No duplication.
+Data aggregated into 60-tick buckets — low Memory footprint.
+
+Anomaly auto-detection (every 10 ticks):
+- Energy drops >25% below bucket average
+- Dropped energy spike >500
+- Miner count falls below source count
+
+Anomaly log stores the last 5 full frozen snapshots: every creep with TTL and
+store contents, container fills, spawn state — everything needed to reconstruct
+what was happening at the moment things went wrong.
+
+**Always start the blackbox after a code deploy:**
+```javascript
+blackbox()
+```
 
 ---
 
 ## Key Design Rules
 
 **`room.find` not `findClosestByPath` for target lookup.**
-`findClosestByPath` silently returns null when the room is congested and it
-cannot pathfind to the target. Always use `room.find` + `findClosestByRange`
-to get the object reference. Let the traffic manager handle actual navigation.
+`findClosestByPath` silently returns null on congested paths. Always use
+`room.find` + `findClosestByRange`. Let traffic handle navigation.
 
 **`energyAvailable` not `energyCapacityAvailable` for body cost checks.**
-Capacity is misleading during recovery (extensions empty). Always pass
-`energyAvailable` to body recipes so spawns never request a body they can't afford.
+Always pass `energyAvailable` to body recipes — never request a body that
+can't be afforded with current energy.
 
-**Miners and haulers bypass the spawn energy threshold.**
-They ARE the pipeline that fills extensions. Gating them creates a deadlock.
+**Miners and thralls bypass the spawn energy threshold.**
+They ARE the pipeline. Gating them creates a deadlock.
+
+**The spawn buffer is sacrosanct.**
+Clanrats never touch it. Warlock only above 280/300. See spawn buffer rules table.
 
 **One construction site at a time.**
-Prevents workers from spreading effort across a large backlog and ensures
-infrastructure completes in priority order.
+Ensures infrastructure completes in priority order.
 
 **Hard pins never cleared by traffic.**
 Only the owning rat clears its pin by not calling `Traffic.pin()` in a given tick.
-Traffic manager never touches hard pin state.
 
 ---
 
 ## What's Next
 
-### Priority 1 — Parts-based spawn director (next session)
-**This is the most important redesign.**
+### Priority 1 — Road repair
+**Roads are currently decaying with no repair system.**
+`job.board.js` needs `publishRepairJobs()` targeting roads below 50% health.
+Clanrats pick up repair jobs between build assignments.
+Without this every road eventually disappears, slowing all creeps permanently.
+
+### Priority 2 — Parts-based spawn director
+**Most important architectural redesign.**
 Creep count is the wrong metric at RCL3+. Replace head-count targets with
 parts-based targets:
 - Miner: spawn until `sum(miner WORK parts) >= sources * 5`
-- Hauler: spawn until `sum(hauler CARRY parts) >= carryDemand` (function of distance + production rate)
-- Worker: spawn until `sum(worker WORK parts) >= workDemand`
-- Emergent behavior: one big creep replaces two small ones automatically as
-  energy capacity grows. Fewer creeps = less traffic = better throughput.
+- Thrall: spawn until `sum(thrall CARRY parts) >= carryDemand`
+- Clanrat: spawn until `sum(clanrat WORK parts) >= workDemand`
+  Emergent behavior: one big creep naturally replaces two small ones as energy
+  capacity grows. Fewer creeps = less traffic = better throughput.
 
-### Priority 2 — Source containers
-Eliminates energy decay. Miners drop into containers, haulers withdraw cleanly.
-Once built, hauler routing changes: source container → consumer (no dropped-pile hunting).
-`spawn.director.js` already auto-scales haulers to 1-per-source-container when detected.
-Needs: `plan.sourceContainers.js`, miner behavior update to sit on container tile,
-hauler withdrawal priority update.
+### Priority 3 — Source containers
+Eliminates energy decay at sources. Miners drop into containers, thralls withdraw
+cleanly. `spawn.director.js` already auto-scales thrall target to 1-per-source-
+container when detected. Needs: `plan.sourceContainers.js`, miner behavior update
+to sit on container tile, thrall withdrawal priority update.
 
-### Priority 3 — Tower
-One auto-placed tower per warren at RCL3.
-Simple: `plan.tower.js` places site near spawn, hauler delivery already wired for towers
-(priority 4 in `rat.hauler.js`), `warren.act.js` needs auto-attack logic.
+### Priority 4 — Tower (RCL3)
+One auto-placed tower per warren. Thrall delivery already wired for towers
+(priority 4 in `rat.thrall.js`). Needs: `plan.tower.js`, auto-attack in `warren.act.js`.
 
-### Priority 4 — Storage (RCL4)
-Significant hauler routing redesign. All energy flows through storage.
-Haulers split into two types: source-haulers (container→storage) and
-demand-haulers (storage→consumers). Worth designing carefully before touching.
+### Priority 5 — Storage (RCL4)
+Significant thrall routing redesign. All energy flows through storage.
+Worth designing carefully — split thralls into source-thralls (container→storage)
+and demand-thralls (storage→consumers).
 
-### Priority 5 — Road polish
-Current roads follow the pathfinder's preferred route which can hug walls.
-Upgrade `plan.roads.js` to use a CostMatrix that penalizes building-adjacency,
-producing cleaner corridors with more space for creeps to pass each other.
+### Priority 6 — Military layer
+Stormvermin, Gutter Runner, Jezzail, Rat Ogre stubs exist.
+Bodies need implementing in `spawn.bodies.js`.
+Combat behavior needs implementing in each `rat.*.js` file.
+Spawn director needs military demand logic.
 
 ### Longer term
-- Remote mining (requires multi-room traffic coordination)
-- Military layer (defenders, healers, attack squads)
+- Remote mining (multi-room traffic coordination required)
 - Empire layer (claim flags, spawn placement, room prioritization)
 - Lab reactions / mineral processing
