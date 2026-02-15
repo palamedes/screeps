@@ -4,6 +4,7 @@
 //   console.log('Memory wiped');
 // }
 
+require('console');
 require('empire');
 require('warren');
 require('rat');
@@ -56,7 +57,7 @@ function cleanupMemory() {
 
 
 
-global.status = function () {
+global.status1 = function () {
   const report = {};
 
   report.time = Game.time;
