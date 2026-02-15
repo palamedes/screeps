@@ -13,7 +13,12 @@
  *   first — it's right there, zero travel cost. This covers both the upgrading
  *   case (worker stationed at controller) and the case where a worker happens
  *   to be nearby between jobs.
- *   Otherwise: tombstones → ruins → dropped pile → spawn fallback.
+ *   Otherwise: tombstones → ruins → dropped pile → wait near source.
+ *
+ * Workers do NOT withdraw from spawn. The spawn buffer must stay intact for
+ * spawning. Haulers fill it, miners produce it — workers have no business
+ * touching it. If all gather sources are dry, wait near the source for the
+ * next drop.
  *
  * Emergency mode: if miners are down, workers harvest directly and
  * feed the spawn so the director can recover the miner population.
@@ -101,8 +106,6 @@ Creep.prototype.runWorker = function () {
   // If worker is near the controller, prefer the controller container.
   // Checking proximity rather than job type because memory.job is null
   // at the start of the gathering phase (cleared when energy ran out).
-  // A worker standing at the controller shouldn't run across the map to
-  // the source drop pile when there's a full container right next to them.
   if (this.room.controller &&
     this.pos.inRangeTo(this.room.controller, WORKER_CONTAINER_USE_RANGE)) {
 
@@ -157,26 +160,16 @@ Creep.prototype.runWorker = function () {
     return;
   }
 
-  // Fallback: withdraw from spawn only if spawn has a strong surplus
-  // (never starve the spawn of energy needed for spawning)
-  const spawn = this.room.find(FIND_MY_SPAWNS)[0];
-  if (spawn && spawn.store[RESOURCE_ENERGY] > 250) {
-    if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-      Traffic.requestMove(this, spawn);
-    }
-    return;
-  }
-
   // Nothing to gather — spend whatever we're holding rather than idling.
   // Handles partial-load edge case: worker acquired a small amount of energy
-  // (below the fill threshold) and can't find more. Spend it rather than
-  // oscillating near the source with a useless trickle in store.
+  // (below the fill threshold) and can't find more.
   if (this.store[RESOURCE_ENERGY] > 0) {
     this.memory.working = true;
     return;
   }
 
-  // Nothing to pick up — wait near the closest source
+  // Truly nothing — wait near the closest source for the next drop.
+  // Do NOT withdraw from spawn. The spawn buffer is sacrosanct.
   const source = this.pos.findClosestByPath(FIND_SOURCES);
   if (source) {
     Traffic.requestMove(this, source, { range: 2 });
