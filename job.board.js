@@ -68,11 +68,11 @@ module.exports = {
     switch (job.type) {
 
       case 'HARVEST':
-        // Workers have their own gathering phase for picking up dropped energy.
+        // Clanrats have their own gathering phase for picking up dropped energy.
         // Harvesting directly from a source is miners and slaves only — letting
-        // workers harvest means they sit on sources instead of consuming the
-        // dropped pile, which disrupts the miner → hauler → worker energy chain.
-        return creep.memory.role !== 'worker' &&
+        // clanrats harvest means they sit on sources instead of consuming the
+        // dropped pile, which disrupts the miner → thrall → clanrat energy chain.
+        return creep.memory.role !== 'clanrat' &&
           creep.getActiveBodyparts(WORK) > 0;
 
       case 'BUILD':
@@ -109,11 +109,11 @@ module.exports = {
         if (job.type === 'HARVEST') return 500;
         return -200;
 
-      case 'hauler':
+      case 'thrall':
         if (job.type === 'HAUL') return 500;
         return -200;
 
-      case 'worker':
+      case 'clanrat':
         if (job.type === 'BUILD')   return 300;
         if (job.type === 'UPGRADE') return 100;
         return -50;
@@ -136,13 +136,11 @@ module.exports = {
 
   publishUpgradeJobs(room) {
     // When a Warlock Engineer is active AND build sites exist, restrict upgrade
-    // slots to 1 — workers should be building, not upgrading. The warlock covers
+    // slots to 1 — clanrats should be building, not upgrading. The warlock covers
     // RCL progression on its own.
     //
     // When there is nothing left to build, open upgrade slots fully so all idle
-    // workers pile onto the controller rather than standing around doing nothing.
-    // Without this, workers with no build jobs and slots=1 would have nothing
-    // to do and just idle near the controller burning ticks.
+    // clanrats pile onto the controller rather than standing around doing nothing.
     const warlockActive = Object.values(Game.creeps).some(c =>
       c.memory.homeRoom === room.name &&
       c.memory.role === 'warlock'
@@ -169,7 +167,7 @@ module.exports = {
 
       // Controller container is the Warlock Engineer's energy supply.
       // Getting it online unlocks continuous upgrade throughput, so it
-      // outranks extension sites in worker assignment priority.
+      // outranks extension sites in clanrat assignment priority.
       const isControllerContainer =
         site.structureType === STRUCTURE_CONTAINER &&
         room.controller &&

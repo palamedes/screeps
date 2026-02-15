@@ -17,9 +17,13 @@
  *   (Screeps deals damage from the front of the body array.)
  *
  * Part costs (for reference):
- *   WORK  = 100
- *   CARRY = 50
- *   MOVE  = 50
+ *   WORK   = 100
+ *   CARRY  = 50
+ *   MOVE   = 50
+ *   ATTACK = 80
+ *   RANGED_ATTACK = 150
+ *   TOUGH  = 10
+ *   HEAL   = 250
  */
 
 module.exports = {
@@ -67,14 +71,14 @@ module.exports = {
   },
 
   /**
-   * Hauler body — pure energy transport, no WORK parts.
+   * Thrall body — pure energy transport, no WORK parts.
    * Equal CARRY and MOVE so it moves at full speed when loaded.
    *
    * Formula: pairs of [CARRY + MOVE] = 100 each.
    * Each pair carries 50 energy per trip and moves without fatigue penalty.
    * Min viable: 100 energy → [CARRY, MOVE]
    */
-  hauler(energy) {
+  thrall(energy) {
     const pairs = Math.min(
       Math.floor(energy / 100),
       25  // 25 pairs = 50 parts (Screeps body part limit)
@@ -89,7 +93,7 @@ module.exports = {
   },
 
   /**
-   * Worker body — builds and upgrades.
+   * Clanrat body — builds and upgrades.
    * Balanced sets of [WORK + CARRY + MOVE] = 200 each.
    * Each set contributes 1 WORK action per trip and moves without penalty.
    *
@@ -97,7 +101,7 @@ module.exports = {
    * Ordering within array: all WORKs, then all CARRYs, then all MOVEs.
    * Min viable: 200 energy → [WORK, CARRY, MOVE]
    */
-  worker(energy) {
+  clanrat(energy) {
     const sets = Math.min(
       Math.floor(energy / 200),
       16  // 16 sets = 48 parts, leaves 2 slots — stays safely under 50 limit
@@ -124,7 +128,7 @@ module.exports = {
    *   Remaining → WORK parts
    *
    * Min viable: 300 energy → [WORK, CARRY, CARRY, MOVE, MOVE]
-   * At 800 energy → [WORK×6, CARRY×2, MOVE×2] (same as old hardcoded top tier)
+   * At 800 energy → [WORK×6, CARRY×2, MOVE×2]
    */
   warlock(energy) {
     const CARRY_COUNT = 2;
@@ -143,6 +147,42 @@ module.exports = {
     for (let i = 0; i < CARRY_COUNT; i++) body.push(CARRY);
     for (let i = 0; i < MOVE_COUNT; i++) body.push(MOVE);
     return body;
+  },
+
+  /**
+   * Stormvermin body — @TODO
+   * Elite melee shock troops. Heavy ATTACK, TOUGH for survivability, enough MOVE.
+   */
+  stormvermin(energy) {
+    // @TODO implement
+    return [ATTACK, MOVE];
+  },
+
+  /**
+   * Gutter Runner body — @TODO
+   * Fast scout/raider. High MOVE ratio, some ATTACK and RANGED_ATTACK.
+   */
+  gutterrunner(energy) {
+    // @TODO implement
+    return [MOVE, MOVE, ATTACK];
+  },
+
+  /**
+   * Jezzail body — @TODO
+   * Long-range sniper. Maximize RANGED_ATTACK, enough MOVE to reposition.
+   */
+  jezzail(energy) {
+    // @TODO implement
+    return [RANGED_ATTACK, MOVE];
+  },
+
+  /**
+   * Rat Ogre body — @TODO
+   * Big dumb muscle. Massive ATTACK and TOUGH, minimal MOVE.
+   */
+  ratogre(energy) {
+    // @TODO implement
+    return [TOUGH, ATTACK, MOVE];
   },
 
 };

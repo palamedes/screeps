@@ -7,23 +7,23 @@
  * Spawn priority order (RCL2+):
  *   1. Emergency slave if warren is completely empty
  *   2. Miners until all sources are covered — spawns immediately (no threshold)
- *   3. Haulers up to haulerTarget         — spawns immediately (no threshold)
- *   4. Workers up to workerTarget         — waits for SPAWN_ENERGY_THRESHOLD
- *   5. Warlock Engineer                   — waits for SPAWN_ENERGY_THRESHOLD
+ *   3. Thralls up to thrallTarget          — spawns immediately (no threshold)
+ *   4. Clanrats up to clanratTarget        — waits for SPAWN_ENERGY_THRESHOLD
+ *   5. Warlock Engineer                    — waits for SPAWN_ENERGY_THRESHOLD
  *
- * Miners and haulers bypass the energy threshold because they ARE the pipeline
+ * Miners and thralls bypass the energy threshold because they ARE the pipeline
  * that fills extensions. Gating them on extension fill % creates a deadlock.
  *
- * Hauler target formula:
+ * Thrall target formula:
  *   Source containers present:  1 per source container (Layer 2 pipeline)
- *   RCL3+, no containers:       2 haulers
+ *   RCL3+, no containers:       2 thralls
  *     At RCL3 there are 10+ extensions (600+ energy to fill) plus spawn plus
- *     controller container. One hauler cannot make enough round trips to keep
- *     everything stocked. Two haulers split the delivery burden.
- *   RCL2, no containers:        1 hauler
- *     5 extensions, 300-550 capacity. One hauler is enough.
+ *     controller container. One thrall cannot make enough round trips to keep
+ *     everything stocked. Two thralls split the delivery burden.
+ *   RCL2, no containers:        1 thrall
+ *     5 extensions, 300-550 capacity. One thrall is enough.
  *
- * Worker target formula:
+ * Clanrat target formula:
  *   Base:  sources * 2      (minimum viable spending capacity)
  *   Bonus: +sources         (if energy is capped — economy saturated)
  *   Cap:   sources * 4      (hard ceiling)
@@ -37,8 +37,8 @@
 
 const Bodies = require('spawn.bodies');
 
-// Wait until extensions are this full before spawning workers and warlock.
-// Miners and haulers are exempt — they fill the extensions.
+// Wait until extensions are this full before spawning clanrats and warlock.
+// Miners and thralls are exempt — they fill the extensions.
 const SPAWN_ENERGY_THRESHOLD = 0.9;
 
 module.exports = {
@@ -63,10 +63,10 @@ module.exports = {
     const sources = room.find(FIND_SOURCES);
     const energy  = room.energyAvailable;
 
-    const miners   = creeps.filter(c => c.memory.role === 'miner');
-    const haulers  = creeps.filter(c => c.memory.role === 'hauler');
-    const workers  = creeps.filter(c => c.memory.role === 'worker');
-    const warlocks = creeps.filter(c => c.memory.role === 'warlock');
+    const miners    = creeps.filter(c => c.memory.role === 'miner');
+    const thralls   = creeps.filter(c => c.memory.role === 'thrall');
+    const clanrats  = creeps.filter(c => c.memory.role === 'clanrat');
+    const warlocks  = creeps.filter(c => c.memory.role === 'warlock');
 
     // RCL1 — slaves only
     if (rcl === 1) {
@@ -76,7 +76,7 @@ module.exports = {
       return;
     }
 
-    // --- No energy threshold below this line for miners and haulers ---
+    // --- No energy threshold below this line for miners and thralls ---
 
     // Miners: immediate — dead miner = economy stalled
     if (miners.length < sources.length) {
@@ -84,41 +84,41 @@ module.exports = {
       return;
     }
 
-    // Hauler target:
+    // Thrall target:
     //   Source containers present → 1 per container (Layer 2 pipeline)
-    //   RCL3+ no containers       → 2 (10+ extensions overwhelms a single hauler)
-    //   RCL2  no containers       → 1 (5 extensions, one hauler sufficient)
+    //   RCL3+ no containers       → 2 (10+ extensions overwhelms a single thrall)
+    //   RCL2  no containers       → 1 (5 extensions, one thrall sufficient)
     const sourceContainerCount = room.find(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
         sources.some(src => s.pos.inRangeTo(src, 2))
     }).length;
 
-    const haulerTarget = sourceContainerCount > 0
+    const thrallTarget = sourceContainerCount > 0
       ? sourceContainerCount
       : rcl >= 3 ? 2 : 1;
 
-    // Haulers: immediate — they fill extensions, can't gate on what they produce
-    if (haulers.length < haulerTarget) {
-      this.spawnRat(spawn, 'hauler', Bodies.hauler(energy));
+    // Thralls: immediate — they fill extensions, can't gate on what they produce
+    if (thralls.length < thrallTarget) {
+      this.spawnRat(spawn, 'thrall', Bodies.thrall(energy));
       return;
     }
 
     // --- Energy threshold applies to everything below ---
-    // Miners and haulers are live so extensions are being filled right now.
-    // Wait for near-full extensions before spending spawn capacity on workers.
+    // Miners and thralls are live so extensions are being filled right now.
+    // Wait for near-full extensions before spending spawn capacity on clanrats.
     const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
     if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
-    // Worker target
-    const energyCapped = room.energyAvailable === room.energyCapacityAvailable;
-    const baseWorkers  = sources.length * 2;
-    const bonusWorkers = energyCapped ? sources.length : 0;
-    const workerCap    = sources.length * 4;
-    const workerTarget = Math.min(baseWorkers + bonusWorkers, workerCap);
+    // Clanrat target
+    const energyCapped  = room.energyAvailable === room.energyCapacityAvailable;
+    const baseClanrats  = sources.length * 2;
+    const bonusClanrats = energyCapped ? sources.length : 0;
+    const clanratCap    = sources.length * 4;
+    const clanratTarget = Math.min(baseClanrats + bonusClanrats, clanratCap);
 
-    if (workers.length < workerTarget) {
-      this.spawnRat(spawn, 'worker', Bodies.worker(energy));
+    if (clanrats.length < clanratTarget) {
+      this.spawnRat(spawn, 'clanrat', Bodies.clanrat(energy));
       return;
     }
 

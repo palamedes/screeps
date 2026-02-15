@@ -1,26 +1,27 @@
 /**
- * rat.worker.js
+ * rat.clanrat.js
  *
- * Worker behavior — builds construction sites and upgrades the controller.
- * Workers do NOT harvest. They pick up dropped energy then spend it.
+ * Clanrat behavior — builds construction sites and upgrades the controller.
+ * The backbone rank-and-file of the warren. Above slaves in the hierarchy,
+ * below the specialist castes. Does the actual work of expanding the warren.
+ *
+ * Clanrats do NOT harvest. They pick up dropped energy then spend it.
  *
  * State toggle (memory.working):
  *   false = gathering energy (pickup dropped resources)
  *   true  = spending energy (running assigned job)
  *
  * Gathering priority:
- *   If worker is near the controller (range 5), check the controller container
- *   first — it's right there, zero travel cost. This covers both the upgrading
- *   case (worker stationed at controller) and the case where a worker happens
- *   to be nearby between jobs.
+ *   If clanrat is near the controller (range 5), check the controller container
+ *   first — it's right there, zero travel cost.
  *   Otherwise: tombstones → ruins → dropped pile → wait near source.
  *
- * Workers do NOT withdraw from spawn. The spawn buffer must stay intact for
- * spawning. Haulers fill it, miners produce it — workers have no business
+ * Clanrats do NOT withdraw from spawn. The spawn buffer must stay intact for
+ * spawning. Thralls fill it, miners produce it — clanrats have no business
  * touching it. If all gather sources are dry, wait near the source for the
  * next drop.
  *
- * Emergency mode: if miners are down, workers harvest directly and
+ * Emergency mode: if miners are down, clanrats harvest directly and
  * feed the spawn so the director can recover the miner population.
  *
  * All movement routed through Traffic.requestMove — no direct moveTo calls.
@@ -28,10 +29,10 @@
 
 const Traffic = require('traffic');
 
-const CONTROLLER_CONTAINER_RANGE = 3;  // must match plan.containers.js placement range
-const WORKER_CONTAINER_USE_RANGE  = 5;  // how close a worker must be to prefer the container
+const CONTROLLER_CONTAINER_RANGE  = 3;  // must match plan.containers.js placement range
+const CLANRAT_CONTAINER_USE_RANGE = 5;  // how close a clanrat must be to prefer the container
 
-Creep.prototype.runWorker = function () {
+Creep.prototype.runClanrat = function () {
 
   const sources = this.room.find(FIND_SOURCES);
 
@@ -42,7 +43,7 @@ Creep.prototype.runWorker = function () {
   );
 
   // --- Emergency Recovery Mode ---
-  // Miners are down. Workers become harvesters temporarily to keep
+  // Miners are down. Clanrats become harvesters temporarily to keep
   // the spawn fed so the director can spawn new miners.
   if (miners.length < sources.length) {
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
@@ -78,7 +79,7 @@ Creep.prototype.runWorker = function () {
   }
 
   // --- Job Validation ---
-  // Clear any job type a worker should never be running.
+  // Clear any job type a clanrat should never be running.
   // Can happen when a slave promotes mid-job and inherits a stale HARVEST.
   if (this.memory.job && this.memory.job.type === 'HARVEST') {
     this.memory.job = null;
@@ -103,11 +104,11 @@ Creep.prototype.runWorker = function () {
 
   // --- Gathering Phase ---
 
-  // If worker is near the controller, prefer the controller container.
+  // If clanrat is near the controller, prefer the controller container.
   // Checking proximity rather than job type because memory.job is null
   // at the start of the gathering phase (cleared when energy ran out).
   if (this.room.controller &&
-    this.pos.inRangeTo(this.room.controller, WORKER_CONTAINER_USE_RANGE)) {
+    this.pos.inRangeTo(this.room.controller, CLANRAT_CONTAINER_USE_RANGE)) {
 
     const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
       filter: s =>
@@ -161,7 +162,7 @@ Creep.prototype.runWorker = function () {
   }
 
   // Nothing to gather — spend whatever we're holding rather than idling.
-  // Handles partial-load edge case: worker acquired a small amount of energy
+  // Handles partial-load edge case: clanrat acquired a small amount of energy
   // (below the fill threshold) and can't find more.
   if (this.store[RESOURCE_ENERGY] > 0) {
     this.memory.working = true;

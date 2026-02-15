@@ -15,16 +15,16 @@
  *   1. Controller container (stand on it, withdraw directly)
  *   2. Dropped energy — near controller if container exists, whole room if not.
  *      Early RCL2 has no container yet and miners drop at source tiles, so
- *      restricting search to controller range 5 means the warlock sees nothing.
+ *      restricting search to controller range means the warlock sees nothing.
  *   3. Tombstones — same radius logic as dropped energy
- *   4. Spawn surplus (last resort, >150 only)
+ *   4. Spawn — DIRE EMERGENCY ONLY (> 280 of 300 capacity).
+ *      The spawn buffer must stay intact. Thralls fill it, miners produce it.
+ *      This threshold is so high it almost never triggers in normal operation.
  *
  * KEY FIX 1: Empty container falls through immediately to other sources.
  * KEY FIX 2: Dropped/tombstone search covers whole room when no container exists.
- * KEY FIX 3: "Spend what you have" fallback — if gathering finds nothing but the
- *   warlock is holding any energy, flip to working rather than idling. The old code
- *   only flipped to working when completely full, so partial pickups caused the
- *   warlock to sit idle with energy in store.
+ * KEY FIX 3: Spend partial loads — flip to working if holding any energy and
+ *   gathering finds nothing, rather than sitting idle with energy in store.
  *
  * All movement routed through Traffic.requestMove / Traffic.pin.
  */
@@ -64,7 +64,6 @@ Creep.prototype.runWarlock = function () {
   })[0];
 
   // Priority 1: Container exists AND has energy — stand on it and withdraw.
-  // Explicitly check store amount before committing to walk there.
   if (container && container.store[RESOURCE_ENERGY] > 0) {
     if (this.pos.isEqualTo(container.pos)) {
       this.withdraw(container, RESOURCE_ENERGY);
@@ -76,7 +75,7 @@ Creep.prototype.runWarlock = function () {
   }
 
   // Priority 2: Dropped energy.
-  // If a container exists, stay near the controller (hauler is en route).
+  // If a container exists, stay reasonably near the controller (thrall is en route).
   // If NO container exists yet (early RCL2), search the whole room —
   // miners are dropping at source tiles which may be far from the controller.
   const droppedFilter = container
@@ -111,11 +110,8 @@ Creep.prototype.runWarlock = function () {
   }
 
   // Priority 4: Spawn — DIRE EMERGENCY ONLY.
-  // Threshold of > 280 out of 300 capacity means the spawn is essentially full
-  // and has genuine surplus above any reasonable spawn cost. This should almost
-  // never trigger in normal operation. Workers are forbidden from touching the
-  // spawn entirely — the warlock gets this one last-resort tap only because it
-  // is pinned at the controller and physically cannot go elsewhere.
+  // Threshold of > 280 out of 300 capacity means the spawn is essentially full.
+  // This should almost never trigger in normal operation.
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 280) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -126,15 +122,14 @@ Creep.prototype.runWarlock = function () {
 
   // --- Spend partial load rather than idling ---
   // If we've exhausted all gather options but are holding any energy,
-  // flip to working and spend it. The old code only flipped on getFreeCapacity() === 0,
-  // so partial pickups (e.g. 40/100) left the warlock idle with energy in store.
+  // flip to working and spend it rather than sitting idle.
   if (this.store[RESOURCE_ENERGY] > 0) {
     this.memory.working = true;
     return;
   }
 
   // Truly nothing available — hold position at container if built,
-  // otherwise wait near controller to be ready when hauler arrives.
+  // otherwise wait near controller to be ready when thrall arrives.
   if (container) {
     if (!this.pos.isEqualTo(container.pos)) {
       Traffic.requestMove(this, container.pos, { range: 0 });

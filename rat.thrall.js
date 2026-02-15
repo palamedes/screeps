@@ -1,8 +1,9 @@
 /**
- * rat.hauler.js
+ * rat.thrall.js
  *
- * Hauler behavior — picks up dropped energy and delivers it to consumers.
- * Haulers have no WORK parts. They only move energy around.
+ * Thrall behavior — picks up dropped energy and delivers it to consumers.
+ * Thralls are bound servants of the warren: no fighting, no building, pure transport.
+ * They have no WORK parts. They only move energy around.
  *
  * Pickup priority:   tombstones → ruins → dropped pile (largest first)
  * Delivery priority: spawn → extensions → controller container → towers
@@ -13,11 +14,11 @@
  *
  * KEY FIX: All consumer lookups now use room.find instead of findClosestByPath.
  * findClosestByPath returns null silently when the room is congested and it
- * cannot calculate a path to the target. This caused the hauler to think
+ * cannot calculate a path to the target. This caused the thrall to think
  * "no container found" and skip delivery entirely — the container was there,
  * but findClosestByPath gave up and returned null.
  * room.find always returns the object if it exists. The traffic manager
- * handles all actual pathing — hauler just needs the target reference.
+ * handles all actual pathing — thrall just needs the target reference.
  *
  * State toggle (memory.delivering):
  *   false = gathering (until store is full)
@@ -30,7 +31,7 @@ const Traffic = require('traffic');
 
 const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.containers.js
 
-Creep.prototype.runHauler = function () {
+Creep.prototype.runThrall = function () {
 
   // --- State Toggle ---
   if (this.store.getFreeCapacity() === 0) {
@@ -62,7 +63,6 @@ Creep.prototype.runHauler = function () {
     });
 
     if (extensions.length > 0) {
-      // Pick the closest by linear range — cheap, avoids findClosestByPath failure
       const extension = this.pos.findClosestByRange(extensions);
       if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, extension);
