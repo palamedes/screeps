@@ -4,12 +4,12 @@
 //   console.log('Memory wiped');
 // }
 
-require('console');
 require('empire');
 require('warren');
 require('rat');
 
-const Traffic = require('traffic');
+const Traffic  = require('traffic');
+const Profiler = require('warren.profiler');
 
 /**
  * Main game loop.
@@ -19,6 +19,9 @@ const Traffic = require('traffic');
 module.exports.loop = function () {
 
   cleanupMemory();
+
+  // Profiler runs first — captures CPU before any game logic runs
+  Profiler.tick();
 
   // Clear all movement intents and pins from last tick.
   // Must happen before any room or creep ticks register new ones.
@@ -53,4 +56,3 @@ function cleanupMemory() {
     }
   }
 }
-
