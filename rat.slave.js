@@ -4,6 +4,9 @@
  * Slave behavior — RCL1 bootstrap generalist.
  * Hardcoded two-phase loop: harvest → fill spawn → upgrade controller.
  *
+ * Promotes to 'clanrat' at RCL2. Any existing 'worker' creeps are handled
+ * by the rat.js backward-compat alias so they run clanrat logic until natural death.
+ *
  * All source lookups use room.find + findClosestByRange.
  * findClosestByPath is banned — silently returns null on congested paths.
  */
@@ -14,11 +17,11 @@ Creep.prototype.runSlave = function () {
 
   // --- Promotion Check ---
   if (this.room.controller && this.room.controller.level >= 2) {
-    this.memory.role = 'worker';
+    this.memory.role = 'clanrat'; // ← was 'worker', now correctly 'clanrat'
     delete this.memory.job;
     delete this.memory.working;
     delete this.memory.sourceId;
-    console.log(`[warren:${this.room.name}] slave ${this.name} promoted to worker`);
+    console.log(`[warren:${this.room.name}] slave ${this.name} promoted to clanrat`);
     return;
   }
 

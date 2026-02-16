@@ -16,6 +16,7 @@ Creep.prototype.tick = function () {
     case 'miner':        return this.runMiner();
     case 'thrall':       return this.runThrall();
     case 'clanrat':      return this.runClanrat();
+    case 'worker':       return this.runClanrat(); // ← backward compat: promoted slaves
     case 'slave':        return this.runSlave();
     case 'warlock':      return this.runWarlock();
     case 'stormvermin':  return this.runStormvermin();
@@ -56,8 +57,6 @@ Creep.prototype.runJob = function () {
       if (result === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, target);
       } else if (result !== OK) {
-        // Road at full health, or otherwise can't be repaired — drop job.
-        // The job board is ephemeral anyway; a healthy road won't be republished.
         this.memory.job = null;
       }
       break;
