@@ -15,7 +15,8 @@
 const JobBoard      = require('job.board');
 const SpawnDirector = require('spawn.director');
 require('plan.extensions');
-require('plan.containers');
+require('plan.container.controller');
+require('plan.container.source');
 require('plan.roads');
 require('plan.ramparts');
 require('plan.tower');
