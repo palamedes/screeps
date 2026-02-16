@@ -154,7 +154,14 @@ module.exports = {
       const config = DEADWEIGHT[creep.memory.role];
       if (!config) continue;
 
-      // Skip creeps that have taken combat damage — defense problem, not spawn quality
+      // Never suicide the last creep of this role.
+      // A weak thrall/miner is always better than none.
+      const sameRoleAlive = creeps.filter(
+        c => c.memory.role === creep.memory.role
+      ).length;
+      if (sameRoleAlive <= 1) continue;
+
+      // Skip creeps that have taken combat damage
       const hasCombatDamage = creep.body.some(b => b.hits < 100);
       if (hasCombatDamage) continue;
 
