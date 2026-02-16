@@ -69,12 +69,18 @@ Room.prototype.act = function () {
   }
 
   // --- Planners ---
+  // Planners are called in priority order. Each one places at most one site
+  // and self-guards against concurrent sites of the same type.
   if (plan.buildExtensions) {
     this.planExtensions();
   }
 
   if (plan.buildControllerContainer) {
     this.planControllerContainer();
+  }
+
+  if (plan.buildSourceContainers) {
+    this.planSourceContainers();
   }
 
   if (plan.buildRoads) {

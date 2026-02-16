@@ -46,26 +46,31 @@ module.exports = {
   },
 
   /**
-   * Miner body — sits on source, never moves after arrival.
-   * Maximize WORK parts (2 energy/tick each) with exactly 1 MOVE to walk there.
+   * Miner body — sits on source container, harvests into store, transfers to container.
+   * Maximize WORK parts (2 energy/tick each) with 1 CARRY + 1 MOVE.
    * Hard cap at 5 WORK — that's 10 energy/tick which exactly drains a source.
    * Beyond 5 WORK is pure waste.
    *
-   * Formula: reserve 50 for MOVE, rest → WORK parts, capped at 5.
-   * Min viable: 150 energy → [WORK, MOVE]
-   * Full drain:  550 energy → [WORK, WORK, WORK, WORK, WORK, MOVE]
+   * The 1 CARRY allows the miner to hold harvested energy and transfer it
+   * into the container beneath it. With 50 CARRY capacity, the store fills
+   * every 5 ticks and the transfer keeps energy flowing continuously.
+   *
+   * Formula: reserve 100 for CARRY+MOVE, rest → WORK parts, capped at 5.
+   * Min viable: 200 energy → [WORK, CARRY, MOVE]
+   * Full drain:  600 energy → [WORK×5, CARRY, MOVE]
    */
   miner(energy) {
-    const MOVE_COST = 50;
+    const OVERHEAD = 100;  // 1 CARRY + 1 MOVE
     const workCount = Math.min(
-      Math.floor((energy - MOVE_COST) / 100),
+      Math.floor((energy - OVERHEAD) / 100),
       5  // 5 WORK = 10 energy/tick = full source drain, more is wasteful
     );
 
-    if (workCount < 1) return [WORK, MOVE]; // absolute floor
+    if (workCount < 1) return [WORK, CARRY, MOVE]; // absolute floor
 
     const body = [];
     for (let i = 0; i < workCount; i++) body.push(WORK);
+    body.push(CARRY);
     body.push(MOVE);
     return body;
   },
@@ -123,8 +128,8 @@ module.exports = {
    *
    * Formula: reserve fixed overhead for CARRY + MOVE, stack WORK with the rest.
    *   2 CARRY = 100 (enough to make each container withdrawal worthwhile)
-   *   2 MOVE  = 100 (gets to controller, can nudge position if needed)
-   *   Overhead = 200 energy reserved
+   *   1 MOVE  = 50  (gets to controller; 2 MOVE was causing 30-tick swamp paralysis)
+   *   Overhead = 150 energy reserved
    *   Remaining → WORK parts
    *
    * Min viable: 250 energy → [WORK, CARRY, CARRY, MOVE]
@@ -133,7 +138,7 @@ module.exports = {
   warlock(energy) {
     const CARRY_COUNT = 2;
     const MOVE_COUNT  = 1;
-    const OVERHEAD    = (CARRY_COUNT * 50) + (MOVE_COUNT * 50); // 200
+    const OVERHEAD    = (CARRY_COUNT * 50) + (MOVE_COUNT * 50); // 150
 
     const workCount = Math.min(
       Math.floor((energy - OVERHEAD) / 100),

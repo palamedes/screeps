@@ -25,6 +25,7 @@ Room.prototype.decide = function () {
   this._plan = {
     buildExtensions:          false,
     buildControllerContainer: false,
+    buildSourceContainers:    false,
     buildRoads:               false,
     buildRamparts:            false,
     buildTower:               false,
@@ -77,6 +78,7 @@ Room.prototype.decide = function () {
       // Actively expanding: build everything, keep economy flowing.
       this._plan.buildExtensions          = true;
       this._plan.buildControllerContainer = true;
+      this._plan.buildSourceContainers    = true;
       this._plan.buildRoads               = true;
       this._plan.buildRamparts            = true;
       this._plan.buildTower               = snap.rcl >= 3;
@@ -99,6 +101,7 @@ Room.prototype.decide = function () {
       // Normal operation: maintain infrastructure and keep upgrading.
       this._plan.buildExtensions          = true;
       this._plan.buildControllerContainer = true;
+      this._plan.buildSourceContainers    = true;
       this._plan.buildRoads               = true;
       this._plan.buildRamparts            = true;
       this._plan.buildTower               = snap.rcl >= 3;
