@@ -154,16 +154,28 @@ module.exports = {
       const config = DEADWEIGHT[creep.memory.role];
       if (!config) continue;
 
-      // Don't suicide if we can't spawn even a minimal replacement
-      const energyFloor = DEADWEIGHT_ENERGY_FLOOR[creep.memory.role] || 200;
-      if (room.energyAvailable < energyFloor) continue;
+      // Skip creeps that have taken combat damage — defense problem, not spawn quality
+      const hasCombatDamage = creep.body.some(b => b.hits < 100);
+      if (hasCombatDamage) continue;
 
-      // Get ideal body at full room capacity
       const bodyFn = Bodies[creep.memory.role];
       if (!bodyFn) continue;
+
+      // Ideal body at full room capacity
       const idealBody = bodyFn(room.energyCapacityAvailable);
 
-      // Count key parts in ideal body (array of part type strings)
+      // Only suicide if we can afford to spawn the ideal replacement RIGHT NOW.
+      // If we can't, keep the weak creep working — a bad thrall is better than no thrall.
+      const partCosts = {
+        work: 100, carry: 50, move: 50,
+        attack: 80, ranged_attack: 150,
+        tough: 10, heal: 250, claim: 600
+      };
+      const idealCost = idealBody.reduce(
+        (sum, part) => sum + (partCosts[part] || 0), 0
+      );
+      if (room.energyAvailable < idealCost) continue;
+
       const idealCount = idealBody.filter(p => p === config.part).length;
       if (idealCount === 0) continue;
 
