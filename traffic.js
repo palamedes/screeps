@@ -330,8 +330,6 @@ const Traffic = {
     // --- Phase 1: Active fallback ---
     // If _trafficFallback > 0 we are mid-rescue. Keep using moveTo until the
     // countdown expires, then hand back to normal traffic control.
-    // The creep gets FALLBACK_DURATION full ticks to bulldoze clear of whatever
-    // jammed it before we go back to being polite about other creeps.
     if (creep.memory._trafficFallback > 0) {
       creep.memory._trafficFallback--;
       creep.moveTo(targetPos.x, targetPos.y, {
@@ -345,9 +343,14 @@ const Traffic = {
     // --- Phase 2: Stuck detection ---
     // Compare current position to last tick. If unchanged for STUCK_THRESHOLD
     // consecutive ticks, traffic's own resolution has failed — trigger fallback.
+    // Only increment the stuck counter when fatigue is zero — a creep recovering
+    // from swamp fatigue hasn't moved but isn't stuck. Triggering fallback on
+    // fatigue wastes CPU on moveTo and causes unnecessary path cache wipes.
     const lastPos = creep.memory._trafficLastPos;
     if (lastPos && lastPos.x === creep.pos.x && lastPos.y === creep.pos.y) {
-      creep.memory._trafficStuck = (creep.memory._trafficStuck || 0) + 1;
+      if (creep.fatigue === 0) {
+        creep.memory._trafficStuck = (creep.memory._trafficStuck || 0) + 1;
+      }
     } else {
       // Moved successfully — reset both counters
       creep.memory._trafficStuck   = 0;
@@ -356,11 +359,10 @@ const Traffic = {
 
     if (creep.memory._trafficStuck >= STUCK_THRESHOLD) {
       // Wipe path cache so we recalculate fresh when fallback ends
-      creep.memory._trafficPath    = null;
-      creep.memory._trafficStuck   = 0;
+      creep.memory._trafficPath     = null;
+      creep.memory._trafficStuck    = 0;
       creep.memory._trafficFallback = FALLBACK_DURATION;
       console.log(`[traffic] ${creep.name} stuck — entering moveTo fallback for ${FALLBACK_DURATION} ticks`);
-      // Use moveTo this tick too — don't waste the trigger tick waiting
       creep.moveTo(targetPos.x, targetPos.y, {
         ignoreCreeps: true,
         reusePath:    5,
@@ -389,8 +391,7 @@ const Traffic = {
 
     // Invalidate if the next cached step is now blocked.
     // Structure/site blocks are always hard invalidations.
-    // Pin invalidation is ONLY for hard pins — soft-pinned creeps (idle rats)
-    // will be pushed out of the way by resolve(), so the path stays valid.
+    // Only hard pins force a reroute — soft-pinned creeps will be pushed aside.
     if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
       const next    = creep.memory._trafficPath[0];
       const nextKey = `${next.x},${next.y}`;
