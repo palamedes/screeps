@@ -127,12 +127,12 @@ module.exports = {
    *   Overhead = 200 energy reserved
    *   Remaining → WORK parts
    *
-   * Min viable: 300 energy → [WORK, CARRY, CARRY, MOVE, MOVE]
-   * At 800 energy → [WORK×6, CARRY×2, MOVE×2]
+   * Min viable: 250 energy → [WORK, CARRY, CARRY, MOVE]
+   * At 850 energy → [WORK×7, CARRY×2, MOVE×1]
    */
   warlock(energy) {
     const CARRY_COUNT = 2;
-    const MOVE_COUNT  = 2;
+    const MOVE_COUNT  = 1;
     const OVERHEAD    = (CARRY_COUNT * 50) + (MOVE_COUNT * 50); // 200
 
     const workCount = Math.min(
