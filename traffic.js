@@ -140,7 +140,7 @@ const Traffic = {
     this._intents[creep.name] = {
       creep,
       target,
-      range: opts.range || 1
+      range: opts.range !== undefined ? opts.range : 1,
     };
   },
 
