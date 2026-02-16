@@ -446,15 +446,25 @@ const Traffic = {
       const pins    = Object.assign({}, this._pins);
       const intents = Object.assign({}, this._intents);
 
+      // Calculate swamp cost from this creep's actual fatigue economics.
+      // A heavily loaded creep with few MOVE parts spends many ticks immobile
+      // on swamp — the pathfinder should reflect that reality, not a room-wide
+      // constant. Formula: ticks immobile = (nonMove * 10) / (move * 2).
+      // A balanced thrall (7 CARRY + 7 MOVE) gets cost 5 — swamp is tolerable.
+      // A warlock (4 WORK + 2 CARRY + 2 MOVE) gets cost 15 — strongly avoided.
+      const activeMoves    = creep.body.filter(p => p.type === MOVE  && p.hits > 0).length;
+      const activeNonMoves = creep.body.filter(p => p.type !== MOVE  && p.hits > 0).length;
+      const swampCost      = activeMoves > 0 && activeNonMoves > 0
+        ? Math.max(2, Math.ceil((activeNonMoves * 10) / (activeMoves * 2)))
+        : 5; // fallback: empty or MOVE-only body
+
       const result = PathFinder.search(
         creep.pos,
         { pos: new RoomPosition(targetPos.x, targetPos.y, creep.room.name), range },
         {
           plainCost: 2,
-          swampCost: 5,   // 10 is technically correct for fatigue ratios but causes
-                          // all creeps to pile into the same narrow plain detour.
-                          // 5 still prefers plains but tolerates a swamp tile rather
-                          // than routing everyone down the same corridor.
+          swampCost,
+
           roomCallback(roomName) {
             const room = Game.rooms[roomName];
             if (!room) return;
