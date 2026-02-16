@@ -85,7 +85,10 @@ Transition to Layer 2 when source containers are built and RCL4 is approaching.
 Controller container online. Extensions at or near RCL cap.
 Warlock Engineer permanently seated.
 Hauler routing shifts from dropped pile → container → storage → consumers.
-Road repair system needed (roads decay without active maintenance).
+Road repair system active — clanrats repair between build assignments.
+Rampart planner online — spawn tile protected first, tower tile second.
+Tower planner online — placed at RCL3, auto-attacks hostiles, idles repairing ramparts.
+Safe mode auto-activates on hostile detection.
 
 ### Layer 3 — Expansion (RCL6+)
 Remote mining, multi-room claims, military.
@@ -124,6 +127,10 @@ RCL1 generalist. Harvests, upgrades, builds. Replaced by specialists at RCL2.
 Also used in emergency recovery when miners are down (promoted temporarily).
 Body: `[WORK×N, CARRY, MOVE]` — scales with available energy.
 
+**Promotion:** Promotes to `'clanrat'` at RCL2. The role string `'worker'` is a
+deprecated alias handled by `rat.js` for creeps spawned before this was corrected —
+they run `runClanrat()` via a backward-compat case and die out naturally.
+
 ---
 
 ### Miner (`rat.miner.js`)
@@ -153,8 +160,9 @@ Body: equal CARRY+MOVE pairs, scales with energy.
 
 ### Clanrat (`rat.clanrat.js`)
 *Formerly: worker*
-Rank-and-file backbone of the warren. Builds construction sites and upgrades
-the controller. Does NOT harvest from sources directly. Does NOT withdraw from spawn.
+Rank-and-file backbone of the warren. Builds construction sites, repairs roads,
+and upgrades the controller. Does NOT harvest from sources directly.
+Does NOT withdraw from spawn.
 
 Gather priority: controller container (if nearby) → tombstones → ruins →
 dropped pile → wait near source
@@ -165,7 +173,14 @@ mode rather than idling (partial-load edge case).
 Emergency mode: if miners are down, clanrats harvest directly and feed the spawn
 so the director can recover the miner population.
 
+Job priority: BUILD (300) → REPAIR (200) → UPGRADE (100). Clanrats pick up road
+repair jobs between build assignments.
+
 Body: equal WORK+CARRY+MOVE sets, scales with energy.
+
+**Note:** All source/consumer lookups use `room.find` + `findClosestByRange`.
+`findClosestByPath` is banned from this file — it silently returns null on
+congested paths.
 
 ---
 
@@ -232,6 +247,20 @@ Priority order:
 4. Clanrats — waits for `energyAvailable / energyCapacityAvailable >= 0.9`
 5. Warlock — same threshold, only spawns when controller container exists
 
+**Preemptive TTL spawning:**
+Dying creeps are treated as already absent before they die, firing a replacement
+early and preventing synchronized-death crash cycles.
+- Miner preempt threshold: **80 ticks** remaining
+- Thrall preempt threshold: **150 ticks** remaining
+
+**Dead weight detector:**
+Creeps too small to be useful are suicided and immediately replaced.
+- Ratio-based comparison: creep's active key-part count vs ideal body at current room capacity
+- Minimum ratio: **50%** — a creep below half the ideal output is dead weight
+- Guards: never suicide the **last living member of a role**, skip combat-damaged
+  creeps (`body[i].hits < 100`), only fires if `energyAvailable >= idealCost`
+- Key parts by role: miner → WORK, thrall → CARRY, clanrat → WORK
+
 Thrall target:
 - Source containers present: 1 per source container
 - RCL3+, no containers: 2 thralls (10+ extensions overwhelm a single thrall)
@@ -241,6 +270,8 @@ Clanrat target:
 - Base: `sources * 2`
 - Bonus: `+sources` when energy is capped (economy saturated)
 - Cap: `sources * 4`
+
+Workers counted as clanrats in head-count logic (backward-compat alias).
 
 **Known limitation / next redesign:**
 Creep count is the wrong metric at higher RCL. What matters is total parts.
@@ -260,6 +291,38 @@ replacement creeps and stalls economic recovery.
 | Thrall    | Never (thralls fill it, never drain it) |
 | Clanrat   | **Never** |
 | Warlock   | Yes — DIRE EMERGENCY ONLY (>280 stored) |
+
+---
+
+## Defense System
+
+### Safe Mode (`warren.decide.js` / `warren.act.js`)
+Auto-activates the moment hostiles enter the room, before any other plan logic runs.
+Guards: safe mode not already active, at least one charge available, cooldown zero.
+Logs a console alert when activated.
+
+### Tower (`plan.tower.js` / `warren.act.js`)
+One tower per warren, placed at RCL3.
+Placement: range 2–5 from spawn (not adjacent — keeps extension ring clear), energy guard 0.7.
+Tower logic runs every tick independently of plan flags:
+- **Hostiles present:** attacks lowest-HP hostile (focus fire kills fastest)
+- **No hostiles:** repairs ramparts below 20k hits first, then other structures below 50% hits
+
+Tower delivery is Priority 4 in `rat.thrall.js` — thralls keep it fed.
+
+### Ramparts (`plan.ramparts.js`)
+Placed on top of structures — attacker must destroy rampart before touching the structure.
+One construction site at a time, no energy guard.
+
+Placement priority:
+1. Spawn tile — most critical, placed first
+2. Tower tile(s) — protecting the tower protects the defense
+
+Build priority in job board: 850 (below tower 875, below controller container 900).
+
+**Rampart HP target:** Tower idles repairing ramparts below 20k hits.
+Full perimeter shell and wall+rampart combos deferred to RCL4–5 when repair
+capacity can support a larger footprint.
 
 ---
 
@@ -298,9 +361,14 @@ Cache invalidated when:
 - Creeps with active move intents: cost 10
 
 ### Stuck Detection
-If position unchanged for `STUCK_THRESHOLD = 3` ticks, a `FALLBACK_DURATION = 3`
-tick countdown begins. During fallback: native `moveTo(ignoreCreeps: true)` with
-red path visualization. After fallback: cache wiped, traffic resumes fresh.
+If position unchanged for `STUCK_THRESHOLD = 3` ticks **and `creep.fatigue === 0`**,
+a `FALLBACK_DURATION = 3` tick countdown begins. During fallback: native
+`moveTo(ignoreCreeps: true)` with red path visualization. After fallback: cache
+wiped, traffic resumes fresh.
+
+**Important:** The fatigue guard prevents swamp recovery from being misidentified
+as stuck. A creep on swamp may not move for several ticks while recovering fatigue —
+this is correct behavior and must not trigger the fallback.
 
 ---
 
@@ -323,6 +391,14 @@ Roads along spawn→source and spawn→controller paths.
 Uses `PathFinder.search` with the same CostMatrix as `traffic.js` — roads are
 placed on tiles creeps actually walk.
 
+### `plan.ramparts.js`
+Ramparts placed on spawn tile first, then tower tiles. One site at a time.
+No energy ratio guard — defense placement is always worth doing.
+
+### `plan.tower.js`
+Tower placed at RCL3, range 2–5 from spawn. Energy ratio guard: 0.7.
+One tower per warren, never adjacent to spawn.
+
 ### `plan.scoring.js`
 Scoring logic for extension placement. Passability guard replaces the old
 clustering feedback loop that caused impassable walls.
@@ -336,10 +412,19 @@ No stale job assignments survive between ticks.
 
 Job types: `HARVEST`, `BUILD`, `UPGRADE`, `REPAIR`, `HAUL`, `DEFEND`
 
+Build priority ladder (highest first):
+- 900: Controller container (unlocks warlock continuous upgrade)
+- 875: Tower (defense infrastructure)
+- 850: Rampart (structural protection)
+- 800: Everything else (extensions, roads, etc.)
+
+Repair jobs: published for up to 3 worst damaged roads. Critical roads
+(< 25% hits) get priority 750; damaged (< 50%) get priority 500.
+
 Role preferences are wired in `rolePreference()`:
 - Miners strongly prefer HARVEST
 - Thralls strongly prefer HAUL
-- Clanrats prefer BUILD, then UPGRADE
+- Clanrats prefer BUILD (300), then REPAIR (200), then UPGRADE (100)
 - Clanrats are explicitly excluded from HARVEST (they have their own gather phase)
 
 ---
@@ -358,6 +443,11 @@ Anomaly auto-detection (every 10 ticks):
 - Energy drops >25% below bucket average
 - Dropped energy spike >500
 - Miner count falls below source count
+
+**Note on false anomalies at RCL2:** Any spawn at RCL2 (300 energy capacity,
+no extensions) causes a 60-70% energy drop by definition. This may trigger
+energy crash anomalies even when the room is healthy. These are expected and
+resolve automatically once extensions are built.
 
 Anomaly log stores the last 5 full frozen snapshots: every creep with TTL and
 store contents, container fills, spawn state — everything needed to reconstruct
@@ -392,17 +482,25 @@ Ensures infrastructure completes in priority order.
 **Hard pins never cleared by traffic.**
 Only the owning rat clears its pin by not calling `Traffic.pin()` in a given tick.
 
+**Dead weight detector never suicides the last of a role.**
+A weak thrall doing 33% of the job is infinitely better than no thrall while
+waiting for energy to accumulate for a replacement.
+
+**Stuck detection respects fatigue.**
+Only increment the stuck counter when `creep.fatigue === 0`. Swamp recovery
+looks identical to stuck from the outside but is not a problem.
+
+**JS string literals in part comparisons must be lowercase.**
+Screeps `creep.body[i].type` returns lowercase strings (`'work'`, `'carry'`, etc.).
+The constants `WORK`, `CARRY` etc. also resolve to these lowercase strings, but
+object literal keys like `{ WORK: 2 }` do NOT — they are the string `"WORK"`.
+Always use lowercase string literals in body part comparisons.
+
 ---
 
 ## What's Next
 
-### Priority 1 — Road repair
-**Roads are currently decaying with no repair system.**
-`job.board.js` needs `publishRepairJobs()` targeting roads below 50% health.
-Clanrats pick up repair jobs between build assignments.
-Without this every road eventually disappears, slowing all creeps permanently.
-
-### Priority 2 — Parts-based spawn director
+### Priority 1 — Parts-based spawn director
 **Most important architectural redesign.**
 Creep count is the wrong metric at RCL3+. Replace head-count targets with
 parts-based targets:
@@ -412,26 +510,29 @@ parts-based targets:
   Emergent behavior: one big creep naturally replaces two small ones as energy
   capacity grows. Fewer creeps = less traffic = better throughput.
 
-### Priority 3 — Source containers
+### Priority 2 — Source containers
 Eliminates energy decay at sources. Miners drop into containers, thralls withdraw
 cleanly. `spawn.director.js` already auto-scales thrall target to 1-per-source-
 container when detected. Needs: `plan.sourceContainers.js`, miner behavior update
 to sit on container tile, thrall withdrawal priority update.
 
-### Priority 4 — Tower (RCL3)
-One auto-placed tower per warren. Thrall delivery already wired for towers
-(priority 4 in `rat.thrall.js`). Needs: `plan.tower.js`, auto-attack in `warren.act.js`.
-
-### Priority 5 — Storage (RCL4)
+### Priority 3 — Storage (RCL4)
 Significant thrall routing redesign. All energy flows through storage.
 Worth designing carefully — split thralls into source-thralls (container→storage)
 and demand-thralls (storage→consumers).
 
-### Priority 6 — Military layer
+### Priority 4 — Expand rampart shell (RCL4–5)
+Compact HQ perimeter with wall+rampart combos once economy can support repair load.
+Define 1–2 chokepoint entries. Push outer boundary toward natural terrain features.
+Full perimeter to room boundary deferred to RCL6+ with multiple towers and storage.
+
+### Priority 5 — Stormvermin implementation
 Stormvermin, Gutter Runner, Jezzail, Rat Ogre stubs exist.
 Bodies need implementing in `spawn.bodies.js`.
 Combat behavior needs implementing in each `rat.*.js` file.
 Spawn director needs military demand logic.
+A well-fed tower at RCL3 handles most attacks before RCL6 — military is lower
+priority than economic infrastructure.
 
 ### Longer term
 - Remote mining (multi-room traffic coordination required)
