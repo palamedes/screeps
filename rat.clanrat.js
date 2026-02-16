@@ -2,54 +2,35 @@
  * rat.clanrat.js
  *
  * Clanrat behavior — builds construction sites and upgrades the controller.
- * The backbone rank-and-file of the warren. Above slaves in the hierarchy,
- * below the specialist castes. Does the actual work of expanding the warren.
+ * The backbone rank-and-file of the warren. Does the actual work of expanding.
  *
  * Clanrats do NOT harvest. They pick up dropped energy then spend it.
  *
- * State toggle (memory.working):
- *   false = gathering energy (pickup dropped resources)
- *   true  = spending energy (running assigned job)
- *
- * Gathering priority:
- *   If clanrat is near the controller (range 5), check the controller container
- *   first — it's right there, zero travel cost.
- *   Otherwise: tombstones → ruins → dropped pile → wait near source.
- *
- * Clanrats do NOT withdraw from spawn. The spawn buffer must stay intact for
- * spawning. Thralls fill it, miners produce it — clanrats have no business
- * touching it. If all gather sources are dry, wait near the source for the
- * next drop.
- *
- * Emergency mode: if miners are down, clanrats harvest directly and
- * feed the spawn so the director can recover the miner population.
- *
- * All movement routed through Traffic.requestMove — no direct moveTo calls.
+ * All consumer/source lookups use room.find + findClosestByRange.
+ * findClosestByPath is banned — it silently returns null on congested paths.
  */
 
 const Traffic = require('traffic');
 
-const CONTROLLER_CONTAINER_RANGE  = 3;  // must match plan.containers.js placement range
-const CLANRAT_CONTAINER_USE_RANGE = 5;  // how close a clanrat must be to prefer the container
+const CONTROLLER_CONTAINER_RANGE  = 3;
+const CLANRAT_CONTAINER_USE_RANGE = 5;
 
 Creep.prototype.runClanrat = function () {
 
   const sources = this.room.find(FIND_SOURCES);
 
-  // Use homeRoom-based miner count to match spawn.director logic
   const miners = Object.values(Game.creeps).filter(c =>
     c.memory.homeRoom === this.memory.homeRoom &&
     c.memory.role === 'miner'
   );
 
   // --- Emergency Recovery Mode ---
-  // Miners are down. Clanrats become harvesters temporarily to keep
-  // the spawn fed so the director can spawn new miners.
   if (miners.length < sources.length) {
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
 
     if (this.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-      const source = this.pos.findClosestByPath(FIND_SOURCES);
+      // Use room.find + findClosestByRange — NOT findClosestByPath
+      const source = this.pos.findClosestByRange(sources);
       if (source) {
         if (this.harvest(source) === ERR_NOT_IN_RANGE) {
           Traffic.requestMove(this, source);
@@ -67,20 +48,16 @@ Creep.prototype.runClanrat = function () {
   }
 
   // --- Energy State Toggle ---
-  // Drain: if we were working and ran out of energy, stop working and clear job
   if (this.memory.working && this.store[RESOURCE_ENERGY] === 0) {
     this.memory.working = false;
     this.memory.job = null;
   }
 
-  // Fill: if we were gathering and are now full, start working
   if (!this.memory.working && this.store.getFreeCapacity() === 0) {
     this.memory.working = true;
   }
 
   // --- Job Validation ---
-  // Clear any job type a clanrat should never be running.
-  // Can happen when a slave promotes mid-job and inherits a stale HARVEST.
   if (this.memory.job && this.memory.job.type === 'HARVEST') {
     this.memory.job = null;
   }
@@ -94,7 +71,6 @@ Creep.prototype.runClanrat = function () {
     if (this.memory.job) {
       this.runJob();
     } else {
-      // No job available — idle near controller as a fallback
       if (this.room.controller) {
         Traffic.requestMove(this, this.room.controller, { range: 3 });
       }
@@ -104,18 +80,19 @@ Creep.prototype.runClanrat = function () {
 
   // --- Gathering Phase ---
 
-  // If clanrat is near the controller, prefer the controller container.
-  // Checking proximity rather than job type because memory.job is null
-  // at the start of the gathering phase (cleared when energy ran out).
+  // If near the controller, prefer the controller container.
+  // Use room.find + findClosestByRange — NOT findClosestByPath.
   if (this.room.controller &&
     this.pos.inRangeTo(this.room.controller, CLANRAT_CONTAINER_USE_RANGE)) {
 
-    const controllerContainer = this.pos.findClosestByPath(FIND_STRUCTURES, {
+    const containers = this.room.find(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
         s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE) &&
         s.store[RESOURCE_ENERGY] > 0
     });
+
+    const controllerContainer = this.pos.findClosestByRange(containers);
 
     if (controllerContainer) {
       if (this.withdraw(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -125,7 +102,7 @@ Creep.prototype.runClanrat = function () {
     }
   }
 
-  // Check tombstones — dead rats shouldn't waste their energy
+  // Tombstones
   const tombstone = this.room.find(FIND_TOMBSTONES, {
     filter: t => t.store[RESOURCE_ENERGY] > 0
   })[0];
@@ -137,7 +114,7 @@ Creep.prototype.runClanrat = function () {
     return;
   }
 
-  // Check ruins
+  // Ruins
   const ruin = this.room.find(FIND_RUINS, {
     filter: r => r.store[RESOURCE_ENERGY] > 0
   })[0];
@@ -149,7 +126,7 @@ Creep.prototype.runClanrat = function () {
     return;
   }
 
-  // Prefer dropped energy (miners drop it at source)
+  // Largest dropped pile
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
     filter: r => r.resourceType === RESOURCE_ENERGY && r.amount > 50
   }).sort((a, b) => b.amount - a.amount)[0];
@@ -161,17 +138,15 @@ Creep.prototype.runClanrat = function () {
     return;
   }
 
-  // Nothing to gather — spend whatever we're holding rather than idling.
-  // Handles partial-load edge case: clanrat acquired a small amount of energy
-  // (below the fill threshold) and can't find more.
+  // Partial load — spend what we have rather than idling
   if (this.store[RESOURCE_ENERGY] > 0) {
     this.memory.working = true;
     return;
   }
 
-  // Truly nothing — wait near the closest source for the next drop.
-  // Do NOT withdraw from spawn. The spawn buffer is sacrosanct.
-  const source = this.pos.findClosestByPath(FIND_SOURCES);
+  // Nothing available — wait near closest source.
+  // Use room.find + findClosestByRange — NOT findClosestByPath.
+  const source = this.pos.findClosestByRange(sources);
   if (source) {
     Traffic.requestMove(this, source, { range: 2 });
   }

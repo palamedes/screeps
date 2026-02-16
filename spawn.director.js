@@ -11,35 +11,38 @@
  *   4. Clanrats up to clanratTarget        — waits for SPAWN_ENERGY_THRESHOLD
  *   5. Warlock Engineer                    — waits for SPAWN_ENERGY_THRESHOLD
  *
- * Miners and thralls bypass the energy threshold because they ARE the pipeline
- * that fills extensions. Gating them on extension fill % creates a deadlock.
+ * Preemptive spawning (PREEMPT_TTL):
+ *   For miners and thralls, a creep nearing death is treated as already absent.
+ *   This fires a replacement spawn before the old one dies, preventing the
+ *   synchronized-death crash cycle seen in the blackbox data.
  *
- * Thrall target formula:
- *   Source containers present:  1 per source container (Layer 2 pipeline)
- *   RCL3+, no containers:       2 thralls
- *     At RCL3 there are 10+ extensions (600+ energy to fill) plus spawn plus
- *     controller container. One thrall cannot make enough round trips to keep
- *     everything stocked. Two thralls split the delivery burden.
- *   RCL2, no containers:        1 thrall
- *     5 extensions, 300-550 capacity. One thrall is enough.
- *
- * Clanrat target formula:
- *   Base:  sources * 2      (minimum viable spending capacity)
- *   Bonus: +sources         (if energy is capped — economy saturated)
- *   Cap:   sources * 4      (hard ceiling)
- *
- * Warlock Engineer:
- *   One per warren. Only after controller container exists.
- *   Lowest priority — economy must be healthy first.
- *
- * At RCL1, only slaves are spawned.
+ * Dead weight detection (DEADWEIGHT_THRESHOLD):
+ *   Creeps with too few active body parts contribute almost nothing and
+ *   waste CPU. They are suicided and filtered from the working set so the
+ *   director immediately sees the vacancy and queues a proper replacement.
  */
 
 const Bodies = require('spawn.bodies');
 
-// Wait until extensions are this full before spawning clanrats and warlock.
+// Extensions must be this full before spawning clanrats and warlocks.
 // Miners and thralls are exempt — they fill the extensions.
 const SPAWN_ENERGY_THRESHOLD = 0.9;
+
+// If a creep of this role has fewer ticks to live than the threshold,
+// treat it as already absent so a replacement is queued before it dies.
+// Threshold must exceed: body_parts × 3 ticks/part + reasonable travel time.
+const PREEMPT_TTL = {
+  miner:  80,   // max miner: 6 parts × 3 = 18 ticks + travel buffer
+  thrall: 150   // max thrall: 26 parts × 3 = 78 ticks + travel buffer
+};
+
+// Minimum useful active body parts per role.
+// Creeps below these thresholds are suicided and replaced properly.
+const DEADWEIGHT_THRESHOLD = {
+  miner:   { WORK:  2 },  // 1 WORK = 2 energy/tick; can't keep pace with source
+  thrall:  { CARRY: 3 },  // < 3 CARRY barely moves any energy
+  clanrat: { WORK:  2 }   // 1 WORK clanrat is nearly useless for building
+};
 
 module.exports = {
 
@@ -47,12 +50,21 @@ module.exports = {
     const spawn = room.find(FIND_MY_SPAWNS).find(s => !s.spawning);
     if (!spawn) return;
 
-    const creeps = this.getWarrenCreeps(room);
+    let creeps = this.getWarrenCreeps(room);
 
     // Emergency: warren completely empty — spawn whatever we can afford
     if (creeps.length === 0 && room.energyAvailable >= 200) {
       this.spawnRat(spawn, 'slave', Bodies.slave(room.energyAvailable));
       return;
+    }
+
+    // Dead weight check: suicide any creep too small to be useful.
+    // Returns the name of the suicided creep, or null.
+    // Filter the suicided creep from the working set so spawnByDemand
+    // sees the vacancy this tick rather than waiting until next tick.
+    const suicided = this.checkDeadWeight(room, creeps);
+    if (suicided) {
+      creeps = creeps.filter(c => c.name !== suicided);
     }
 
     this.spawnByDemand(room, spawn, creeps);
@@ -63,10 +75,10 @@ module.exports = {
     const sources = room.find(FIND_SOURCES);
     const energy  = room.energyAvailable;
 
-    const miners    = creeps.filter(c => c.memory.role === 'miner');
-    const thralls   = creeps.filter(c => c.memory.role === 'thrall');
-    const clanrats  = creeps.filter(c => c.memory.role === 'clanrat');
-    const warlocks  = creeps.filter(c => c.memory.role === 'warlock');
+    const miners   = creeps.filter(c => c.memory.role === 'miner');
+    const thralls  = creeps.filter(c => c.memory.role === 'thrall');
+    const clanrats = creeps.filter(c => c.memory.role === 'clanrat');
+    const warlocks = creeps.filter(c => c.memory.role === 'warlock');
 
     // RCL1 — slaves only
     if (rcl === 1) {
@@ -78,16 +90,19 @@ module.exports = {
 
     // --- No energy threshold below this line for miners and thralls ---
 
-    // Miners: immediate — dead miner = economy stalled
-    if (miners.length < sources.length) {
+    // Miners: preemptive — treat dying miners as already absent.
+    // effectiveMiners excludes any miner whose TTL is below the preempt threshold.
+    // This fires a replacement before the old miner dies, preventing income gaps.
+    const effectiveMiners = miners.filter(c =>
+      c.ticksToLive === undefined || c.ticksToLive > PREEMPT_TTL.miner
+    );
+
+    if (effectiveMiners.length < sources.length) {
       this.spawnRat(spawn, 'miner', Bodies.miner(energy));
       return;
     }
 
-    // Thrall target:
-    //   Source containers present → 1 per container (Layer 2 pipeline)
-    //   RCL3+ no containers       → 2 (10+ extensions overwhelms a single thrall)
-    //   RCL2  no containers       → 1 (5 extensions, one thrall sufficient)
+    // Thrall target
     const sourceContainerCount = room.find(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
@@ -98,15 +113,17 @@ module.exports = {
       ? sourceContainerCount
       : rcl >= 3 ? 2 : 1;
 
-    // Thralls: immediate — they fill extensions, can't gate on what they produce
-    if (thralls.length < thrallTarget) {
+    // Thralls: preemptive — same logic as miners.
+    const effectiveThralls = thralls.filter(c =>
+      c.ticksToLive === undefined || c.ticksToLive > PREEMPT_TTL.thrall
+    );
+
+    if (effectiveThralls.length < thrallTarget) {
       this.spawnRat(spawn, 'thrall', Bodies.thrall(energy));
       return;
     }
 
     // --- Energy threshold applies to everything below ---
-    // Miners and thralls are live so extensions are being filled right now.
-    // Wait for near-full extensions before spending spawn capacity on clanrats.
     const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
     if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
@@ -134,6 +151,43 @@ module.exports = {
         this.spawnRat(spawn, 'warlock', Bodies.warlock(energy));
       }
     }
+  },
+
+  /**
+   * Detects and suicides creeps too small to be worth running.
+   *
+   * Safety guards:
+   *   - Miners and thralls require minimum replacement energy before suicide.
+   *     Never suicide a miner if we can't immediately spawn a real one.
+   *   - Only one suicide per tick to avoid cascade failures.
+   *
+   * @returns {string|null} — name of suicided creep, or null if none
+   */
+  checkDeadWeight(room, creeps) {
+    for (const creep of creeps) {
+      const threshold = DEADWEIGHT_THRESHOLD[creep.memory.role];
+      if (!threshold) continue;
+
+      // Safety: don't suicide pipeline-critical roles unless we can replace them
+      if (creep.memory.role === 'miner'  && room.energyAvailable < 350) continue;
+      if (creep.memory.role === 'thrall' && room.energyAvailable < 300) continue;
+
+      for (const [partType, minCount] of Object.entries(threshold)) {
+        const activeCount = creep.body.filter(
+          b => b.type === partType && b.hits > 0
+        ).length;
+
+        if (activeCount < minCount) {
+          console.log(
+            `[warren:${room.name}] dead weight: ${creep.name} ` +
+            `(${creep.memory.role}, ${activeCount}/${minCount} active ${partType}) — suiciding`
+          );
+          creep.suicide();
+          return creep.name; // one per tick — caller filters this from the working set
+        }
+      }
+    }
+    return null;
   },
 
   getWarrenCreeps(room) {

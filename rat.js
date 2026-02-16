@@ -50,5 +50,17 @@ Creep.prototype.runJob = function () {
         Traffic.requestMove(this, target);
       }
       break;
+
+    case 'REPAIR': {
+      const result = this.repair(target);
+      if (result === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, target);
+      } else if (result !== OK) {
+        // Road at full health, or otherwise can't be repaired — drop job.
+        // The job board is ephemeral anyway; a healthy road won't be republished.
+        this.memory.job = null;
+      }
+      break;
+    }
   }
 };

@@ -2,23 +2,10 @@
  * rat.slave.js
  *
  * Slave behavior — RCL1 bootstrap generalist.
- * The lowest caste of the Skaven horde. Cheap, dumb, expendable.
+ * Hardcoded two-phase loop: harvest → fill spawn → upgrade controller.
  *
- * Slaves bypass the job board entirely. At RCL1 the economy is too fragile
- * to rely on job assignment — they just run a hardcoded two-phase loop:
- *   gathering phase: harvest from nearest source until full
- *   spending phase:  fill spawn first, then upgrade controller
- *
- * Spending priority:
- *   1. Spawn (must stay fed so the director can spawn more rats)
- *   2. Controller (upgrading gets us to RCL2 and unlocks specialist roles)
- *
- * Promotion:
- *   When the warren reaches RCL2, slaves are immediately promoted to worker.
- *   All slave-specific memory is cleared on promotion so the worker
- *   starts with a clean slate.
- *
- * All movement routed through Traffic.requestMove — no direct moveTo calls.
+ * All source lookups use room.find + findClosestByRange.
+ * findClosestByPath is banned — silently returns null on congested paths.
  */
 
 const Traffic = require('traffic');
@@ -26,8 +13,6 @@ const Traffic = require('traffic');
 Creep.prototype.runSlave = function () {
 
   // --- Promotion Check ---
-  // As soon as RCL2 is reached, this slave becomes a worker.
-  // The spawn director will stop making slaves and start making miners/haulers/workers.
   if (this.room.controller && this.room.controller.level >= 2) {
     this.memory.role = 'worker';
     delete this.memory.job;
@@ -48,7 +33,7 @@ Creep.prototype.runSlave = function () {
   // --- Spending Phase ---
   if (this.memory.working) {
 
-    // Priority 1: Keep the spawn fed so the director can spawn reinforcements
+    // Priority 1: Keep spawn fed
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -57,7 +42,7 @@ Creep.prototype.runSlave = function () {
       return;
     }
 
-    // Priority 2: Upgrade the controller — getting to RCL2 is the entire goal
+    // Priority 2: Upgrade to RCL2
     if (this.room.controller) {
       if (this.upgradeController(this.room.controller) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, this.room.controller, { range: 3 });
@@ -68,7 +53,9 @@ Creep.prototype.runSlave = function () {
   }
 
   // --- Gathering Phase ---
-  const source = this.pos.findClosestByPath(FIND_SOURCES);
+  // Use room.find + findClosestByRange — NOT findClosestByPath
+  const sources = this.room.find(FIND_SOURCES);
+  const source  = this.pos.findClosestByRange(sources);
   if (source) {
     if (this.harvest(source) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, source);

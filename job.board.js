@@ -68,10 +68,8 @@ module.exports = {
     switch (job.type) {
 
       case 'HARVEST':
-        // Clanrats have their own gathering phase for picking up dropped energy.
-        // Harvesting directly from a source is miners and slaves only — letting
-        // clanrats harvest means they sit on sources instead of consuming the
-        // dropped pile, which disrupts the miner → thrall → clanrat energy chain.
+        // Clanrats have their own gathering phase — harvesting from source
+        // would break the miner → thrall → clanrat energy chain.
         return creep.memory.role !== 'clanrat' &&
           creep.getActiveBodyparts(WORK) > 0;
 
@@ -115,6 +113,7 @@ module.exports = {
 
       case 'clanrat':
         if (job.type === 'BUILD')   return 300;
+        if (job.type === 'REPAIR')  return 200;  // roads between builds
         if (job.type === 'UPGRADE') return 100;
         return -50;
 
@@ -135,12 +134,6 @@ module.exports = {
   },
 
   publishUpgradeJobs(room) {
-    // When a Warlock Engineer is active AND build sites exist, restrict upgrade
-    // slots to 1 — clanrats should be building, not upgrading. The warlock covers
-    // RCL progression on its own.
-    //
-    // When there is nothing left to build, open upgrade slots fully so all idle
-    // clanrats pile onto the controller rather than standing around doing nothing.
     const warlockActive = Object.values(Game.creeps).some(c =>
       c.memory.homeRoom === room.name &&
       c.memory.role === 'warlock'
@@ -165,21 +158,55 @@ module.exports = {
   publishBuildJobs(room) {
     room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
 
-      // Controller container is the Warlock Engineer's energy supply.
-      // Getting it online unlocks continuous upgrade throughput, so it
-      // outranks extension sites in clanrat assignment priority.
+      // Priority ladder — higher number = clanrats work this first:
+      //   900: controller container (unlocks warlock continuous upgrade)
+      //   875: tower              (defense infrastructure)
+      //   850: rampart            (immediate structural protection)
+      //   800: everything else   (extensions, roads, etc.)
       const isControllerContainer =
         site.structureType === STRUCTURE_CONTAINER &&
         room.controller &&
         site.pos.inRangeTo(room.controller, 3);
 
+      const isTower   = site.structureType === STRUCTURE_TOWER;
+      const isRampart = site.structureType === STRUCTURE_RAMPART;
+
+      const priority = isControllerContainer ? 900 :
+        isTower               ? 875 :
+          isRampart             ? 850 : 800;
+
       this.publish(room.name, {
         type:     'BUILD',
         targetId: site.id,
-        priority: isControllerContainer ? 900 : 800,
+        priority,
         slots:    2
       });
     });
+  },
+
+  /**
+   * Publish repair jobs for damaged roads.
+   *
+   * Only roads for now — ramparts are maintained by the tower's idle repair.
+   * Critical roads (< 25% hits) get higher priority than merely damaged ones.
+   * Publish up to 3 worst roads so multiple clanrats can repair in parallel.
+   */
+  publishRepairJobs(room) {
+    const damaged = room.find(FIND_MY_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_ROAD &&
+        s.hits < s.hitsMax * 0.5
+    }).sort((a, b) => a.hits - b.hits).slice(0, 3);
+
+    for (const road of damaged) {
+      const isCritical = road.hits < road.hitsMax * 0.25;
+      this.publish(room.name, {
+        type:     'REPAIR',
+        targetId: road.id,
+        priority: isCritical ? 750 : 500,
+        slots:    1
+      });
+    }
   },
 
   publishDefenseJobs(room) {
