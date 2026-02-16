@@ -4,36 +4,82 @@
  * Warlock Engineer behavior — sits on the controller container and upgrades forever.
  * The highest-caste specialist in the warren. Never leaves its tile once seated.
  *
- * Position strategy:
- *   The warlock targets the controller container tile and stands ON it.
- *   From that tile it can:
- *     - Withdraw from the container (range 0 satisfies withdraw's range-1 requirement)
- *     - Upgrade the controller (container is always placed within range 3 of controller)
- *   Zero travel between refueling and upgrading once seated.
+ * Core philosophy:
+ *   A 6 WORK warlock sitting still waiting for a thrall is worth far more
+ *   than that same warlock spending 20 ticks walking to a dropped pile and back.
+ *   Once a container exists, the warlock is ANCHORED. It does not roam.
+ *   The thrall pipeline exists precisely to feed it.
  *
- * Energy gathering priority:
- *   1. Controller container (stand on it, withdraw directly)
- *   2. Dropped energy — near controller if container exists, whole room if not.
- *      Early RCL2 has no container yet and miners drop at source tiles, so
- *      restricting search to controller range means the warlock sees nothing.
- *   3. Tombstones — same radius logic as dropped energy
- *   4. Spawn — DIRE EMERGENCY ONLY (> 280 of 300 capacity).
- *      The spawn buffer must stay intact. Thralls fill it, miners produce it.
- *      This threshold is so high it almost never triggers in normal operation.
+ * Behavior when container EXISTS (normal operation):
+ *   1. Move to container tile (once, on spawn)
+ *   2. Withdraw from container when it has energy
+ *   3. Upgrade when holding energy
+ *   4. Pin and wait when container is empty — do NOT leave
+ *   The warlock never leaves this tile for any reason.
  *
- * KEY FIX 1: Empty container falls through immediately to other sources.
- * KEY FIX 2: Dropped/tombstone search covers whole room when no container exists.
- * KEY FIX 3: Spend partial loads — flip to working if holding any energy and
- *   gathering finds nothing, rather than sitting idle with energy in store.
+ * Behavior when NO container exists (early RCL2):
+ *   Hunt dropped energy across the whole room.
+ *   Hunt tombstones across the whole room.
+ *   Upgrade when holding energy.
+ *   Move toward controller when idle.
+ *   This phase ends permanently once the container is built.
+ *
+ * Dire emergency spawn tap:
+ *   Only fires when NO container exists AND spawn has > 280 stored.
+ *   Once a container exists this branch is never reached.
  *
  * All movement routed through Traffic.requestMove / Traffic.pin.
  */
 
 const Traffic = require('traffic');
 
-const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.containers.js
+const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
 
 Creep.prototype.runWarlock = function () {
+
+  // --- Find container (if built) ---
+  const container = this.room.find(FIND_STRUCTURES, {
+    filter: s =>
+      s.structureType === STRUCTURE_CONTAINER &&
+      s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
+  })[0];
+
+  // =========================================================================
+  // ANCHORED MODE — container exists
+  // The warlock never leaves this tile. Withdraw, upgrade, wait. That's all.
+  // =========================================================================
+  if (container) {
+
+    // Not on container tile yet — walk there once
+    if (!this.pos.isEqualTo(container.pos)) {
+      Traffic.requestMove(this, container.pos, { range: 0 });
+      return;
+    }
+
+    // Seated on container tile — pin permanently
+    Traffic.pin(this);
+
+    // Upgrade if holding energy
+    if (this.store[RESOURCE_ENERGY] > 0) {
+      this.upgradeController(this.room.controller);
+      return;
+    }
+
+    // Withdraw if container has energy
+    if (container.store[RESOURCE_ENERGY] > 0) {
+      this.withdraw(container, RESOURCE_ENERGY);
+      return;
+    }
+
+    // Container empty — sit and wait. Thrall is coming.
+    // Pin is already registered above. Nothing else to do.
+    return;
+  }
+
+  // =========================================================================
+  // ROAMING MODE — no container yet (early RCL2)
+  // Hunt energy across the whole room until the container is built.
+  // =========================================================================
 
   // --- Energy State Toggle ---
   if (this.memory.working && this.store[RESOURCE_ENERGY] === 0) {
@@ -46,7 +92,6 @@ Creep.prototype.runWarlock = function () {
   // --- Spending Phase ---
   if (this.memory.working) {
     const result = this.upgradeController(this.room.controller);
-
     if (result === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, this.room.controller, { range: 3 });
     } else {
@@ -55,35 +100,11 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // --- Gathering Phase ---
-  // Use room.find for the container — do NOT use findClosestByPath.
-  const container = this.room.find(FIND_STRUCTURES, {
-    filter: s =>
-      s.structureType === STRUCTURE_CONTAINER &&
-      s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
-  })[0];
+  // --- Gathering Phase (roaming, no container) ---
 
-  // Priority 1: Container exists AND has energy — stand on it and withdraw.
-  if (container && container.store[RESOURCE_ENERGY] > 0) {
-    if (this.pos.isEqualTo(container.pos)) {
-      this.withdraw(container, RESOURCE_ENERGY);
-      Traffic.pin(this);
-    } else {
-      Traffic.requestMove(this, container.pos, { range: 0 });
-    }
-    return;
-  }
-
-  // Priority 2: Dropped energy.
-  // If a container exists, stay reasonably near the controller (thrall is en route).
-  // If NO container exists yet (early RCL2), search the whole room —
-  // miners are dropping at source tiles which may be far from the controller.
-  const droppedFilter = container
-    ? r => r.resourceType === RESOURCE_ENERGY && r.pos.inRangeTo(this.room.controller, 8)
-    : r => r.resourceType === RESOURCE_ENERGY;
-
+  // Dropped energy — whole room
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
-    filter: droppedFilter
+    filter: r => r.resourceType === RESOURCE_ENERGY
   }).sort((a, b) => b.amount - a.amount)[0];
 
   if (dropped) {
@@ -93,13 +114,9 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 3: Tombstones — same radius logic as dropped energy.
-  const tombstoneFilter = container
-    ? t => t.store[RESOURCE_ENERGY] > 0 && t.pos.inRangeTo(this.room.controller, 8)
-    : t => t.store[RESOURCE_ENERGY] > 0;
-
+  // Tombstones — whole room
   const tombstone = this.room.find(FIND_TOMBSTONES, {
-    filter: tombstoneFilter
+    filter: t => t.store[RESOURCE_ENERGY] > 0
   })[0];
 
   if (tombstone) {
@@ -109,9 +126,7 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // Priority 4: Spawn — DIRE EMERGENCY ONLY.
-  // Threshold of > 280 out of 300 capacity means the spawn is essentially full.
-  // This should almost never trigger in normal operation.
+  // Dire emergency spawn tap — no container, spawn essentially full
   const spawn = this.room.find(FIND_MY_SPAWNS)[0];
   if (spawn && spawn.store[RESOURCE_ENERGY] > 280) {
     if (this.withdraw(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -120,23 +135,8 @@ Creep.prototype.runWarlock = function () {
     return;
   }
 
-  // --- Spend partial load rather than idling ---
-  // If we've exhausted all gather options but are holding any energy,
-  // flip to working and spend it rather than sitting idle.
-  if (this.store[RESOURCE_ENERGY] > 0) {
-    this.memory.working = true;
-    return;
-  }
-
-  // Truly nothing available — hold position at container if built,
-  // otherwise wait near controller to be ready when thrall arrives.
-  if (container) {
-    if (!this.pos.isEqualTo(container.pos)) {
-      Traffic.requestMove(this, container.pos, { range: 0 });
-    } else {
-      Traffic.pin(this);
-    }
-  } else if (this.room.controller) {
+  // Nothing available — wait near controller
+  if (this.room.controller) {
     Traffic.requestMove(this, this.room.controller, { range: 3 });
   }
 };
