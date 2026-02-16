@@ -5,12 +5,16 @@
  * Thralls are bound servants of the warren: no fighting, no building, pure transport.
  * They have no WORK parts. They only move energy around.
  *
- * Pickup priority:   tombstones → ruins → dropped pile (largest first)
+ * Pickup priority:   tombstones → ruins → dropped pile (largest first) → source containers
  * Delivery priority: spawn → extensions → controller container → towers
  *
  * Extensions are prioritized above the controller container because they
  * directly determine spawn body quality. Empty extensions = every replacement
  * creep spawns at minimum body regardless of capacity.
+ *
+ * Source containers are the LAST resort in gathering — they're the steady-state
+ * buffer that never decays. Tombstones and dropped piles are lossy and must be
+ * collected first to avoid waste.
  *
  * KEY FIX: All consumer lookups now use room.find instead of findClosestByPath.
  * findClosestByPath returns null silently when the room is congested and it
@@ -29,7 +33,7 @@
 
 const Traffic = require('traffic');
 
-const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.containers.js
+const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
 
 Creep.prototype.runThrall = function () {
 
@@ -53,7 +57,7 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 2: Extensions — fill before container.
+    // Priority 2: Extensions — fill before controller container.
     // Use room.find + filter, pick closest by range (no pathfinding needed
     // for selection — traffic handles the actual path).
     const extensions = this.room.find(FIND_MY_STRUCTURES, {
@@ -132,7 +136,7 @@ Creep.prototype.runThrall = function () {
     return;
   }
 
-  // Largest dropped pile
+  // Largest dropped pile — decays if not collected
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
     filter: r => r.resourceType === RESOURCE_ENERGY
   }).sort((a, b) => b.amount - a.amount)[0];
@@ -144,8 +148,25 @@ Creep.prototype.runThrall = function () {
     return;
   }
 
-  // Nothing to pick up — wait near closest source
+  // Source containers — steady-state buffer, no decay.
+  // Only withdraw when all lossy sources (tombstones, drops) are dry.
   const sources = this.room.find(FIND_SOURCES);
+  const sourceContainers = this.room.find(FIND_STRUCTURES, {
+    filter: s =>
+      s.structureType === STRUCTURE_CONTAINER &&
+      sources.some(src => s.pos.inRangeTo(src, 2)) &&
+      s.store[RESOURCE_ENERGY] > 0
+  });
+
+  if (sourceContainers.length > 0) {
+    const container = this.pos.findClosestByRange(sourceContainers);
+    if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      Traffic.requestMove(this, container);
+    }
+    return;
+  }
+
+  // Nothing to pick up — wait near closest source
   if (sources.length) {
     const target = this.pos.findClosestByRange(sources);
     Traffic.requestMove(this, target, { range: 2 });
