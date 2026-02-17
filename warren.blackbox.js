@@ -64,20 +64,21 @@ const BlackBox = {
   // ───────────────────────────────────────────────────────────── Public API ──
 
   /**
-   * blackbox(cmd)
+   * blackbox(cmd, arg1, arg2)
    * Controls the rolling recorder.
    */
-  blackbox(cmd) {
+  blackbox(cmd, arg1, arg2) {
     if (!cmd) return this._recorderStart();
     switch (cmd) {
-      case 'stop':   return this._recorderStop();
-      case 'report': return this._recorderReport();
-      case 'status': return this._recorderStatus();
-      case 'clear':  return this._recorderClear();
+      case 'stop':     return this._recorderStop();
+      case 'report':   return this._recorderReport();
+      case 'status':   return this._recorderStatus();
+      case 'clear':    return this._recorderClear();
       case 'snapshot': return this._snapshot();
+      case 'diagnose': return this._diagnose(arg1, arg2);
       default:
         console.log('[blackbox] unknown command: ' + cmd +
-          '. Use: blackbox() | blackbox("stop") | blackbox("report") | blackbox("status") | blackbox("clear") | blackbox("snapshot")');
+          '. Use: blackbox() | blackbox("stop") | blackbox("report") | blackbox("status") | blackbox("clear") | blackbox("snapshot") | blackbox("diagnose", creepName, ticks)');
     }
   },
 
@@ -99,6 +100,55 @@ const BlackBox = {
 
   // ─────────────────────────────────────────────── Rolling recorder commands ──
   // ─────────────────────────────────────────────────────────────── Snapshot ──
+
+  _diagnose(creepName, ticks) {
+    this._ensureMemory();
+    const bb = Memory.blackbox;
+    if (!bb.diagnostics) bb.diagnostics = {};
+
+    // No args: show active diagnostics
+    if (!creepName) {
+      const active = Object.keys(bb.diagnostics).filter(n => bb.diagnostics[n].active);
+      if (active.length === 0) {
+        console.log('[diagnose] no active diagnostics. Use: blackbox("diagnose", "creepName", 50)');
+        return;
+      }
+      active.forEach(name => {
+        const d = bb.diagnostics[name];
+        const progress = d.log.length + '/' + (d.endTick - d.startTick);
+        const pct = Math.round(d.log.length / (d.endTick - d.startTick) * 100);
+        console.log('[diagnose] ' + name + ' — ' + progress + ' ticks (' + pct + '%) — ' +
+          (d.endTick - Game.time) + ' ticks remaining');
+      });
+      return;
+    }
+
+    // Check if creep exists
+    const creep = Game.creeps[creepName];
+    if (!creep) {
+      // Maybe it's a completed diagnostic - show report
+      if (bb.diagnostics[creepName] && !bb.diagnostics[creepName].active) {
+        console.log(JSON.stringify(bb.diagnostics[creepName], null, 2));
+        return;
+      }
+      console.log('[diagnose] creep "' + creepName + '" not found');
+      return;
+    }
+
+    // Start new diagnostic
+    const duration = ticks || 50;
+    bb.diagnostics[creepName] = {
+      active:    true,
+      startTick: Game.time,
+      endTick:   Game.time + duration,
+      role:      creep.memory.role,
+      homeRoom:  creep.memory.homeRoom,
+      log:       []
+    };
+
+    console.log('[diagnose] tracking ' + creepName + ' (' + creep.memory.role + ') for ' +
+      duration + ' ticks. blackbox("diagnose") to check progress.');
+  },
 
   _snapshot() {
     const rooms = {};
@@ -391,6 +441,9 @@ const BlackBox = {
 
     // Creep lifecycle
     this._trackCreepLifecycle(bb);
+
+    // Creep diagnostics
+    this._trackDiagnostics(bb);
 
     // Prune old data
     const cutoff = Game.time - (MAX_BUCKETS * BUCKET_SIZE);
@@ -885,6 +938,69 @@ const BlackBox = {
           });
       } else {
         entry.lastTTL = Game.creeps[name].ticksToLive;
+      }
+    }
+  },
+
+  _trackDiagnostics(bb) {
+    if (!bb.diagnostics) return;
+
+    for (const name in bb.diagnostics) {
+      const diag = bb.diagnostics[name];
+      if (!diag.active) continue;
+
+      const creep = Game.creeps[name];
+      if (!creep) {
+        // Creep died during diagnostic
+        diag.active = false;
+        diag.incomplete = true;
+        diag.endTick = Game.time;
+        console.log('[diagnose] ' + name + ' died at tick ' + Game.time +
+          ' (' + diag.log.length + ' ticks collected)');
+        continue;
+      }
+
+      // Capture current state
+      const entry = {
+        tick:     Game.time,
+        pos:      { x: creep.pos.x, y: creep.pos.y, roomName: creep.pos.roomName },
+        store:    creep.store[RESOURCE_ENERGY] || 0,
+        capacity: creep.store.getCapacity(RESOURCE_ENERGY),
+        ttl:      creep.ticksToLive,
+        fatigue:  creep.fatigue,
+        memory:   {
+          working:    creep.memory.working,
+          delivering: creep.memory.delivering,
+          job:        creep.memory.job ? {
+            type:     creep.memory.job.type,
+            targetId: creep.memory.job.targetId,
+            priority: creep.memory.job.priority
+          } : null
+        }
+      };
+
+      // Try to capture what action was attempted (if any)
+      // This is best-effort — we can't see inside the creep's behavior
+      // But we can infer from memory state and position
+      if (creep.memory.job) {
+        const target = Game.getObjectById(creep.memory.job.targetId);
+        if (target) {
+          entry.target = {
+            id:    target.id,
+            type:  target.structureType || target.resourceType || 'unknown',
+            pos:   { x: target.pos.x, y: target.pos.y },
+            range: creep.pos.getRangeTo(target)
+          };
+        }
+      }
+
+      diag.log.push(entry);
+
+      // Check if diagnostic is complete
+      if (Game.time >= diag.endTick) {
+        diag.active = false;
+        console.log('[diagnose] ' + name + ' complete — ' + diag.log.length +
+          ' ticks collected. Type blackbox("diagnose", "' + name + '") to see report.');
       }
     }
   },
