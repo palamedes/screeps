@@ -119,10 +119,12 @@ Creep.prototype.runThrall = function () {
       })[0];
 
       const warlockActive = warlock &&
-        warlock.pos.getRangeTo(controllerContainer) <= 1;
+        warlock.pos.getRangeTo(controllerContainer) <= 1 &&
+        warlock.store[RESOURCE_ENERGY] < warlock.store.getCapacity(RESOURCE_ENERGY);
 
-      // Only deliver if container is low AND warlock isn't actively draining
-      const shouldFill = energyPct < 0.5 && !warlockActive;
+      // Fill when container is low (<50%), UNLESS warlock is actively draining a fuller container
+      // If container is empty or very low, ALWAYS fill regardless of warlock
+      const shouldFill = energyPct < 0.5 || (energyPct < 0.8 && !warlockActive);
 
       if (shouldFill && controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
         if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -186,7 +188,22 @@ Creep.prototype.runThrall = function () {
   });
 
   if (sourceContainers.length > 0) {
-    const container = this.pos.findClosestByRange(sourceContainers);
+    // Prefer fullest container, but if they're close in fill level, prefer closest
+    // This prevents uneven draining where everyone goes to the nearest one
+    sourceContainers.sort((a, b) => {
+      const aFill = a.store[RESOURCE_ENERGY] / a.store.getCapacity(RESOURCE_ENERGY);
+      const bFill = b.store[RESOURCE_ENERGY] / b.store.getCapacity(RESOURCE_ENERGY);
+
+      // If one is significantly fuller (>20% difference), prefer the fuller one
+      if (Math.abs(aFill - bFill) > 0.2) {
+        return bFill - aFill;  // Sort descending by fill ratio
+      }
+
+      // Otherwise prefer closest
+      return this.pos.getRangeTo(a) - this.pos.getRangeTo(b);
+    });
+
+    const container = sourceContainers[0];
     if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, container);
     }
