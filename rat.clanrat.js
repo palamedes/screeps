@@ -138,6 +138,22 @@ Creep.prototype.runClanrat = function () {
     return;
   }
 
+  // Source containers — only if thralls can't keep up
+  const sourceContainers = this.room.find(FIND_STRUCTURES, {
+    filter: s =>
+      s.structureType === STRUCTURE_CONTAINER &&
+      sources.some(src => s.pos.inRangeTo(src, 2)) &&
+      s.store[RESOURCE_ENERGY] > 0
+  });
+
+  if (sourceContainers.length > 0) {
+    const container = this.pos.findClosestByRange(sourceContainers);
+    if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+      Traffic.requestMove(this, container);
+    }
+    return;
+  }
+
   // Partial load — spend what we have rather than idling
   if (this.store[RESOURCE_ENERGY] > 0) {
     this.memory.working = true;
