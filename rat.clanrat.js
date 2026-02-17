@@ -147,7 +147,22 @@ Creep.prototype.runClanrat = function () {
   });
 
   if (sourceContainers.length > 0) {
-    const container = this.pos.findClosestByRange(sourceContainers);
+    // Prefer fullest container, but if they're close in fill level, prefer closest
+    // This prevents uneven draining where everyone goes to the nearest one
+    sourceContainers.sort((a, b) => {
+      const aFill = a.store[RESOURCE_ENERGY] / a.store.getCapacity(RESOURCE_ENERGY);
+      const bFill = b.store[RESOURCE_ENERGY] / b.store.getCapacity(RESOURCE_ENERGY);
+
+      // If one is significantly fuller (>20% difference), prefer the fuller one
+      if (Math.abs(aFill - bFill) > 0.2) {
+        return bFill - aFill;  // Sort descending by fill ratio
+      }
+
+      // Otherwise prefer closest
+      return this.pos.getRangeTo(a) - this.pos.getRangeTo(b);
+    });
+
+    const container = sourceContainers[0];
     if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, container);
     }
