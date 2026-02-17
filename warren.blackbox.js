@@ -123,14 +123,25 @@ const BlackBox = {
       return;
     }
 
+    // Check if there's a completed diagnostic for this creep
+    if (bb.diagnostics[creepName] && !bb.diagnostics[creepName].active) {
+      console.log(JSON.stringify(bb.diagnostics[creepName], null, 2));
+      return;
+    }
+
+    // Check if there's already an active diagnostic for this creep
+    if (bb.diagnostics[creepName] && bb.diagnostics[creepName].active) {
+      const d = bb.diagnostics[creepName];
+      const progress = d.log.length + '/' + (d.endTick - d.startTick);
+      const pct = Math.round(d.log.length / (d.endTick - d.startTick) * 100);
+      console.log('[diagnose] already tracking ' + creepName + ' — ' + progress +
+        ' ticks (' + pct + '%) — ' + (d.endTick - Game.time) + ' ticks remaining');
+      return;
+    }
+
     // Check if creep exists
     const creep = Game.creeps[creepName];
     if (!creep) {
-      // Maybe it's a completed diagnostic - show report
-      if (bb.diagnostics[creepName] && !bb.diagnostics[creepName].active) {
-        console.log(JSON.stringify(bb.diagnostics[creepName], null, 2));
-        return;
-      }
       console.log('[diagnose] creep "' + creepName + '" not found');
       return;
     }
