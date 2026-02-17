@@ -48,15 +48,26 @@ Creep.prototype.runJob = function () {
 
     case 'BUILD':
       if (this.build(target) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, target);
+        Traffic.requestMove(this, target, { range: 3 });
       }
       break;
 
     case 'REPAIR': {
+      const energyBefore = this.store[RESOURCE_ENERGY];
       const result = this.repair(target);
+
       if (result === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, target);
-      } else if (result !== OK) {
+        Traffic.requestMove(this, target, { range: 3 });
+      } else if (result === OK) {
+        // Check if energy was actually consumed
+        // If structure is at RCL cap, repair() returns OK but consumes no energy
+        const energyAfter = this.store[RESOURCE_ENERGY];
+        if (energyAfter === energyBefore) {
+          // Structure can't be repaired further (at RCL cap)
+          this.memory.job = null;
+        }
+      } else {
+        // Any other error (target gone, etc)
         this.memory.job = null;
       }
       break;
