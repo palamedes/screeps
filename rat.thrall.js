@@ -6,11 +6,18 @@
  * They have no WORK parts. They only move energy around.
  *
  * Pickup priority:   tombstones → ruins → dropped pile (largest first) → source containers
- * Delivery priority: spawn → extensions → controller container → towers
+ * Delivery priority: spawn → extensions → towers → controller container
  *
- * Extensions are prioritized above the controller container because they
- * directly determine spawn body quality. Empty extensions = every replacement
- * creep spawns at minimum body regardless of capacity.
+ * CRITICAL FIX: Towers moved ahead of controller container.
+ * The controller container is an infinite sink when the warlock is anchored
+ * and actively upgrading. If thralls prioritize it, they get stuck in a loop
+ * filling the container while the warlock drains it, starving the tower.
+ * An empty tower is a 5000-energy paperweight that can't attack or repair.
+ * The warlock can wait 5 extra ticks for the next thrall cycle.
+ *
+ * Extensions are prioritized above towers because they directly determine
+ * spawn body quality. Empty extensions = every replacement creep spawns at
+ * minimum body regardless of capacity.
  *
  * Source containers are the LAST resort in gathering — they're the steady-state
  * buffer that never decays. Tombstones and dropped piles are lossy and must be
@@ -57,7 +64,7 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 2: Extensions — fill before controller container.
+    // Priority 2: Extensions — fill before towers and controller container.
     // Use room.find + filter, pick closest by range (no pathfinding needed
     // for selection — traffic handles the actual path).
     const extensions = this.room.find(FIND_MY_STRUCTURES, {
@@ -74,23 +81,9 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 3: Controller container.
-    // Use room.find — do NOT use findClosestByPath (fails silently on congested paths).
-    const controllerContainer = this.room.find(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE) &&
-        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-    })[0];
-
-    if (controllerContainer) {
-      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, controllerContainer);
-      }
-      return;
-    }
-
-    // Priority 4: Towers
+    // Priority 3: Towers (MOVED UP from priority 4)
+    // An empty tower is a 5000-energy paperweight. Defense and repair
+    // infrastructure must stay powered. The warlock can wait.
     const towers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -103,6 +96,40 @@ Creep.prototype.runThrall = function () {
         Traffic.requestMove(this, tower);
       }
       return;
+    }
+
+    // Priority 4: Controller container (MOVED DOWN from priority 3)
+    // Only fill when below 50% AND warlock isn't actively draining it.
+    // This prevents the infinite sink problem where thralls endlessly
+    // feed the container while the warlock drains it continuously.
+    // Use room.find — do NOT use findClosestByPath (fails silently on congested paths).
+    const controllerContainer = this.room.find(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
+    })[0];
+
+    if (controllerContainer) {
+      const energyPct = controllerContainer.store[RESOURCE_ENERGY] /
+        controllerContainer.store.getCapacity(RESOURCE_ENERGY);
+
+      // Check if warlock is nearby and actively using the container
+      const warlock = this.room.find(FIND_MY_CREEPS, {
+        filter: c => c.memory.role === 'warlock'
+      })[0];
+
+      const warlockActive = warlock &&
+        warlock.pos.getRangeTo(controllerContainer) <= 1;
+
+      // Only deliver if container is low AND warlock isn't actively draining
+      const shouldFill = energyPct < 0.5 && !warlockActive;
+
+      if (shouldFill && controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+        if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+          Traffic.requestMove(this, controllerContainer);
+        }
+        return;
+      }
     }
 
     // Everything full — return to gathering

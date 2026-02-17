@@ -185,25 +185,86 @@ module.exports = {
   },
 
   /**
-   * Publish repair jobs for damaged roads.
+   * Publish repair jobs for damaged structures.
    *
-   * Only roads for now — ramparts are maintained by the tower's idle repair.
-   * Critical roads (< 25% hits) get higher priority than merely damaged ones.
-   * Publish up to 3 worst roads so multiple clanrats can repair in parallel.
+   * CRITICAL STRUCTURES (containers, ramparts, towers, spawn):
+   * - Controller container: priority 975 (warlock anchor point)
+   * - Source containers: priority 950 (miner harvest points)
+   * - Other containers: priority 900
+   * - Critical ramparts (<1000 hits): priority 950
+   * - Normal ramparts: priority 900
+   * - Towers: priority 900
+   *
+   * ROADS:
+   * - Critical (<25% hits): priority 750
+   * - Damaged (<50% hits): priority 500
+   *
+   * Publish up to 3 worst damaged structures so multiple clanrats can repair in parallel.
    */
   publishRepairJobs(room) {
-    const damaged = room.find(FIND_MY_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_ROAD &&
-        s.hits < s.hitsMax * 0.5
-    }).sort((a, b) => a.hits - b.hits).slice(0, 3);
+    const sources = room.find(FIND_SOURCES);
 
-    for (const road of damaged) {
-      const isCritical = road.hits < road.hitsMax * 0.25;
+    // Find all damaged structures
+    const damagedStructures = room.find(FIND_MY_STRUCTURES, {
+      filter: s => s.hits < s.hitsMax
+    });
+
+    // Prioritize and sort
+    const prioritized = damagedStructures.map(structure => {
+      let priority = 500; // default
+
+      if (structure.structureType === STRUCTURE_CONTAINER) {
+        // Check if controller container
+        const isControllerContainer = room.controller &&
+          structure.pos.inRangeTo(room.controller, 3);
+
+        // Check if source container
+        const isSourceContainer = sources.some(src =>
+          structure.pos.inRangeTo(src, 2)
+        );
+
+        if (isControllerContainer) {
+          priority = 975;
+        } else if (isSourceContainer) {
+          priority = 950;
+        } else {
+          priority = 900;
+        }
+      } else if (structure.structureType === STRUCTURE_RAMPART) {
+        // Critical ramparts get emergency priority
+        if (structure.hits < 1000) {
+          priority = 950;
+        } else {
+          priority = 900;
+        }
+      } else if (structure.structureType === STRUCTURE_TOWER) {
+        priority = 900;
+      } else if (structure.structureType === STRUCTURE_ROAD) {
+        // Only repair roads below 50% hits
+        if (structure.hits >= structure.hitsMax * 0.5) {
+          return null; // Skip healthy roads
+        }
+        const isCritical = structure.hits < structure.hitsMax * 0.25;
+        priority = isCritical ? 750 : 500;
+      }
+
+      return { structure, priority };
+    }).filter(item => item !== null);
+
+    // Sort by priority (highest first), then by hits (lowest first)
+    prioritized.sort((a, b) => {
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      return a.structure.hits - b.structure.hits;
+    });
+
+    // Publish top 3 repair jobs
+    for (const item of prioritized.slice(0, 3)) {
       this.publish(room.name, {
         type:     'REPAIR',
-        targetId: road.id,
-        priority: isCritical ? 750 : 500,
+        targetId: item.structure.id,
+        priority: item.priority,
         slots:    1
       });
     }

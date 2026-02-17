@@ -89,16 +89,28 @@ module.exports = {
       return;
     }
 
-    // Thrall target
+    // Thrall target — UPDATED for better throughput
     const sourceContainerCount = room.find(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
         sources.some(src => s.pos.inRangeTo(src, 2))
     }).length;
 
-    const thrallTarget = sourceContainerCount > 0
-      ? sourceContainerCount
-      : rcl >= 3 ? 2 : 1;
+    let thrallTarget;
+    if (sourceContainerCount > 0) {
+      // With source containers, scale by RCL:
+      // RCL3 = 3 thralls (was 2)
+      // RCL4 = 3 thralls
+      // RCL5 = 4 thralls
+      // Formula ensures minimum coverage plus scaling
+      thrallTarget = Math.max(
+        sourceContainerCount + 1,  // minimum: one per container + 1 extra
+        Math.ceil(room.controller.level * 0.75)  // scales with RCL
+      );
+    } else {
+      // No containers yet — use simpler logic
+      thrallTarget = rcl >= 3 ? 2 : 1;
+    }
 
     // Thralls: preemptive
     const effectiveThralls = thralls.filter(c =>
