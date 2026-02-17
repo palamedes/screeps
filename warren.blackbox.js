@@ -1176,7 +1176,7 @@ const BlackBox = {
 // ─────────────────────────────────────────────────────────── Global exports ──
 
 global.BlackBox = BlackBox;
-global.blackbox = function(cmd) { return BlackBox.blackbox(cmd); };
+global.blackbox = function(cmd, arg1, arg2) { return BlackBox.blackbox(cmd, arg1, arg2); };
 global.profile  = function(cmd) { return BlackBox.profile(cmd); };
 
 module.exports = BlackBox;
