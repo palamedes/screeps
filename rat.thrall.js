@@ -45,11 +45,32 @@ const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
 Creep.prototype.runThrall = function () {
 
   // --- State Toggle ---
-  if (this.store.getFreeCapacity() === 0) {
+  // Only switch to delivering mode if we're currently gathering AND now full.
+  // Don't override a "nothing to deliver to" decision from last tick.
+  if (!this.memory.delivering && this.store.getFreeCapacity() === 0) {
     this.memory.delivering = true;
   }
+
+  // Switch to gathering mode when empty
   if (this.store[RESOURCE_ENERGY] === 0) {
     this.memory.delivering = false;
+  }
+
+  // --- Full But Waiting Check ---
+  // If we're full but in gathering mode (because nothing needed energy last tick),
+  // check if anything needs energy NOW before idling.
+  if (!this.memory.delivering && this.store.getFreeCapacity() === 0) {
+    const spawn = this.room.find(FIND_MY_SPAWNS)[0];
+    const needsEnergy =
+      (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) ||
+      this.room.find(FIND_MY_STRUCTURES, {
+        filter: s => (s.structureType === STRUCTURE_EXTENSION || s.structureType === STRUCTURE_TOWER) &&
+          s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+      }).length > 0;
+
+    if (needsEnergy) {
+      this.memory.delivering = true;
+    }
   }
 
   // --- Delivery Phase ---
