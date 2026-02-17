@@ -11,6 +11,12 @@
  * Roads complete in priority order — spawn→source paths finish before the
  * controller road starts. Hauler throughput improves before warlock travel.
  *
+ * CRITICAL INFRASTRUCTURE FIX:
+ *   Spawn→source roads use a LOWER energy threshold (0.5 vs 0.7) because
+ *   hauler paths are critical to energy flow. If these roads decay completely
+ *   during energy crashes, the planner must rebuild them even during recovery.
+ *   Without hauler roads, recovery takes much longer.
+ *
  * IMPORTANT — path calculation matches traffic.js exactly:
  *   Roads must be placed on the tiles creeps actually walk, not just the
  *   geometrically shortest path. This planner uses PathFinder.search with
@@ -22,7 +28,7 @@
  *
  * Guard conditions (all must pass or planner returns immediately):
  *   - Spawn and controller must exist
- *   - Energy ratio >= 0.7 (same guard as extensions — don't build during recovery)
+ *   - Energy ratio >= 0.5 (for spawn→source) or 0.7 (for spawn→controller)
  *   - No road construction site already exists (one site at a time)
  *
  * Paths are cached in room.memory._roadPaths after first calculation.
@@ -41,10 +47,18 @@ Room.prototype.planRoads = function () {
   const spawn = this.find(FIND_MY_SPAWNS)[0];
   if (!spawn) return;
 
+  const sources = this.find(FIND_SOURCES);
+
+  // Check if we're missing any spawn→source roads (critical infrastructure)
+  const missingCriticalRoads = this._checkMissingSpawnSourceRoads(spawn, sources);
+
   // Only build roads when we have economic surplus.
-  // Roads are infrastructure investment — don't starve the horde to build them.
+  // HOWEVER: spawn→source roads are CRITICAL (hauler paths) so use lower threshold.
+  // Without hauler roads, energy recovery takes much longer.
   const energyRatio = this.energyAvailable / this.energyCapacityAvailable;
-  if (energyRatio < 0.7) return;
+  const threshold = missingCriticalRoads ? 0.5 : 0.7;
+
+  if (energyRatio < threshold) return;
 
   // One site at a time. Wait for the current road to be built before placing
   // the next. Keeps workers focused and prevents energy drain from a backlog.
@@ -53,7 +67,6 @@ Room.prototype.planRoads = function () {
   });
   if (existingSites.length > 0) return;
 
-  const sources    = this.find(FIND_SOURCES);
   const controller = this.controller;
 
   // Priority-ordered list of paths to road.
@@ -107,6 +120,39 @@ Room.prototype.planRoads = function () {
       }
     }
   }
+};
+
+/**
+ * Check if any spawn→source road tiles are missing.
+ * Used to determine if we should use the lower energy threshold.
+ *
+ * @param  {StructureSpawn} spawn
+ * @param  {Array<Source>}  sources
+ * @return {boolean}        true if any spawn→source road tiles are missing
+ */
+Room.prototype._checkMissingSpawnSourceRoads = function (spawn, sources) {
+  if (!this.memory._roadPaths) return false;
+
+  for (let i = 0; i < sources.length; i++) {
+    const key = `road_spawn_source_${i}`;
+    const path = this.memory._roadPaths[key];
+    if (!path || !path.length) continue;
+
+    // Check if any tile in this path is missing a road
+    for (const step of path) {
+      // Skip spawn tile
+      if (step.x === spawn.pos.x && step.y === spawn.pos.y) continue;
+
+      const structures = this.lookForAt(LOOK_STRUCTURES, step.x, step.y);
+      const hasRoad = structures.some(s => s.structureType === STRUCTURE_ROAD);
+
+      if (!hasRoad) {
+        return true;  // Found a missing road tile on a critical path
+      }
+    }
+  }
+
+  return false;  // All spawn→source roads intact
 };
 
 /**
