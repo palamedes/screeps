@@ -122,6 +122,7 @@ const BlackBox = {
       const dropped    = room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType === RESOURCE_ENERGY});
       const spawns     = room.find(FIND_MY_SPAWNS);
       const towers     = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_TOWER});
+      const ramparts   = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_RAMPART});
       const hostiles   = room.find(FIND_HOSTILE_CREEPS);
 
       rooms[roomName] = {
@@ -161,6 +162,11 @@ const BlackBox = {
           energy:   t.store[RESOURCE_ENERGY],
           capacity: t.store.getCapacity(RESOURCE_ENERGY),
           pct:      Math.round(t.store[RESOURCE_ENERGY] / t.store.getCapacity(RESOURCE_ENERGY) * 100)
+        })),
+        ramparts: ramparts.map(r => ({
+          hits:    r.hits,
+          hitsMax: r.hitsMax,
+          hitsPct: Math.round(r.hits / r.hitsMax * 100)
         })),
         creeps: {
           total:  creeps.length,
@@ -430,6 +436,8 @@ const BlackBox = {
     const droppedTotal = dropped.reduce((s, d) => s + d.amount, 0);
     const roads    = room.find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_ROAD});
     const containers = room.find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_CONTAINER});
+    const towers   = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_TOWER});
+    const ramparts = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_RAMPART});
     const creeps   = Object.values(Game.creeps).filter(c => c.memory.homeRoom === roomName);
     const miners   = creeps.filter(c => c.memory.role === 'miner');
     const exts     = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_EXTENSION});
@@ -479,13 +487,33 @@ const BlackBox = {
     // Containers
     containers.forEach(c => {
       const fillPct = Math.round(c.store[RESOURCE_ENERGY] / c.store.getCapacity(RESOURCE_ENERGY) * 100);
+      const hitsPct = Math.round(c.hits / c.hitsMax * 100);
+
       if (c.pos.inRangeTo(room.controller, 3)) {
         bucket.containerControllerSum += fillPct;
+        bucket.containerControllerHitsSum += hitsPct;
         bucket.containerControllerTicks++;
       } else if (sources.some(src => c.pos.inRangeTo(src, 2))) {
         bucket.containerSourceSum += fillPct;
+        bucket.containerSourceHitsSum += hitsPct;
         bucket.containerSourceTicks++;
       }
+    });
+
+    // Towers
+    towers.forEach(t => {
+      const energyPct = Math.round(t.store[RESOURCE_ENERGY] / t.store.getCapacity(RESOURCE_ENERGY) * 100);
+      bucket.towerEnergySum += energyPct;
+      bucket.towerTicks++;
+    });
+
+    // Ramparts
+    ramparts.forEach(r => {
+      const hitsPct = Math.round(r.hits / r.hitsMax * 100);
+      bucket.rampartHitsSum += hitsPct;
+      bucket.rampartHitsMin = Math.min(bucket.rampartHitsMin, hitsPct);
+      bucket.rampartTicks++;
+      if (r.hits < 1000) bucket.rampartCriticalCount++;
     });
 
     // CPU
@@ -557,6 +585,12 @@ const BlackBox = {
         spawnBusyPct:  Math.round(bucket.spawnBusyTicks / bucket.ticks * 100),
         containerControllerAvgPct: bucket.containerControllerTicks > 0
           ? Math.round(bucket.containerControllerSum / bucket.containerControllerTicks)
+          : null,
+        towerAvgPct: bucket.towerTicks > 0
+          ? Math.round(bucket.towerEnergySum / bucket.towerTicks)
+          : null,
+        rampartAvgPct: bucket.rampartTicks > 0
+          ? Math.round(bucket.rampartHitsSum / bucket.rampartTicks)
           : null
       };
     }
@@ -606,9 +640,17 @@ const BlackBox = {
       extensionsBuilt:          0,
       extensionsMax:            0,
       containerControllerSum:   0,
+      containerControllerHitsSum: 0,
       containerControllerTicks: 0,
       containerSourceSum:       0,
+      containerSourceHitsSum:   0,
       containerSourceTicks:     0,
+      towerEnergySum:           0,
+      towerTicks:               0,
+      rampartHitsSum:           0,
+      rampartHitsMin:           100,
+      rampartCriticalCount:     0,
+      rampartTicks:             0,
       droppedSum:               0,
       droppedMax:               0,
       roadDamagedStart:         roads.filter(r => r.hits < r.hitsMax * 0.5).length,
@@ -666,7 +708,10 @@ const BlackBox = {
     let droppedSum = 0, droppedMax = 0;
     let cpuSum = 0, cpuMax = 0;
     let roleGapTicks = 0;
-    let ccSum = 0, ccTicks = 0, csSum = 0, csTicks = 0;
+    let ccSum = 0, ccTicks = 0, ccHitsSum = 0;
+    let csSum = 0, csTicks = 0, csHitsSum = 0;
+    let towerSum = 0, towerTicks = 0;
+    let rampartSum = 0, rampartMin = 100, rampartCritical = 0, rampartTicks = 0;
 
     buckets.forEach(b => {
       energyRatioSum      += b.energyRatioSum;
@@ -683,9 +728,17 @@ const BlackBox = {
       cpuMax               = Math.max(cpuMax, b.cpuMax);
       roleGapTicks        += b.roleGapTicks;
       ccSum               += b.containerControllerSum;
+      ccHitsSum           += b.containerControllerHitsSum || 0;
       ccTicks             += b.containerControllerTicks;
       csSum               += b.containerSourceSum;
+      csHitsSum           += b.containerSourceHitsSum || 0;
       csTicks             += b.containerSourceTicks;
+      towerSum            += b.towerEnergySum || 0;
+      towerTicks          += b.towerTicks || 0;
+      rampartSum          += b.rampartHitsSum || 0;
+      rampartMin           = Math.min(rampartMin, b.rampartHitsMin || 100);
+      rampartCritical     += b.rampartCriticalCount || 0;
+      rampartTicks        += b.rampartTicks || 0;
     });
 
     const progressDelta = last.controllerProgressEnd - first.controllerProgressStart;
@@ -735,9 +788,30 @@ const BlackBox = {
       },
 
       containers: {
-        controller: ccTicks > 0 ? { avgPct: Math.round(ccSum / ccTicks) } : null,
-        source:     csTicks > 0 ? { avgPct: Math.round(csSum / csTicks) } : null
+        controller: ccTicks > 0 ? {
+          avgPct: Math.round(ccSum / ccTicks),
+          avgHitsPct: Math.round(ccHitsSum / ccTicks)
+        } : null,
+        source: csTicks > 0 ? {
+          avgPct: Math.round(csSum / csTicks),
+          avgHitsPct: Math.round(csHitsSum / csTicks)
+        } : null
       },
+
+      towers: towerTicks > 0 ? {
+        avgEnergyPct: Math.round(towerSum / towerTicks),
+        assessment: (towerSum / towerTicks) > 50 ? 'healthy' :
+          (towerSum / towerTicks) > 20 ? 'low' : 'critical'
+      } : null,
+
+      ramparts: rampartTicks > 0 ? {
+        avgHitsPct: Math.round(rampartSum / rampartTicks),
+        minHitsPct: rampartMin,
+        criticalCount: Math.round(rampartCritical / totalTicks),
+        assessment: rampartMin < 1 ? 'failing' :
+          rampartMin < 10 ? 'critical' :
+            (rampartSum / rampartTicks) < 50 ? 'weak' : 'healthy'
+      } : null,
 
       droppedEnergy: {
         avg:        Math.round(droppedSum / totalTicks),
