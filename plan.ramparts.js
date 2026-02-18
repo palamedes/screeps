@@ -8,10 +8,16 @@
  * Placement priority:
  *   1. Spawn tile   — most critical. Losing spawn = game over.
  *   2. Tower tile(s) — protecting the tower protects our defense.
+ *   3. Extensions   — raiders can drain energy buffer by destroying them.
+ *                     Placed after spawn/tower are covered.
  *
  * One rampart site at a time — consistent with all other planners.
  * No energy ratio guard — defense placement is always worth it.
  * The build cost (1 energy for the site) is negligible.
+ *
+ * Rampart HP target: 250k (maintained by tower repair in warren.act.js).
+ * Extensions don't need multi-million HP walls — 250k stops raiders cold
+ * without burning tower energy on unnecessary overbuilding.
  *
  * Called by: warren.act.js (when plan.buildRamparts is true)
  * Reads:     room structures, construction sites
@@ -36,8 +42,6 @@ Room.prototype.planRamparts = function () {
       .some(s => s.structureType === STRUCTURE_RAMPART);
 
   // Priority 1: Rampart on spawn tile.
-  // A rampart directly on the spawn means attackers must chew through it
-  // before the spawn takes a single point of damage.
   if (!hasRampart(spawn.pos.x, spawn.pos.y)) {
     const result = this.createConstructionSite(
       spawn.pos.x, spawn.pos.y, STRUCTURE_RAMPART
@@ -51,7 +55,6 @@ Room.prototype.planRamparts = function () {
   }
 
   // Priority 2: Rampart on each tower tile.
-  // A protected tower keeps shooting even while under heavy attack.
   const towers = this.find(FIND_MY_STRUCTURES, {
     filter: s => s.structureType === STRUCTURE_TOWER
   });
@@ -64,6 +67,28 @@ Room.prototype.planRamparts = function () {
       if (result === OK) {
         console.log(
           `[warren:${this.name}] rampart site placed on tower at ${tower.pos.x},${tower.pos.y}`
+        );
+        return;
+      }
+    }
+  }
+
+  // Priority 3: Rampart on each extension.
+  // Extensions are soft targets — a raid can destroy them and drain your energy
+  // buffer, downgrading every spawn for the next 1500 ticks.
+  // We cover them last (spawn and tower protection come first) but systematically.
+  const extensions = this.find(FIND_MY_STRUCTURES, {
+    filter: s => s.structureType === STRUCTURE_EXTENSION
+  });
+
+  for (const extension of extensions) {
+    if (!hasRampart(extension.pos.x, extension.pos.y)) {
+      const result = this.createConstructionSite(
+        extension.pos.x, extension.pos.y, STRUCTURE_RAMPART
+      );
+      if (result === OK) {
+        console.log(
+          `[warren:${this.name}] rampart site placed on extension at ${extension.pos.x},${extension.pos.y}`
         );
         return;
       }
