@@ -51,6 +51,16 @@
  *     thrall:   30  — hauler
  *     slave:    10  — bootstrap generalist
  *
+ * Graduated stuck recovery:
+ *   The stuck counter (_trafficStuck) accumulates every tick the creep doesn't
+ *   move and fatigue is zero. It ONLY resets on actual position change.
+ *   Triggering a recovery tier does NOT reset the counter — if moveTo also
+ *   fails, the counter keeps climbing to the next threshold automatically.
+ *
+ *   Tick  3+: moveTo fallback — ignoreCreeps bulldoze attempt (FALLBACK_DURATION ticks)
+ *   Tick  9+: random nudge   — pick any open adjacent tile to break the deadlock
+ *   Tick 18+: suicide        — irrecoverably stuck; spawn director queues replacement
+ *
  * Path caching:
  *   Paths are stored in creep.memory._trafficPath as {x,y} arrays.
  *   Cache is invalidated when:
@@ -82,37 +92,23 @@
  *   visible to the pathfinder (cost 20 deters routing through) while still
  *   allowing motivated creeps to displace them when necessary.
  *
- * Stuck detection and moveTo fallback:
- *   Every tick a creep registers a move intent, its position is compared to
- *   creep.memory._trafficLastPos. If unchanged for STUCK_THRESHOLD consecutive
- *   ticks, the traffic system surrenders and calls native moveTo() as an escape
- *   hatch. moveTo uses ignoreCreeps:true — it will bulldoze through any blocker
- *   rather than waiting politely. Path cache is wiped on fallback so a fresh
- *   path is calculated on the next tick once the creep is moving again.
- *   Counter resets to 0 whenever the creep successfully changes position.
- *   Memory keys: _trafficLastPos {x,y}, _trafficStuck (tick count)
- *
- * Future hooks (not yet implemented):
- *   - Convoy logic for haulers in corridors
- *   - Inter-room pathing awareness
- *   - Road preference scoring fed from plan.roads.js
- *
  * Called from: main.js (reset before ticks, resolve after)
  * Registered by: all rat files (pin or requestMove)
  */
 
-// How many consecutive ticks without movement before triggering the moveTo fallback.
-const STUCK_THRESHOLD = 3;
+// Graduated stuck recovery thresholds (ticks without movement, fatigue = 0).
+// Counter accumulates continuously — triggering a tier does NOT reset it.
+// Only actual position change resets the counter.
+const STUCK_FALLBACK = 3;   // → moveTo ignoreCreeps bulldoze
+const STUCK_NUDGE    = 9;   // → random-direction nudge to break deadlock
+const STUCK_SUICIDE  = 18;  // → suicide; spawn director queues a fresh replacement
 
-// How many ticks to stay in moveTo fallback mode once triggered.
-// The creep gets FALLBACK_DURATION full ticks of ignoreCreeps moveTo to break free
-// before traffic resumes control. 3 ticks is usually enough to clear any jam.
+// How many ticks to stay in moveTo fallback mode per trigger.
 const FALLBACK_DURATION = 3;
 
 // Role priority for contested tile resolution.
 // Higher number = wins the tile when multiple creeps want the same destination.
 // Miners are highest — a stuck miner kills income for the whole room.
-// Warlocks are second — once seated they shouldn't be bumped.
 // Losers yield sideways rather than queueing indefinitely.
 const ROLE_PRIORITY = {
   miner:   100,
@@ -181,18 +177,14 @@ const Traffic = {
    *   1. Skip creeps already in range of their target
    *   2. Calculate next-step direction for each intent (cached paths)
    *   3. Detect and execute mutual swaps
-   *   4. Execute uncontested moves; push soft-pinned blockers when needed
-   *   5. Role priority: when multiple creeps contest a tile, higher priority wins
-   *   6. Miner override: miners can displace non-miners from hard-pinned tiles
-   *   7. Skip hard-pinned or unresolvable destinations (creep waits one tick)
+   *   4. Group by destination; sort by role priority; resolve conflicts
+   *   5. Miner override: miners can displace non-miners from hard-pinned tiles
+   *   6. Soft-pin push: displace idle rats blocking a mover's path
+   *   7. Yield losers sideways to prevent permanent queueing
    */
   resolve() {
 
     // Step 0: Auto soft-pin idle creeps.
-    // Any creep that didn't register a move intent this tick is parked.
-    // Register as a SOFT pin — idle rats can be pushed by motivated movers.
-    // The _pins entry (cost 20 in CostMatrix) still makes other creeps prefer
-    // to route around them; the _softPins entry marks them as displaceable.
     for (const name in Game.creeps) {
       if (!this._intents[name]) {
         const creep = Game.creeps[name];
@@ -202,13 +194,12 @@ const Traffic = {
       }
     }
 
-    // Step 1 & 2: Calculate next-step direction for each intent
+    // Step 1 & 2: Calculate next-step direction for each intent.
     const moves = {};  // creepName → { creep, dir, fromKey, toKey }
 
     for (const [name, intent] of Object.entries(this._intents)) {
       const { creep, target, range } = intent;
 
-      // Already in range — no move needed
       const targetPos = target.pos || target;
       if (creep.pos.inRangeTo(targetPos.x, targetPos.y, range)) continue;
 
@@ -226,17 +217,14 @@ const Traffic = {
       };
     }
 
-    // Step 3: Detect mutual swaps and execute them first.
-    // A wants B's tile and B wants A's tile — clean swap, both move.
+    // Step 3: Mutual swaps first — A wants B's tile, B wants A's tile.
     const swapped = new Set();
 
     for (const [nameA, moveA] of Object.entries(moves)) {
       if (swapped.has(nameA)) continue;
-
       for (const [nameB, moveB] of Object.entries(moves)) {
         if (nameA === nameB)    continue;
         if (swapped.has(nameB)) continue;
-
         if (moveA.toKey === moveB.fromKey && moveB.toKey === moveA.fromKey) {
           moveA.creep.move(moveA.dir);
           moveB.creep.move(moveB.dir);
@@ -247,16 +235,8 @@ const Traffic = {
       }
     }
 
-    // Step 4, 5, 6 & 7: Group remaining moves by destination, then resolve.
-    //
-    // For each destination tile:
-    //   - Hard-pinned by non-miner: skip (miner/warlock owns this tile) UNLESS
-    //     the mover is a miner — miners can displace any non-miner from a hard tile.
-    //   - Soft-pinned: try to push the idle blocker to a free adjacent tile,
-    //     then let the moving creep through. If no push tile exists, skip.
-    //   - Uncontested: move freely.
-    //   - Contested: highest role priority wins; losers yield sideways.
-    const destinations = {};  // toKey → [creepName, ...]
+    // Step 4–7: Group by destination and resolve.
+    const destinations = {};
 
     for (const [name, move] of Object.entries(moves)) {
       if (swapped.has(name)) continue;
@@ -266,9 +246,7 @@ const Traffic = {
 
     for (const [toKey, names] of Object.entries(destinations)) {
 
-      // --- Role priority: pick the highest-priority creep as the mover ---
-      // Sort by role priority descending so the most important creep wins.
-      // Losers yield sideways rather than queueing indefinitely.
+      // Sort contestants by role priority — highest wins the tile.
       names.sort((a, b) => {
         const roleA = moves[a].creep.memory.role;
         const roleB = moves[b].creep.memory.role;
@@ -280,61 +258,47 @@ const Traffic = {
       const moverRole = mover.creep.memory.role;
 
       // --- Miner hard-pin override ---
-      // A miner trying to reach its source seat can displace any non-miner
-      // that is hard-pinned on that tile. This handles the case where a thrall
-      // or clanrat has settled on the miner's seat and pinned itself.
-      // Hard pin = in _pins but NOT in _softPins.
+      // Miners can displace any non-miner that has hard-pinned their seat tile.
       if (this._pins[toKey] && !this._softPins[toKey]) {
         if (moverRole === 'miner') {
-          const pinnedCreepName = this._pins[toKey];
-          const pinnedCreep     = Game.creeps[pinnedCreepName];
-
+          const pinnedName  = this._pins[toKey];
+          const pinnedCreep = Game.creeps[pinnedName];
           if (pinnedCreep && pinnedCreep.memory.role !== 'miner') {
-            // Push the non-miner off the seat tile so the miner can take it.
             const pushDir = this._getPushDir(pinnedCreep, destinations);
             if (pushDir !== null) {
               pinnedCreep.move(pushDir);
-              pinnedCreep.memory._trafficPath = null; // force reroute from new position
+              pinnedCreep.memory._trafficPath = null;
               mover.creep.move(mover.dir);
               console.log(
-                `[traffic] miner ${mover.creep.name} displaced hard-pinned ` +
-                `${pinnedCreep.memory.role} ${pinnedCreepName} from ${toKey}`
+                `[traffic] miner ${mover.creep.name} displaced ` +
+                `${pinnedCreep.memory.role} ${pinnedName} from ${toKey}`
               );
             }
-            // If no push tile, miner waits one tick. Rare — completely boxed in.
           }
-          // If pinned by another miner, respect it — two miners don't fight.
+          // Two miners respect each other's hard pins.
         }
-        // Non-miners respect all hard pins as before.
+        // All other roles respect hard pins unconditionally.
         continue;
       }
 
-      // Soft-pinned tile — idle rat is parked here. Try to shove it aside.
+      // --- Soft-pin push: idle rat parked on the destination ---
       if (this._softPins[toKey]) {
         const blockerName = this._softPins[toKey];
         const blocker     = Game.creeps[blockerName];
 
         if (!blocker) {
-          // Blocker died this tick — proceed normally.
           mover.creep.move(mover.dir);
           continue;
         }
 
         const pushDir = this._getPushDir(blocker, destinations);
-
         if (pushDir !== null) {
-          // Push the idle rat to a free adjacent tile, then advance.
           blocker.move(pushDir);
           mover.creep.move(mover.dir);
-
-          // Remove from softPins so a second contender doesn't also try
-          // to push this same rat in the same tick (move() can only fire once).
           delete this._softPins[toKey];
         }
-        // If pushDir is null the blocker has nowhere to go — moving creep
-        // waits one tick. This should be rare (completely boxed in blocker).
 
-        // Yield losers sideways regardless of whether the push succeeded.
+        // Yield losers regardless of push success.
         for (let i = 1; i < names.length; i++) {
           const loser    = moves[names[i]].creep;
           const yieldDir = this._getYieldDir(loser, destinations);
@@ -346,30 +310,16 @@ const Traffic = {
         continue;
       }
 
-      if (names.length === 1) {
-        // Uncontested — move freely.
-        mover.creep.move(mover.dir);
-      } else {
-        // Contested — highest role priority wins.
-        // Losers yield sideways rather than waiting in place.
-        //
-        // Without yielding, a losing creep drops its move, recalculates the
-        // same road path next tick, contests the same tile again, and waits
-        // again indefinitely — producing a permanent single-file queue.
-        //
-        // Yielding steps the loser to any adjacent free tile, getting it out
-        // of the road corridor so the creep behind it can advance. Path cache
-        // is wiped so the loser recalculates a fresh route from the yield tile.
-        mover.creep.move(mover.dir);
+      // --- Uncontested or role-priority-won move ---
+      mover.creep.move(mover.dir);
 
-        for (let i = 1; i < names.length; i++) {
-          const loser    = moves[names[i]].creep;
-          const yieldDir = this._getYieldDir(loser, destinations);
-          if (yieldDir !== null) {
-            loser.move(yieldDir);
-            loser.memory._trafficPath = null; // recalculate from yield position
-          }
-          // No yield tile available — creep waits one tick (rare, boxed in)
+      // Yield all losers sideways.
+      for (let i = 1; i < names.length; i++) {
+        const loser    = moves[names[i]].creep;
+        const yieldDir = this._getYieldDir(loser, destinations);
+        if (yieldDir !== null) {
+          loser.move(yieldDir);
+          loser.memory._trafficPath = null;
         }
       }
     }
@@ -381,82 +331,88 @@ const Traffic = {
 
   /**
    * Get the next direction toward target using a cached path.
-   * Recalculates when:
-   *   - target changes
-   *   - creep is pushed off-path
-   *   - next cached step is blocked by a structure or construction site
-   *   - next cached step is HARD-pinned by a different creep
    *
-   * Soft-pinned tiles do NOT trigger cache invalidation — the moving creep
-   * keeps its direct path and resolve() will push the blocker aside.
-   * Routing around a soft pin (via cost 20 detour) is wasteful when we can
-   * simply displace the idle rat and take the straight line.
+   * Graduated stuck recovery — counter accumulates, only resets on movement.
+   * Triggering a tier does NOT reset the counter.
    *
-   * Pinned creep tiles are written into the CostMatrix at cost 20 so the
-   * pathfinder routes around occupied clusters proactively, but still allows
-   * paths through them when no good detour exists.
-   *
-   * Construction sites for blocking structures are written at cost 0xff —
-   * physically impassable even though they aren't structures yet.
+   *   >= STUCK_FALLBACK (3):  moveTo ignoreCreeps for FALLBACK_DURATION ticks
+   *   >= STUCK_NUDGE    (9):  random open-tile nudge to break the deadlock
+   *   >= STUCK_SUICIDE  (18): suicide — spawn director queues a replacement
    */
   _getNextDir(creep, target, range) {
     const targetPos = target.pos || target;
     const targetKey = `${targetPos.x},${targetPos.y},${range}`;
 
-    // --- Phase 1: Active fallback ---
-    // If _trafficFallback > 0 we are mid-rescue. Keep using moveTo until the
-    // countdown expires, then hand back to normal traffic control.
-    if (creep.memory._trafficFallback > 0) {
-      creep.memory._trafficFallback--;
-      creep.moveTo(targetPos.x, targetPos.y, {
-        ignoreCreeps: true,
-        reusePath:    5,
-        visualizePathStyle: { stroke: '#ff4444', opacity: 0.4 }
-      });
-      return null; // resolve() must not double-move this creep
-    }
-
-    // --- Phase 2: Stuck detection ---
-    // Compare current position to last tick. If unchanged for STUCK_THRESHOLD
-    // consecutive ticks, traffic's own resolution has failed — trigger fallback.
-    // Only increment the stuck counter when fatigue is zero — a creep recovering
-    // from swamp fatigue hasn't moved but isn't stuck. Triggering fallback on
-    // fatigue wastes CPU on moveTo and causes unnecessary path cache wipes.
+    // --- Stuck detection ---
+    // Accumulate when stationary and not fatigued.
+    // Reset ONLY on successful position change.
     const lastPos = creep.memory._trafficLastPos;
     if (lastPos && lastPos.x === creep.pos.x && lastPos.y === creep.pos.y) {
       if (creep.fatigue === 0) {
         creep.memory._trafficStuck = (creep.memory._trafficStuck || 0) + 1;
       }
     } else {
-      // Moved successfully — reset both counters
-      creep.memory._trafficStuck   = 0;
-      creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
+      creep.memory._trafficStuck    = 0;
+      creep.memory._trafficFallback = 0;
+      creep.memory._trafficLastPos  = { x: creep.pos.x, y: creep.pos.y };
     }
 
-    if (creep.memory._trafficStuck >= STUCK_THRESHOLD) {
-      // Wipe path cache so we recalculate fresh when fallback ends
-      creep.memory._trafficPath     = null;
-      creep.memory._trafficStuck    = 0;
+    creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
+
+    const stuck = creep.memory._trafficStuck || 0;
+
+    // --- Tier 3: Suicide (18+ ticks) ---
+    if (stuck >= STUCK_SUICIDE) {
+      console.log(
+        `[traffic] ${creep.name} (${creep.memory.role}) stuck ${stuck} ticks — suiciding`
+      );
+      creep.suicide();
+      return null;
+    }
+
+    // --- Tier 2: Random nudge (9+ ticks) ---
+    if (stuck >= STUCK_NUDGE) {
+      const nudgeDir = this._getNudgeDir(creep);
+      if (nudgeDir !== null) {
+        console.log(
+          `[traffic] ${creep.name} (${creep.memory.role}) stuck ${stuck} ticks — nudging`
+        );
+        creep.memory._trafficPath = null;
+        creep.move(nudgeDir);
+      }
+      return null; // resolve() must not double-move
+    }
+
+    // --- Tier 1: moveTo fallback (3+ ticks) ---
+    // Start a new fallback window each time stuck threshold is crossed
+    // (every FALLBACK_DURATION ticks as long as stuck counter keeps climbing).
+    if (stuck >= STUCK_FALLBACK && (creep.memory._trafficFallback || 0) <= 0) {
       creep.memory._trafficFallback = FALLBACK_DURATION;
-      console.log(`[traffic] ${creep.name} stuck — entering moveTo fallback for ${FALLBACK_DURATION} ticks`);
+      creep.memory._trafficPath     = null;
+      console.log(
+        `[traffic] ${creep.name} (${creep.memory.role}) stuck ${stuck} ticks — moveTo fallback`
+      );
+    }
+
+    if ((creep.memory._trafficFallback || 0) > 0) {
+      creep.memory._trafficFallback--;
       creep.moveTo(targetPos.x, targetPos.y, {
         ignoreCreeps: true,
         reusePath:    5,
         visualizePathStyle: { stroke: '#ff4444', opacity: 0.4 }
       });
-      return null;
+      return null; // resolve() must not double-move
     }
 
-    // Update last pos for next tick's comparison
-    creep.memory._trafficLastPos = { x: creep.pos.x, y: creep.pos.y };
+    // --- Normal path following ---
 
-    // Invalidate cache if target changed
+    // Invalidate cache if target changed.
     if (creep.memory._trafficTarget !== targetKey) {
       creep.memory._trafficTarget = targetKey;
       creep.memory._trafficPath   = null;
     }
 
-    // Invalidate if first cached step no longer adjacent (pushed off-path)
+    // Invalidate if pushed off-path (first step no longer adjacent).
     const cached = creep.memory._trafficPath;
     if (cached && cached.length) {
       const next = cached[0];
@@ -465,9 +421,7 @@ const Traffic = {
       }
     }
 
-    // Invalidate if the next cached step is now blocked.
-    // Structure/site blocks are always hard invalidations.
-    // Only hard pins force a reroute — soft-pinned creeps will be pushed aside.
+    // Invalidate if next cached step is now blocked.
     if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
       const next    = creep.memory._trafficPath[0];
       const nextKey = `${next.x},${next.y}`;
@@ -487,12 +441,6 @@ const Traffic = {
         s.structureType !== STRUCTURE_RAMPART
       );
 
-      // Only hard pins force a reroute. Soft-pinned tiles used to be exempt —
-      // the idea was resolve() would push the idle rat aside. But that creates
-      // a worse problem: the path was calculated routing AROUND the soft-pinned
-      // creep. When that creep gets pushed away, the cached path still detours
-      // around where it used to be, leading creeps on a bad route for many ticks.
-      // Recalculating when a soft pin is in the way gives a fresh direct path.
       const pinnedByOther =
         this._pins[nextKey] &&
         this._pins[nextKey] !== creep.name;
@@ -502,7 +450,7 @@ const Traffic = {
       }
     }
 
-    // Advance path if we've already reached the next step
+    // Advance path if already on next step.
     if (creep.memory._trafficPath && creep.memory._trafficPath.length) {
       const next = creep.memory._trafficPath[0];
       if (creep.pos.x === next.x && creep.pos.y === next.y) {
@@ -510,29 +458,17 @@ const Traffic = {
       }
     }
 
-    // Recalculate if no valid cached path
+    // Recalculate path if needed.
     if (!creep.memory._trafficPath || !creep.memory._trafficPath.length) {
 
-      // Capture pins and current intent positions at path-calculation time.
-      // Pins: idle creeps that are physically stationary this tick.
-      // Intents: creeps already registered to move somewhere this tick.
-      // Including intent positions at moderate cost creates natural path diversity —
-      // a creep that ticks later sees existing traffic and routes slightly
-      // differently, preventing all creeps from piling onto the exact same tiles.
       const pins    = Object.assign({}, this._pins);
       const intents = Object.assign({}, this._intents);
 
-      // Calculate swamp cost from this creep's actual fatigue economics.
-      // A heavily loaded creep with few MOVE parts spends many ticks immobile
-      // on swamp — the pathfinder should reflect that reality, not a room-wide
-      // constant. Formula: ticks immobile = (nonMove * 10) / (move * 2).
-      // A balanced thrall (7 CARRY + 7 MOVE) gets cost 5 — swamp is tolerable.
-      // A warlock (4 WORK + 2 CARRY + 2 MOVE) gets cost 15 — strongly avoided.
       const activeMoves    = creep.body.filter(p => p.type === MOVE  && p.hits > 0).length;
       const activeNonMoves = creep.body.filter(p => p.type !== MOVE  && p.hits > 0).length;
       const swampCost      = activeMoves > 0 && activeNonMoves > 0
         ? Math.max(2, Math.ceil((activeNonMoves * 10) / (activeMoves * 2)))
-        : 5; // fallback: empty or MOVE-only body
+        : 5;
 
       const result = PathFinder.search(
         creep.pos,
@@ -547,10 +483,8 @@ const Traffic = {
 
             const costs = new PathFinder.CostMatrix();
 
-            // Structures: roads cheap, blocking structures impassable
             room.find(FIND_STRUCTURES).forEach(s => {
               if (s.structureType === STRUCTURE_ROAD) {
-                // Roads are cheap — pathfinder naturally prefers them once built
                 costs.set(s.pos.x, s.pos.y, 1);
               } else if (
                 s.structureType !== STRUCTURE_CONTAINER &&
@@ -560,10 +494,6 @@ const Traffic = {
               }
             });
 
-            // Construction sites for blocking structures are impassable.
-            // creep.move() silently fails when trying to step onto these tiles,
-            // so the pathfinder must treat them as walls to avoid planning
-            // routes that can never execute.
             room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
               if (
                 site.structureType !== STRUCTURE_ROAD &&
@@ -574,23 +504,11 @@ const Traffic = {
               }
             });
 
-            // All pinned creep tiles (hard and soft): cost 20.
-            // Pathfinder prefers to route around occupied clusters.
-            // Cost 20 vs plain 2 = up to 10-tile detour to avoid one pinned creep.
-            // Cost 20 (not 0xff) keeps adjacent tiles reachable for final approach.
             for (const key of Object.keys(pins)) {
               const [x, y] = key.split(',').map(Number);
-              if (costs.get(x, y) < 20) {
-                costs.set(x, y, 20);
-              }
+              if (costs.get(x, y) < 20) costs.set(x, y, 20);
             }
 
-            // Creeps that already registered move intents this tick are
-            // physically present on their current tiles. Adding their positions
-            // at moderate cost (10) creates path diversity — creeps that tick
-            // later see existing traffic and naturally route slightly differently
-            // rather than all computing the exact same path and piling up.
-            // Cost 10 is noticeable but not so high it causes wild detours.
             for (const intentName of Object.keys(intents)) {
               const ic = Game.creeps[intentName];
               if (!ic) continue;
@@ -614,27 +532,78 @@ const Traffic = {
   },
 
   /**
+   * Pick a random open adjacent direction to nudge a stuck creep.
+   * Used at STUCK_NUDGE threshold to physically break a deadlock.
+   * Direction order is shuffled so repeated nudges don't always go the same way.
+   *
+   * @param  {Creep} creep
+   * @return {number|null} direction constant or null if completely boxed in
+   */
+  _getNudgeDir(creep) {
+    const terrain = creep.room.getTerrain();
+    const allDirs = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
+
+    // Fisher-Yates shuffle for true randomness
+    for (let i = allDirs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allDirs[i], allDirs[j]] = [allDirs[j], allDirs[i]];
+    }
+
+    const offsets = {
+      [TOP]:          { dx:  0, dy: -1 },
+      [TOP_RIGHT]:    { dx:  1, dy: -1 },
+      [RIGHT]:        { dx:  1, dy:  0 },
+      [BOTTOM_RIGHT]: { dx:  1, dy:  1 },
+      [BOTTOM]:       { dx:  0, dy:  1 },
+      [BOTTOM_LEFT]:  { dx: -1, dy:  1 },
+      [LEFT]:         { dx: -1, dy:  0 },
+      [TOP_LEFT]:     { dx: -1, dy: -1 }
+    };
+
+    for (const dir of allDirs) {
+      const { dx, dy } = offsets[dir];
+      const nx = creep.pos.x + dx;
+      const ny = creep.pos.y + dy;
+
+      if (nx <= 0 || nx >= 49 || ny <= 0 || ny >= 49) continue;
+      if (terrain.get(nx, ny) === TERRAIN_MASK_WALL) continue;
+
+      const tileKey = `${nx},${ny}`;
+
+      // Don't nudge into a hard-pinned tile
+      if (this._pins[tileKey] && !this._softPins[tileKey]) continue;
+
+      const structures = creep.room.lookForAt(LOOK_STRUCTURES, nx, ny);
+      if (structures.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      )) continue;
+
+      const sites = creep.room.lookForAt(LOOK_CONSTRUCTION_SITES, nx, ny);
+      if (sites.some(s =>
+        s.structureType !== STRUCTURE_ROAD &&
+        s.structureType !== STRUCTURE_CONTAINER &&
+        s.structureType !== STRUCTURE_RAMPART
+      )) continue;
+
+      return dir;
+    }
+
+    return null; // completely boxed in — suicide fires at tick 18
+  },
+
+  /**
    * Find a yield direction for a moving creep that lost a contested tile.
+   * Prefers perpendicular directions — stepping sideways off a road corridor
+   * is more useful than stepping backward.
    *
-   * Prefers tiles that are:
-   *   1. Not the contested destination (don't step into the same fight)
-   *   2. Not hard-pinned
-   *   3. Not a blocking structure or site
-   *   4. Not already claimed by another mover this tick
-   *   5. Walkable terrain
-   *
-   * Prefers perpendicular directions first — stepping sideways off a road
-   * is more useful than stepping backward toward where you came from.
-   *
-   * @param  {Creep}  creep        — the creep that needs to yield
-   * @param  {object} destinations — current tick destination map { toKey: [names] }
-   * @return {number|null}         — direction constant or null if boxed in
+   * @param  {Creep}  creep
+   * @param  {object} destinations
+   * @return {number|null}
    */
   _getYieldDir(creep, destinations) {
     const terrain = creep.room.getTerrain();
-
-    // All 8 directions — perpendicular/diagonal first, backward last.
-    // Stepping sideways off a road corridor is the most useful yield move.
     const dirs = [TOP_RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, TOP_LEFT, TOP, RIGHT, BOTTOM, LEFT];
     const offsets = {
       [TOP]:          { dx:  0, dy: -1 },
@@ -657,13 +626,9 @@ const Traffic = {
 
       const tileKey = `${nx},${ny}`;
 
-      // Don't yield into a hard-pinned tile
       if (this._pins[tileKey] && !this._softPins[tileKey]) continue;
-
-      // Don't yield into a tile someone else is moving into this tick
       if (destinations[tileKey]) continue;
 
-      // Don't yield into a blocking structure or site
       const structures = creep.room.lookForAt(LOOK_STRUCTURES, nx, ny);
       if (structures.some(s =>
         s.structureType !== STRUCTURE_ROAD &&
@@ -686,28 +651,14 @@ const Traffic = {
 
   /**
    * Find a push direction for a soft-pinned (idle) creep being displaced.
+   * Prefers cardinal directions to minimise corner-pushing.
    *
-   * A valid push tile must be:
-   *   1. Within room bounds
-   *   2. Walkable terrain (not a wall)
-   *   3. Not hard-pinned (not a miner/warlock tile)
-   *   4. Not a blocking structure or construction site
-   *   5. Not already the destination of another moving creep this tick
-   *      (avoids two creeps trying to occupy the same tile after the push)
-   *
-   * Prefers cardinal directions (TOP/RIGHT/BOTTOM/LEFT) over diagonals
-   * to minimize the chance of pushing a rat into a corner.
-   *
-   * Returns a direction constant, or null if the blocker is boxed in.
-   *
-   * @param {Creep}  blocker      — the idle rat to be pushed
-   * @param {object} destinations — current tick's destination map { toKey: [names] }
+   * @param {Creep}  blocker
+   * @param {object} destinations
+   * @return {number|null}
    */
   _getPushDir(blocker, destinations) {
     const terrain = blocker.room.getTerrain();
-
-    // Cardinals first — diagonals as fallback.
-    // Pushing into a cardinal direction keeps the rat on open ground more often.
     const dirs = [TOP, RIGHT, BOTTOM, LEFT, TOP_RIGHT, BOTTOM_RIGHT, BOTTOM_LEFT, TOP_LEFT];
     const offsets = {
       [TOP]:          { dx:  0, dy: -1 },
@@ -725,45 +676,31 @@ const Traffic = {
       const nx = blocker.pos.x + dx;
       const ny = blocker.pos.y + dy;
 
-      // Bounds check
       if (nx <= 0 || nx >= 49 || ny <= 0 || ny >= 49) continue;
-
-      // Terrain must be walkable
       if (terrain.get(nx, ny) === TERRAIN_MASK_WALL) continue;
 
       const tileKey = `${nx},${ny}`;
 
-      // Don't push into a hard-pinned tile (miner or warlock owns it).
-      // Soft-pinned tiles are OK — we'd just displace one idle rat with another,
-      // which is harmless (the displaced rat will re-evaluate next tick).
       if (this._pins[tileKey] && !this._softPins[tileKey]) continue;
-
-      // Don't push into a tile another creep is moving into this tick.
-      // Avoids the pushed rat colliding with an incoming mover.
       if (destinations[tileKey]) continue;
 
-      // Don't push into a blocking structure
       const structures = blocker.room.lookForAt(LOOK_STRUCTURES, nx, ny);
-      const structureBlocked = structures.some(s =>
+      if (structures.some(s =>
         s.structureType !== STRUCTURE_ROAD &&
         s.structureType !== STRUCTURE_CONTAINER &&
         s.structureType !== STRUCTURE_RAMPART
-      );
-      if (structureBlocked) continue;
+      )) continue;
 
-      // Don't push into a blocking construction site
       const sites = blocker.room.lookForAt(LOOK_CONSTRUCTION_SITES, nx, ny);
-      const siteBlocked = sites.some(s =>
+      if (sites.some(s =>
         s.structureType !== STRUCTURE_ROAD &&
         s.structureType !== STRUCTURE_CONTAINER &&
         s.structureType !== STRUCTURE_RAMPART
-      );
-      if (siteBlocked) continue;
+      )) continue;
 
       return dir;
     }
 
-    // Blocker is completely surrounded — moving creep waits one tick.
     return null;
   },
 
