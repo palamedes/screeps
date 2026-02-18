@@ -44,13 +44,18 @@ Room.prototype.act = function () {
         tower.attack(target);
       }
     } else {
-      // Idle repair: keep ramparts healthy, then fix other damaged structures.
-      // Ramparts below 20k are priority — they're our armor layer.
+      // Idle repair: keep ramparts healthy up to 250k, then fix other structures.
+      //
+      // 250k is our rampart HP target — enough to absorb raids without burning
+      // tower energy on unnecessary overbuilding toward the multi-million max.
+      // Priority order within ramparts: lowest HP first (triage the most exposed).
+      // Extension ramparts are included here — they're built by plan.ramparts.js
+      // and maintained by the same tower repair logic as spawn/tower ramparts.
       const repairTarget =
         this.find(FIND_MY_STRUCTURES, {
           filter: s =>
             s.structureType === STRUCTURE_RAMPART &&
-            s.hits < 20000
+            s.hits < 250000
         }).sort((a, b) => a.hits - b.hits)[0]
         ||
         this.find(FIND_MY_STRUCTURES, {
