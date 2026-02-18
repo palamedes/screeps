@@ -15,7 +15,8 @@
  * Core concepts:
  *   pin(creep)               — HARD pin. Stationary creep with purpose.
  *                              Miners and Warlock Engineers call this every
- *                              tick once seated. These creeps are NEVER pushed.
+ *                              tick once seated. These creeps are NEVER pushed
+ *                              (except by miners — see role priority below).
  *
  *   requestMove(creep, target, opts) — moving creep declares intent.
  *                              Calculates next-step direction via cached path.
@@ -25,17 +26,30 @@
  *                              any creep that registered no intent as a SOFT pin.
  *                              Soft-pinned creeps (idle rats with nothing to do)
  *                              can be pushed aside by moving creeps that need
- *                              their tile. Hard-pinned creeps cannot be displaced.
+ *                              their tile. Hard-pinned creeps cannot be displaced
+ *                              except by miners trying to reach their source seat.
  *
  * Pin types:
  *   Hard pin (_pins only, not _softPins):
  *     Set by explicit pin() calls — miners seated on sources, warlock at controller.
- *     These rats have work and own their tile. Nobody routes through, nobody pushes.
+ *     These rats have work and own their tile. Nobody routes through, nobody pushes —
+ *     EXCEPT: a miner moving toward its source seat can displace any non-miner
+ *     hard-pinned creep. This ensures miners always reach their harvest positions.
  *
  *   Soft pin (_pins AND _softPins):
  *     Set automatically in resolve() for creeps that registered no intent.
  *     These rats are idle and just parked. A moving creep that needs their tile
  *     will shove them to any adjacent free tile rather than waiting.
+ *
+ * Role priority:
+ *   When multiple creeps contest the same destination tile, the higher-priority
+ *   role wins the tile and lower-priority creeps yield sideways.
+ *
+ *     miner:   100  — must reach source to keep income flowing
+ *     warlock:  80  — stationary upgrader; don't bump it once seated
+ *     clanrat:  50  — builder/upgrader
+ *     thrall:   30  — hauler
+ *     slave:    10  — bootstrap generalist
  *
  * Path caching:
  *   Paths are stored in creep.memory._trafficPath as {x,y} arrays.
@@ -79,7 +93,6 @@
  *   Memory keys: _trafficLastPos {x,y}, _trafficStuck (tick count)
  *
  * Future hooks (not yet implemented):
- *   - Priority weighting by role for contested tiles
  *   - Convoy logic for haulers in corridors
  *   - Inter-room pathing awareness
  *   - Road preference scoring fed from plan.roads.js
@@ -95,6 +108,19 @@ const STUCK_THRESHOLD = 3;
 // The creep gets FALLBACK_DURATION full ticks of ignoreCreeps moveTo to break free
 // before traffic resumes control. 3 ticks is usually enough to clear any jam.
 const FALLBACK_DURATION = 3;
+
+// Role priority for contested tile resolution.
+// Higher number = wins the tile when multiple creeps want the same destination.
+// Miners are highest — a stuck miner kills income for the whole room.
+// Warlocks are second — once seated they shouldn't be bumped.
+// Losers yield sideways rather than queueing indefinitely.
+const ROLE_PRIORITY = {
+  miner:   100,
+  warlock:  80,
+  clanrat:  50,
+  thrall:   30,
+  slave:    10
+};
 
 const Traffic = {
 
@@ -117,7 +143,8 @@ const Traffic = {
 
   /**
    * Register a HARD-pinned creep. Owns its tile permanently for this tick.
-   * Nobody routes through it, nobody pushes it.
+   * Nobody routes through it, nobody pushes it — EXCEPT miners displacing
+   * non-miners to reach their source seat (see resolve()).
    * Miners and Warlock Engineers call this every tick once seated.
    *
    * Hard pin = in _pins, NOT in _softPins.
@@ -125,7 +152,8 @@ const Traffic = {
   pin(creep) {
     const key = `${creep.pos.x},${creep.pos.y}`;
     this._pins[key] = creep.name;
-    // Deliberately NOT adding to _softPins — this rat cannot be displaced.
+    // Deliberately NOT adding to _softPins — this rat cannot be displaced
+    // (except by miners — handled explicitly in resolve()).
   },
 
   /**
@@ -154,7 +182,9 @@ const Traffic = {
    *   2. Calculate next-step direction for each intent (cached paths)
    *   3. Detect and execute mutual swaps
    *   4. Execute uncontested moves; push soft-pinned blockers when needed
-   *   5. Skip hard-pinned or unresolvable destinations (creep waits one tick)
+   *   5. Role priority: when multiple creeps contest a tile, higher priority wins
+   *   6. Miner override: miners can displace non-miners from hard-pinned tiles
+   *   7. Skip hard-pinned or unresolvable destinations (creep waits one tick)
    */
   resolve() {
 
@@ -217,14 +247,15 @@ const Traffic = {
       }
     }
 
-    // Step 4 & 5: Group remaining moves by destination, then resolve.
+    // Step 4, 5, 6 & 7: Group remaining moves by destination, then resolve.
     //
     // For each destination tile:
-    //   - Hard-pinned: skip entirely (miner/warlock owns this tile).
+    //   - Hard-pinned by non-miner: skip (miner/warlock owns this tile) UNLESS
+    //     the mover is a miner — miners can displace any non-miner from a hard tile.
     //   - Soft-pinned: try to push the idle blocker to a free adjacent tile,
     //     then let the moving creep through. If no push tile exists, skip.
     //   - Uncontested: move freely.
-    //   - Contested: first registrant wins (future: weight by role priority).
+    //   - Contested: highest role priority wins; losers yield sideways.
     const destinations = {};  // toKey → [creepName, ...]
 
     for (const [name, move] of Object.entries(moves)) {
@@ -235,13 +266,48 @@ const Traffic = {
 
     for (const [toKey, names] of Object.entries(destinations)) {
 
-      // Hard-pinned tile — miner or warlock owns this. Nobody gets in.
-      // Hard pin = in _pins but NOT in _softPins.
-      if (this._pins[toKey] && !this._softPins[toKey]) continue;
+      // --- Role priority: pick the highest-priority creep as the mover ---
+      // Sort by role priority descending so the most important creep wins.
+      // Losers yield sideways rather than queueing indefinitely.
+      names.sort((a, b) => {
+        const roleA = moves[a].creep.memory.role;
+        const roleB = moves[b].creep.memory.role;
+        return (ROLE_PRIORITY[roleB] || 0) - (ROLE_PRIORITY[roleA] || 0);
+      });
 
-      // Determine the one mover we'll try to execute (first registrant).
       const moverName = names[0];
       const mover     = moves[moverName];
+      const moverRole = mover.creep.memory.role;
+
+      // --- Miner hard-pin override ---
+      // A miner trying to reach its source seat can displace any non-miner
+      // that is hard-pinned on that tile. This handles the case where a thrall
+      // or clanrat has settled on the miner's seat and pinned itself.
+      // Hard pin = in _pins but NOT in _softPins.
+      if (this._pins[toKey] && !this._softPins[toKey]) {
+        if (moverRole === 'miner') {
+          const pinnedCreepName = this._pins[toKey];
+          const pinnedCreep     = Game.creeps[pinnedCreepName];
+
+          if (pinnedCreep && pinnedCreep.memory.role !== 'miner') {
+            // Push the non-miner off the seat tile so the miner can take it.
+            const pushDir = this._getPushDir(pinnedCreep, destinations);
+            if (pushDir !== null) {
+              pinnedCreep.move(pushDir);
+              pinnedCreep.memory._trafficPath = null; // force reroute from new position
+              mover.creep.move(mover.dir);
+              console.log(
+                `[traffic] miner ${mover.creep.name} displaced hard-pinned ` +
+                `${pinnedCreep.memory.role} ${pinnedCreepName} from ${toKey}`
+              );
+            }
+            // If no push tile, miner waits one tick. Rare — completely boxed in.
+          }
+          // If pinned by another miner, respect it — two miners don't fight.
+        }
+        // Non-miners respect all hard pins as before.
+        continue;
+      }
 
       // Soft-pinned tile — idle rat is parked here. Try to shove it aside.
       if (this._softPins[toKey]) {
@@ -267,14 +333,24 @@ const Traffic = {
         }
         // If pushDir is null the blocker has nowhere to go — moving creep
         // waits one tick. This should be rare (completely boxed in blocker).
+
+        // Yield losers sideways regardless of whether the push succeeded.
+        for (let i = 1; i < names.length; i++) {
+          const loser    = moves[names[i]].creep;
+          const yieldDir = this._getYieldDir(loser, destinations);
+          if (yieldDir !== null) {
+            loser.move(yieldDir);
+            loser.memory._trafficPath = null;
+          }
+        }
         continue;
       }
 
       if (names.length === 1) {
-        // Uncontested — move freely
+        // Uncontested — move freely.
         mover.creep.move(mover.dir);
       } else {
-        // Contested — first registrant wins the tile.
+        // Contested — highest role priority wins.
         // Losers yield sideways rather than waiting in place.
         //
         // Without yielding, a losing creep drops its move, recalculates the
@@ -609,6 +685,7 @@ const Traffic = {
   },
 
   /**
+   * Find a push direction for a soft-pinned (idle) creep being displaced.
    *
    * A valid push tile must be:
    *   1. Within room bounds
