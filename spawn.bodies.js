@@ -86,7 +86,7 @@ module.exports = {
   thrall(energy) {
     const pairs = Math.min(
       Math.floor(energy / 100),
-      25  // 25 pairs = 50 parts (Screeps body part limit)
+      10  // cap at 1000e — leave buffer for other roles after spawn
     );
 
     if (pairs < 1) return [CARRY, MOVE]; // absolute floor
