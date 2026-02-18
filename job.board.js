@@ -206,7 +206,10 @@ module.exports = {
 
     // Find all damaged structures
     const damagedStructures = room.find(FIND_MY_STRUCTURES, {
-      filter: s => s.hits < s.hitsMax
+      filter: s =>
+        s.hits < s.hitsMax &&
+        s.structureType !== STRUCTURE_RAMPART &&
+        s.structureType !== STRUCTURE_WALL
     });
 
     // Prioritize and sort
