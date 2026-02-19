@@ -9,26 +9,6 @@
  *
  * Behavior loop:
  *   idle → BFS pick target → moveTo center of target room → scan → moveTo home spawn → idle
- *
- * WHY moveTo INSTEAD OF TRAFFIC:
- *   The manual exit-tile approach (find exit tiles, check position, direct move())
- *   was fragile because the creep lands on an arbitrary border tile after crossing,
- *   almost never the specific middle tile we compared against, so the crossing
- *   logic never fired correctly and the creep oscillated.
- *
- *   Screeps' built-in moveTo() handles room boundary crossing automatically —
- *   give it a RoomPosition in any room and the pathfinder routes through exits.
- *   Gutter runners are the one creep type where bypassing Traffic is correct:
- *     - Pure MOVE body, no fatigue regardless of path
- *     - Solo traveler, never competing for tiles with miners or thralls
- *     - Cross-room targets are meaningless to Traffic's single-room cost matrix
- *
- * Phase detection (not movement) still uses room name checks:
- *   - Entered target room?  → scan
- *   - Returned to homeRoom? → idle
- *
- * Called by: rat.js → Creep.prototype.tick()
- * Movement:  this.moveTo() directly — NOT Traffic (intentional, see above)
  */
 
 // Max hops from homeRoom the runner will scout.
@@ -46,8 +26,6 @@ Creep.prototype.runGutterRunner = function () {
     this.memory.homeRoom = this.room.name;
   }
 
-  console.log(this.memory.grPhase);
-
   switch (this.memory.grPhase) {
     case 'transit_out':  return this._grTransitOut();
     case 'scanning':     return this._grScan();
@@ -64,10 +42,10 @@ Creep.prototype.runGutterRunner = function () {
  */
 Creep.prototype._grIdle = function () {
 
-  // if (this.room.name !== this.memory.homeRoom && !this.memory.grTarget) {
-  //   this.memory.grPhase = 'transit_home';
-  //   return;
-  // }
+  if (this.room.name !== this.memory.homeRoom && !this.memory.grTarget) {
+    this.memory.grPhase = 'transit_home';
+    return;
+  }
 
   const result = this._grBfsFindTarget();
 
@@ -273,18 +251,3 @@ Creep.prototype._grWriteIntelligence = function (room) {
     (minerals.length ? ` | mineral: ${minerals.map(m => m.type).join(', ')}` : '')
   );
 };
-
-/*
- * Memory.intelligence[roomName] schema (for empire.js):
- *
- * {
- *   scoutedAt:  number,
- *   scoutedBy:  string,
- *   sources:    [{ id, x, y }],
- *   controller: { owner: string|null, level: number, reserved: string|false },
- *   exits:      { '1': roomName, '3': roomName, ... },
- *   hostiles:   { count: number, threat: 'none'|'low'|'high' },
- *   minerals:   [{ type: string, amount: number }],
- *   safeMode:   boolean
- * }
- */
