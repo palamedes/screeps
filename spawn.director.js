@@ -141,6 +141,12 @@ module.exports = {
       thrallCarryTarget = thrallCount * pairsPerThrall;
     }
 
+    // Hard cap: no more than (sources * 2) thralls worth of CARRY.
+    // Early thralls are tiny — the parts formula wildly overspawns at low RCL.
+    const maxThralls = sources.length * 2;
+    const pairsPerThrall = Math.min(Math.floor(room.energyCapacityAvailable / 100), 10);
+    thrallCarryTarget = Math.min(thrallCarryTarget, maxThralls * pairsPerThrall);
+
     // --- CLANRATS: fixed WORK target, conservative baseline ---
     // 16 WORK = 16 upgrade/build points per tick — plenty for RCL3–5.
     // Could scale later: Math.min(productionRate * 0.6, rcl * 5, 50)
