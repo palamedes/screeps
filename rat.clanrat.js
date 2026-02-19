@@ -126,9 +126,14 @@ Creep.prototype.runClanrat = function () {
     return;
   }
 
-  // Largest dropped pile
+// Largest dropped pile
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
-    filter: r => r.resourceType === RESOURCE_ENERGY && r.amount > 50
+    filter: r => {
+      if (r.resourceType !== RESOURCE_ENERGY) return false;
+      if (r.amount < 50) return false;
+      const dist = this.pos.getRangeTo(r);
+      return dist === 0 || (r.amount / dist) >= 2;
+    }
   }).sort((a, b) => b.amount - a.amount)[0];
 
   if (dropped) {

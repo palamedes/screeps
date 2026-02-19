@@ -187,8 +187,17 @@ Creep.prototype.runThrall = function () {
   }
 
   // Largest dropped pile — decays if not collected
+  // Skip piles too small to be worth the trip:
+  //   - Hard floor: ignore anything under 50 (one carry pair's worth)
+  //   - Distance check: need at least 2 energy per tile of travel
+  //     A thrall burning 20 ticks to collect 13 energy is a net loss
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
-    filter: r => r.resourceType === RESOURCE_ENERGY
+    filter: r => {
+      if (r.resourceType !== RESOURCE_ENERGY) return false;
+      if (r.amount < 50) return false;
+      const dist = this.pos.getRangeTo(r);
+      return dist === 0 || (r.amount / dist) >= 2;
+    }
   }).sort((a, b) => b.amount - a.amount)[0];
 
   if (dropped) {
