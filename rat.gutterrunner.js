@@ -41,7 +41,7 @@ const INTEL_STALE_AGE = 5000;
 // ─────────────────────────────────────────────────────── Main behavior tick ──
 
 Creep.prototype.runGutterRunner = function () {
-
+console.log('Running Gutter Runner');
   if (!this.memory.homeRoom) {
     this.memory.homeRoom = this.room.name;
   }
