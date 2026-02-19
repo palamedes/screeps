@@ -294,6 +294,8 @@ module.exports = {
         c.memory.role === 'gutterrunner'
       );
 
+      console.log('------', hasScout)
+
       if (!hasScout) {
         const roomExits  = Game.map.describeExits(room.name);
         const intel      = Memory.intelligence || {};
