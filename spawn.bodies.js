@@ -164,12 +164,26 @@ module.exports = {
   },
 
   /**
-   * Gutter Runner body — @TODO
-   * Fast scout/raider. High MOVE ratio, some ATTACK and RANGED_ATTACK.
+   * Gutter Runner body
+   * Pure MOVE body — always travels at 1 tile/tick on plains and roads.
+   * No CARRY penalty, no WORK, nothing that generates fatigue.
+   *
+   * Hard cap at 5 MOVE = 250e. A scout doesn't need to be huge, just fast.
+   * 5 MOVE is cheap enough that losing one is painless and the spawn can
+   * immediately queue another without dipping below the energy threshold.
+   *
+   * At 50e per MOVE part, even the minimum spawn (300e) can afford 5 parts.
+   *
+   * Min viable: 100e → [MOVE, MOVE]     (2 parts)
+   * Standard:   250e → [MOVE×5]         (5 parts, hard cap)
    */
   gutterrunner(energy) {
-    // @TODO implement
-    return [MOVE, MOVE, ATTACK];
+    const moveParts = Math.min(Math.floor(energy / 50), 5);
+    if (moveParts < 2) return [MOVE, MOVE]; // absolute floor
+
+    const body = [];
+    for (let i = 0; i < moveParts; i++) body.push(MOVE);
+    return body;
   },
 
   /**
