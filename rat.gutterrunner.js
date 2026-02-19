@@ -8,45 +8,48 @@
  * Body: pure MOVE — always travels at 1 tile/tick on plains/roads.
  *
  * Behavior loop:
- *   idle (in homeRoom) → BFS pick target → follow path out → scan → follow path home → idle
+ *   idle → BFS pick target → transit out (hop by hop) → scan → transit home → idle
  *
- * Multi-hop routing works because Game.map.describeExits() returns exit data
- * for any room without requiring vision. The full path is calculated before
- * leaving home and stored in memory — transit just follows it step by step.
+ * KEY FIX (v3): Border tile crossing.
+ *   When a creep enters room B from room A, it appears ON the border tile
+ *   (e.g. x=0 if it came from the left). The exit tiles back to room A are
+ *   ALSO at x=0. Traffic.requestMove to range=0 sees the creep is already
+ *   there and skips the move — the creep gets stuck, stuck recovery fires a
+ *   random nudge, and the creep oscillates back and forth indefinitely.
  *
- * BFS priority: missing intel first, then stale intel, nearest rooms first.
- * This means the runner systematically covers ring 1 before ring 2, ring 2
- * before ring 3 — you always have a complete picture of the inner frontier
- * before pushing further out.
+ *   Fix: _grCrossToward() checks if we're already on the border tile.
+ *   If yes, call creep.move(exitDirection) directly to actually cross.
+ *   If no, use Traffic.requestMove normally to approach the tile.
  *
- * If the runner ends up off-path it recalculates. If it's completely lost
- * it suicides so spawn director queues a fresh replacement.
- *
- * Intelligence written to: Memory.intelligence[roomName]
- * Schema documented at bottom of this file.
+ *   Phase transitions no longer chain within the same tick — each phase
+ *   sets the next phase and returns, keeping one Traffic call per tick.
  *
  * Called by: rat.js → Creep.prototype.tick()
- * Movement:  all through Traffic.requestMove — no direct moveTo
+ * Movement:  Traffic.requestMove for approach, direct move() for crossing
  */
 
 const Traffic = require('traffic');
 
 // Max hops from homeRoom the runner will scout.
-// 3 hops = up to ~24 rooms depending on map layout. Good regional coverage
-// without sending the runner so far it can't reliably navigate home.
-// Increase to 4+ once multi-hop is proven stable.
+// 3 hops = up to ~24 rooms depending on layout — solid regional coverage.
 const MAX_SCOUT_DEPTH = 3;
 
-// How old (in ticks) intelligence must be before it's worth re-scouting.
-// ~5000 ticks ≈ 83 minutes of real time.
+// How old (in ticks) before data is worth re-scouting. ~83 real minutes.
 const INTEL_STALE_AGE = 5000;
 
-// Exit direction keys from Game.map.describeExits → FIND_EXIT_* constants
+// Game.map.describeExits direction keys → FIND_EXIT_* and direction constants
 const EXIT_FIND = {
   '1': FIND_EXIT_TOP,
   '3': FIND_EXIT_RIGHT,
   '5': FIND_EXIT_BOTTOM,
   '7': FIND_EXIT_LEFT
+};
+
+const EXIT_MOVE_DIR = {
+  '1': TOP,
+  '3': RIGHT,
+  '5': BOTTOM,
+  '7': LEFT
 };
 
 // ─────────────────────────────────────────────────────── Main behavior tick ──
@@ -68,87 +71,80 @@ Creep.prototype.runGutterRunner = function () {
 // ───────────────────────────────────────────────────────────────── Phases ──
 
 /**
- * Idle: in homeRoom, nothing assigned.
- * BFS to find the next room worth scouting, store full path, begin transit.
+ * Idle: in homeRoom. BFS to find the next room worth scouting.
+ * Sets phase and returns — transit begins next tick.
  */
 Creep.prototype._grIdle = function () {
 
   if (this.room.name !== this.memory.homeRoom) {
-    this._grStartTransitHome();
+    // Somehow not home — start heading back
+    this.memory.grPhase = 'transit_home';
     return;
   }
 
   const result = this._grBfsFindTarget();
 
   if (!result) {
-    // Everything within range is fresh — nothing to do
+    // Everything within MAX_SCOUT_DEPTH is fresh — nothing to do
     return;
   }
 
-  this.memory.grPath   = result.path;   // [homeRoom, roomA, roomB, ..., target]
+  this.memory.grPath   = result.path;   // [homeRoom, ..., target]
   this.memory.grTarget = result.target;
   this.memory.grPhase  = 'transit_out';
 
   console.log(
-    `[gutterrunner:${this.name}] assigned to scout ${result.target} ` +
+    `[gutterrunner:${this.name}] scouting ${result.target} ` +
     `(${result.depth} hop${result.depth === 1 ? '' : 's'}: ${result.path.join(' → ')})`
   );
-
-  this._grTransitOut();
+  // Movement starts next tick
 };
 
 /**
- * Transit out: follow grPath forward.
- * Advance one room per crossing — the game changes this.room automatically
- * when the creep steps through an exit tile.
+ * Transit out: follow grPath forward toward target.
+ * One room crossing per tick (or approach if not at border yet).
  */
 Creep.prototype._grTransitOut = function () {
 
   if (this.room.name === this.memory.grTarget) {
+    // Arrived — scan next tick
     this.memory.grPhase = 'scanning';
-    this._grScan();
     return;
   }
 
   const nextRoom = this._grNextRoomOnPath(this.memory.grPath, this.room.name, false);
 
   if (!nextRoom) {
-    // Off path — try recalculating from current position
-    console.log(`[gutterrunner:${this.name}] path broken at ${this.room.name} — recalculating`);
-    const recovery = this._grBfsFindTargetFrom(this.room.name);
-    if (recovery) {
-      this.memory.grPath   = recovery.path;
-      this.memory.grTarget = recovery.target;
-      this._grTransitOut();
-    } else {
-      this._grStartTransitHome();
-    }
+    console.log(`[gutterrunner:${this.name}] path broken at ${this.room.name} — aborting to home`);
+    this.memory.grPhase  = 'transit_home';
+    this.memory.grTarget = null;
     return;
   }
 
-  const exitPos = this._grExitToward(this.room.name, nextRoom);
-
-  if (!exitPos) {
-    console.log(`[gutterrunner:${this.name}] can't find exit ${this.room.name} → ${nextRoom} — aborting`);
-    this._grStartTransitHome();
-    return;
+  if (!this._grCrossToward(this.room.name, nextRoom)) {
+    console.log(`[gutterrunner:${this.name}] can't exit ${this.room.name} → ${nextRoom} — aborting`);
+    this.memory.grPhase  = 'transit_home';
+    this.memory.grTarget = null;
   }
-
-  Traffic.requestMove(this, exitPos, { range: 0 });
 };
 
 /**
- * Scanning: we're in the target room — collect and write intelligence.
+ * Scanning: in target room. Write intelligence, then head home next tick.
  */
 Creep.prototype._grScan = function () {
 
+  // Sanity — should be in target room
   if (this.room.name !== this.memory.grTarget) {
-    this._grStartTransitHome();
+    this.memory.grPhase  = 'transit_home';
+    this.memory.grTarget = null;
     return;
   }
 
   this._grWriteIntelligence(this.room);
-  this._grStartTransitHome();
+
+  this.memory.grPhase  = 'transit_home';
+  this.memory.grTarget = null;
+  // Movement home starts next tick
 };
 
 /**
@@ -167,72 +163,106 @@ Creep.prototype._grTransitHome = function () {
 
   if (!nextRoom) {
     // Stored path doesn't cover current position — try emergency routing
-    console.log(`[gutterrunner:${this.name}] lost on return from ${this.room.name} — emergency routing`);
-    const emergencyExit = this._grEmergencyRouteHome();
-    if (!emergencyExit) {
-      console.log(`[gutterrunner:${this.name}] completely lost — suiciding`);
+    console.log(`[gutterrunner:${this.name}] lost at ${this.room.name} — emergency routing`);
+    if (!this._grEmergencyRouteHome()) {
+      console.log(`[gutterrunner:${this.name}] can't find home — suiciding`);
       this.suicide();
-      return;
     }
-    Traffic.requestMove(this, emergencyExit, { range: 0 });
     return;
   }
 
-  const exitPos = this._grExitToward(this.room.name, nextRoom);
-
-  if (!exitPos) {
-    console.log(`[gutterrunner:${this.name}] can't find exit home ${this.room.name} → ${nextRoom} — suiciding`);
+  if (!this._grCrossToward(this.room.name, nextRoom)) {
+    console.log(`[gutterrunner:${this.name}] can't exit toward home ${this.room.name} → ${nextRoom} — suiciding`);
     this.suicide();
-    return;
+  }
+};
+
+// ──────────────────────────────────────────────── Core crossing helper ──
+
+/**
+ * Move from fromRoom toward toRoom.
+ *
+ * THE FIX: if we're already standing on the border exit tile, execute a
+ * direct creep.move(exitDirection) to physically cross into the next room.
+ * Traffic.requestMove to range=0 would see "already in range" and skip it,
+ * leaving the creep frozen on the border tile indefinitely.
+ *
+ * If we're NOT on the border tile, use Traffic.requestMove normally to
+ * approach it — traffic will path us there, and next tick we'll cross.
+ *
+ * @param  {string} fromRoomName
+ * @param  {string} toRoomName
+ * @return {boolean} false if no exit found
+ */
+Creep.prototype._grCrossToward = function (fromRoomName, toRoomName) {
+  const exits = Game.map.describeExits(fromRoomName);
+
+  let exitDir = null;
+  for (const dir in exits) {
+    if (exits[dir] === toRoomName) {
+      exitDir = dir;
+      break;
+    }
   }
 
-  Traffic.requestMove(this, exitPos, { range: 0 });
+  if (!exitDir) return false;
+
+  const findConst = EXIT_FIND[exitDir];
+  if (!findConst) return false;
+
+  const room = Game.rooms[fromRoomName];
+  if (!room) return false; // need vision to get tile positions
+
+  const tiles = room.find(findConst);
+  if (!tiles.length) return false;
+
+  // Pick the middle exit tile to avoid corner-hugging
+  const exitTile = tiles[Math.floor(tiles.length / 2)];
+
+  // Are we already standing on this exit tile?
+  if (this.pos.x === exitTile.x && this.pos.y === exitTile.y) {
+    // Direct move in exit direction to actually cross the boundary
+    const moveDir = EXIT_MOVE_DIR[exitDir];
+    if (moveDir !== undefined) {
+      this.move(moveDir);
+    }
+    return true;
+  }
+
+  // Not on the exit tile yet — approach it via traffic
+  Traffic.requestMove(this, exitTile, { range: 0 });
+  return true;
 };
 
 // ──────────────────────────────────────────────────────── BFS path finding ──
 
 /**
  * BFS outward from homeRoom to find the nearest room needing scouting.
- * Uses Game.map.describeExits() — no vision required.
+ * Uses Game.map.describeExits() — works globally, no vision required.
  *
- * Prioritizes: unscouted > stale, and nearer rooms before farther ones
- * (BFS naturally gives shortest-path-first).
+ * Priority: unscouted rooms > stale rooms. Nearest rooms first (BFS order).
  *
- * @return {{ target, path, depth }} or null if everything is fresh
+ * @return {{ target, path, depth }} or null if all rooms within range are fresh
  */
 Creep.prototype._grBfsFindTarget = function () {
-  return this._grBfsFindTargetFrom(this.memory.homeRoom, true);
-};
-
-/**
- * BFS from an arbitrary start room. Used for in-transit recalculation.
- * When called mid-transit (fromHome=false) we don't enforce homeRoom as
- * the path root — the stored grPath handles the return leg.
- *
- * @param  {string}  startRoom
- * @param  {boolean} fromHome   — true when starting fresh from homeRoom
- * @return {{ target, path, depth }} or null
- */
-Creep.prototype._grBfsFindTargetFrom = function (startRoom, fromHome) {
   const intel = Memory.intelligence || {};
+  const home  = this.memory.homeRoom;
 
-  const queue   = [{ roomName: startRoom, path: [startRoom] }];
-  const visited = new Set([startRoom]);
+  const queue   = [{ roomName: home, path: [home] }];
+  const visited = new Set([home]);
 
   while (queue.length) {
     const { roomName, path } = queue.shift();
     const depth = path.length - 1;
 
-    // Evaluate this room (skip the start room itself when starting from home)
-    if (depth > 0 || !fromHome) {
-      if (depth > 0) { // always skip the actual start node
-        const entry     = intel[roomName];
-        const unscouted = !entry;
-        const stale     = entry && (Game.time - entry.scoutedAt) > INTEL_STALE_AGE;
+    // Evaluate this room (skip homeRoom itself)
+    if (depth > 0) {
+      const entry     = intel[roomName];
+      const unscouted = !entry;
+      const stale     = entry && (Game.time - entry.scoutedAt) > INTEL_STALE_AGE;
 
-        if (unscouted || stale) {
-          return { target: roomName, path, depth };
-        }
+      if (unscouted || stale) {
+        return { target: roomName, path, depth };
       }
     }
 
@@ -255,7 +285,7 @@ Creep.prototype._grBfsFindTargetFrom = function (startRoom, fromHome) {
  * Given the stored path and current room, return the next room to move toward.
  *
  * @param  {string[]} path     - room sequence from homeRoom to target
- * @param  {string}   current  - where we are now
+ * @param  {string}   current  - current room name
  * @param  {boolean}  reverse  - true when returning home
  * @return {string|null}
  */
@@ -271,10 +301,10 @@ Creep.prototype._grNextRoomOnPath = function (path, current, reverse) {
 };
 
 /**
- * Emergency home routing when the stored path can't help.
- * Checks up to 2 hops via Game.map.describeExits — no vision needed.
+ * Emergency home routing when stored path is useless.
+ * Checks direct exits and one-hop exits via describeExits (no vision needed).
  *
- * @return {RoomPosition|null}
+ * @return {boolean} true if a move was registered
  */
 Creep.prototype._grEmergencyRouteHome = function () {
   const home  = this.memory.homeRoom;
@@ -283,29 +313,29 @@ Creep.prototype._grEmergencyRouteHome = function () {
   // Direct neighbor?
   for (const dir in exits) {
     if (exits[dir] === home) {
-      return this._grExitToward(this.room.name, home);
+      return this._grCrossToward(this.room.name, home);
     }
   }
 
-  // Two hops — check neighbors of neighbors
+  // One hop through a known intermediate room
   for (const dir in exits) {
-    const neighbor       = exits[dir];
-    const neighborExits  = Game.map.describeExits(neighbor);
+    const neighbor      = exits[dir];
+    const neighborExits = Game.map.describeExits(neighbor);
     for (const nDir in neighborExits) {
       if (neighborExits[nDir] === home) {
-        return this._grExitToward(this.room.name, neighbor);
+        return this._grCrossToward(this.room.name, neighbor);
       }
     }
   }
 
-  return null;
+  return false;
 };
 
 // ──────────────────────────────────────────────────────── Intelligence scan ──
 
 /**
- * Write a full room intelligence snapshot to Memory.intelligence[roomName].
- * Must only be called when we have vision of the room (this.room === target).
+ * Write full room intelligence to Memory.intelligence[roomName].
+ * Only call when we have vision (this.room === target).
  */
 Creep.prototype._grWriteIntelligence = function (room) {
 
@@ -364,78 +394,21 @@ Creep.prototype._grWriteIntelligence = function (room) {
   );
 };
 
-// ─────────────────────────────────────────────────────── Routing helpers ──
-
-/**
- * Find the middle exit tile in fromRoom leading toward toRoom.
- * Middle tile avoids corner-hugging which can cause stuck issues near exits.
- *
- * @param  {string} fromRoomName
- * @param  {string} toRoomName
- * @return {RoomPosition|null}
- */
-Creep.prototype._grExitToward = function (fromRoomName, toRoomName) {
-  const exits = Game.map.describeExits(fromRoomName);
-
-  let exitDir = null;
-  for (const dir in exits) {
-    if (exits[dir] === toRoomName) {
-      exitDir = dir;
-      break;
-    }
-  }
-
-  if (!exitDir) return null;
-
-  const findConst = EXIT_FIND[exitDir];
-  if (!findConst) return null;
-
-  const room = Game.rooms[fromRoomName];
-  if (!room) return null; // need vision to get tile positions
-
-  const tiles = room.find(findConst);
-  if (!tiles.length) return null;
-
-  return tiles[Math.floor(tiles.length / 2)];
-};
-
-/**
- * Flip to transit_home phase. grPath is kept so it can be reversed.
- * grTarget is cleared since scanning is done (or was aborted).
- */
-Creep.prototype._grStartTransitHome = function () {
-  this.memory.grPhase  = 'transit_home';
-  this.memory.grTarget = null;
-  this._grTransitHome();
-};
-
 /*
- * Memory.intelligence[roomName] schema (consumed by empire.js):
+ * Memory.intelligence[roomName] schema (for empire.js):
  *
  * {
  *   scoutedAt:  number,          // Game.time when last scanned
- *   scoutedBy:  string,          // homeRoom that sent the runner
- *   sources: [
- *     { id: string, x: number, y: number }
- *   ],
+ *   scoutedBy:  string,          // homeRoom of the runner
+ *   sources: [{ id, x, y }],
  *   controller: {
- *     owner:    string | null,   // username or null if unowned
- *     level:    number,          // 0 if unowned
- *     reserved: string | false   // reserving username or false
+ *     owner:    string | null,
+ *     level:    number,
+ *     reserved: string | false
  *   },
- *   exits: {                     // from Game.map.describeExits
- *     '1': roomName,             // TOP
- *     '3': roomName,             // RIGHT
- *     '5': roomName,             // BOTTOM
- *     '7': roomName,             // LEFT
- *   },
- *   hostiles: {
- *     count:  number,
- *     threat: 'none' | 'low' | 'high'
- *   },
- *   minerals: [
- *     { type: string, amount: number }
- *   ],
+ *   exits: { '1': roomName, '3': roomName, ... },  // describeExits output
+ *   hostiles: { count: number, threat: 'none'|'low'|'high' },
+ *   minerals: [{ type: string, amount: number }],
  *   safeMode: boolean
  * }
  */
