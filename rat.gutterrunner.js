@@ -93,6 +93,7 @@ Creep.prototype._grTransitOut = function () {
 
   // Arrived in target room
   if (this.room.name === this.memory.grTarget) {
+    console.log(`[gr:${this.name}] arrived in ${this.room.name}, target=${this.memory.grTarget}`);
     this.memory.grPhase = 'scanning';
     return;
   }
@@ -114,6 +115,7 @@ Creep.prototype._grTransitOut = function () {
  * Scanning: we're in the target room. Write intelligence, then head home.
  */
 Creep.prototype._grScan = function () {
+  console.log(`[gr:${this.name}] scanning in ${this.room.name}, target=${this.memory.grTarget}`);
 
   if (this.room.name !== this.memory.grTarget) {
     // Somehow not in target room — abort home
