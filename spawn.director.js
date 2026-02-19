@@ -276,19 +276,19 @@ module.exports = {
       }
     }
 
-    // ---- GUTTER RUNNER: one scout per room, RCL5+, on demand ----
+    // ---- GUTTER RUNNER: one scout per room, RCL2+, on demand ----
     /**
      * Gutter Runner spawn gate.
      *
      * Gate conditions (all must pass):
-     *   1. RCL >= 5  — we have energy to spare; early rooms can't afford a scout
+     *   1. RCL >= 2  — we have energy to spare; early rooms can't afford a scout
      *   2. No gutter runner already alive in this homeRoom
      *   3. At least one adjacent room has missing or stale intelligence
      *
      * One scout per room. If it dies, the spawn director queues a replacement
      * next tick automatically (condition 2 becomes false again).
      */
-    if (rcl >= 5) {
+    if (rcl >= 2) {
       const hasScout = Object.values(Game.creeps).some(c =>
         c.memory.homeRoom === room.name &&
         c.memory.role === 'gutterrunner'
