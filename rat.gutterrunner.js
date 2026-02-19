@@ -41,7 +41,7 @@ const INTEL_STALE_AGE = 5000;
 // ─────────────────────────────────────────────────────── Main behavior tick ──
 
 Creep.prototype.runGutterRunner = function () {
-console.log('Running Gutter Runner');
+
   if (!this.memory.homeRoom) {
     this.memory.homeRoom = this.room.name;
   }
@@ -62,7 +62,7 @@ console.log('Running Gutter Runner');
  */
 Creep.prototype._grIdle = function () {
 
-  if (this.room.name !== this.memory.homeRoom) {
+  if (this.room.name !== this.memory.homeRoom && !this.memory.grTarget) {
     this.memory.grPhase = 'transit_home';
     return;
   }
