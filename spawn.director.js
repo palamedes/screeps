@@ -148,9 +148,11 @@ module.exports = {
     thrallCarryTarget = Math.min(thrallCarryTarget, maxThralls * pairsPerThrall);
 
     // --- CLANRATS: fixed WORK target, conservative baseline ---
-    // 16 WORK = 16 upgrade/build points per tick — plenty for RCL3–5.
-    // Could scale later: Math.min(productionRate * 0.6, rcl * 5, 50)
-    const clanratWorkTarget = 16;
+    // Cap clanrats at 3 per source — early bodies are tiny and the parts
+    // target wildly overspawns at low RCL before capacity scales up.
+    const maxClanrats = sources.length * 3;
+    const setsPerClanrat = Math.min(Math.floor(room.energyCapacityAvailable / 200), 16);
+    const clanratWorkTarget = Math.min(16, maxClanrats * setsPerClanrat);
 
     // --- WARLOCK: fixed, sized for one dedicated upgrader ---
     // 6 WORK parts = 6 upgrade points/tick, reasonable baseline.
