@@ -172,6 +172,7 @@ Creep.prototype._grBfsFindTarget = function () {
   const intel = Memory.intelligence || {};
   const home  = this.memory.homeRoom;
 
+  const RECENT_GRACE = 500;
   const queue   = [{ roomName: home, path: [home] }];
   const visited = new Set([home]);
 
@@ -184,8 +185,9 @@ Creep.prototype._grBfsFindTarget = function () {
       const entry     = intel[roomName];
       const unscouted = !entry;
       const stale     = entry && (Game.time - entry.scoutedAt) > INTEL_STALE_AGE;
+      const recent    = entry && (Game.time - entry.scoutedAt) < RECENT_GRACE;
 
-      if (unscouted || stale) {
+      if ((unscouted || stale) && !recent) {
         return { target: roomName, path, depth };
       }
     }
