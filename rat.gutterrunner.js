@@ -46,6 +46,8 @@ Creep.prototype.runGutterRunner = function () {
     this.memory.homeRoom = this.room.name;
   }
 
+  console.log(this.memory.grPhase);
+
   switch (this.memory.grPhase) {
     case 'transit_out':  return this._grTransitOut();
     case 'scanning':     return this._grScan();
