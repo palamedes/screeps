@@ -64,10 +64,10 @@ Creep.prototype.runGutterRunner = function () {
  */
 Creep.prototype._grIdle = function () {
 
-  if (this.room.name !== this.memory.homeRoom && !this.memory.grTarget) {
-    this.memory.grPhase = 'transit_home';
-    return;
-  }
+  // if (this.room.name !== this.memory.homeRoom && !this.memory.grTarget) {
+  //   this.memory.grPhase = 'transit_home';
+  //   return;
+  // }
 
   const result = this._grBfsFindTarget();
 
