@@ -177,13 +177,21 @@ module.exports = {
 
     const targets = this.calculatePartsTargets(room);
 
-    // ---- MINERS: preemptive, parts-based ----
+    // ---- MINERS: preemptive, parts-based, capped at one per source ----
     // Exclude creeps within PREEMPT_TTL ticks of death so replacement spawns early.
     const effectiveMinerWork = this.countLivingParts(
       room.name, 'miner', WORK, PREEMPT_TTL.miner
     );
 
-    if (effectiveMinerWork < targets.miner.parts) {
+    // Hard cap: never more miners than sources. A miner beyond source count
+    // has nowhere to sit and just wastes energy and a seat.
+    const activeMinerCount = Object.values(Game.creeps).filter(c =>
+      c.memory.homeRoom === room.name &&
+      c.memory.role === 'miner' &&
+      (c.ticksToLive === undefined || c.ticksToLive >= PREEMPT_TTL.miner)
+    ).length;
+
+    if (effectiveMinerWork < targets.miner.parts && activeMinerCount < sources.length) {
       const shortage = targets.miner.parts - effectiveMinerWork;
       const body = Bodies.miner(energy);
       if (body && body.length > 0) {
