@@ -2,28 +2,15 @@
  * spawn.director.js
  *
  * Decides WHAT to spawn and WHEN.
- * Called exclusively from warren.act.js — nothing else should call this.
  *
- * PARTS-BASED TARGETING (v2):
- * Instead of targeting creep counts, the director targets total PART counts
- * across all living creeps of a role. This enables emergent optimization:
- * as energy capacity grows, the system naturally spawns fewer, larger creeps
- * to achieve the same throughput, reducing traffic and CPU overhead.
+ * PARTS-BASED TARGETING (v2 - simplified):
+ * Targets total part counts, not creep counts. Bodies auto-scale with cap.
+ * Targets are now RCL-stepped to avoid over-spawning tiny creeps at low RCL.
  *
- *   Old: "spawn 4 clanrats"
- *   New: "spawn enough clanrats to have 16 total WORK parts"
- *
- * At RCL3 (800 cap): spawns 4x 4-WORK clanrats (can't afford bigger)
- * At RCL4 (1300 cap): spawns 3x 6-WORK clanrats (same throughput, fewer bodies)
- * At RCL8 (12900 cap): could spawn 1x 16-WORK clanrat (ultimate efficiency)
- *
- * Preemptive spawning: dying miners/thralls are treated as already absent
- * so a replacement is queued before death, preventing income gaps.
- * Preemption uses part counts too — parts from dying creeps don't count.
- *
- * Dead weight detection: suicides creeps whose key part count is below
- * 50% of what the ideal body at current room capacity would have.
- * Uses ratio comparison so early-game small bodies are never wrongly killed.
+ * Dead weight detection has been relaxed:
+ * - minRatio raised to 0.4 (was 0.5) — don't suicide a creep that's 45% effective
+ * - Only suicides when you can afford the replacement AND 3+ creeps of that role exist
+ *   (was 2) to avoid the "last two miners kill each other" scenario
  */
 
 const Bodies = require('spawn.bodies');
@@ -35,13 +22,10 @@ const PREEMPT_TTL = {
   thrall: 150
 };
 
-// Which part determines a role's usefulness, and what fraction of
-// the ideal body's count must be present to avoid the dead weight cut.
-// Uses lowercase string literals — these match creep.body[i].type values.
 const DEADWEIGHT = {
-  miner:   { part: 'work',  minRatio: 0.5 },
-  thrall:  { part: 'carry', minRatio: 0.5 },
-  clanrat: { part: 'work',  minRatio: 0.5 }
+  miner:   { part: 'work',  minRatio: 0.4 },
+  thrall:  { part: 'carry', minRatio: 0.4 },
+  clanrat: { part: 'work',  minRatio: 0.4 }
 };
 
 module.exports = {
@@ -69,16 +53,6 @@ module.exports = {
   // Parts counting
   // ---------------------------------------------------------------------------
 
-  /**
-   * Count total ACTIVE parts of a given type across all living creeps of a role.
-   * "Active" means hits > 0 — injured parts don't contribute throughput.
-   *
-   * @param {string} roomName  - Room to count in
-   * @param {string} role      - Creep role (miner, thrall, clanrat, warlock)
-   * @param {string} partType  - WORK, CARRY, MOVE, etc. (uppercase constant)
-   * @param {number} [minTTL]  - If set, exclude creeps with TTL below this threshold
-   * @return {number}          Total count of active parts of that type
-   */
   countLivingParts(roomName, role, partType, minTTL) {
     return Object.values(Game.creeps)
       .filter(c => {
@@ -94,76 +68,45 @@ module.exports = {
   },
 
   // ---------------------------------------------------------------------------
-  // Parts targets
+  // Parts targets — simplified, RCL-stepped
   // ---------------------------------------------------------------------------
 
-  /**
-   * Calculate target part counts for each role based on current room state.
-   * These are FORMULAS — they scale with sources, RCL, and infrastructure.
-   *
-   * @param {Room} room
-   * @return {object} { miner, thrall, clanrat, warlock } each with { parts, type }
-   */
   calculatePartsTargets(room) {
+    const rcl     = room.controller.level;
     const sources = room.find(FIND_SOURCES);
-    const sourceContainers = room.find(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        sources.some(src => s.pos.inRangeTo(src, 2))
-    });
+    const cap     = room.energyCapacityAvailable;
 
-    // --- MINERS: 5 WORK per source ---
-    // Each source yields 10 energy/tick. 1 WORK harvests 2/tick. 10/2 = 5 WORK.
+    // --- MINERS: 5 WORK per source saturates it (10 energy/tick / 2 per WORK) ---
     const minerWorkTarget = sources.length * 5;
 
-    // --- THRALLS: scale with production and infrastructure ---
-    // Without containers, thralls need to run to the source directly — keep it simple.
-    // With containers, target enough CARRY to handle ~80% of peak production
-    // buffered by ~30-tick round trips.
-    // Each CARRY holds 50 energy; at 30-tick round trip = 1.67 energy/tick per CARRY.
-    // Production rate = sources * 10/tick. Need: (production * 0.8) / 1.67 CARRY.
-    // Simplified: productionRate * 0.5 ≈ adequate CARRY with some buffer.
-    let thrallCarryTarget;
-    if (sourceContainers.length > 0) {
-      const productionRate = sources.length * 10;
-      // 1.5× multiplier accounts for round-trip time and traffic delays
-      thrallCarryTarget = Math.ceil(productionRate * 1.5);
-      // Enforce a sensible minimum (at least sourceContainerCount + 1 thrall worth of CARRY)
-      const minCarry = (sourceContainers.length + 1) *
-        Math.floor(room.energyCapacityAvailable / 100); // pairs per thrall at capacity
-      thrallCarryTarget = Math.max(thrallCarryTarget, sources.length * 8);
-    } else {
-      // No containers yet — mirror old logic: 1–2 thralls' worth of CARRY
-      const rcl = room.controller.level;
-      const thrallCount = rcl >= 3 ? 2 : 1;
-      // Use capacity to estimate thrall body size
-      const pairsPerThrall = Math.min(Math.floor(room.energyCapacityAvailable / 100), 25);
-      thrallCarryTarget = thrallCount * pairsPerThrall;
-    }
+    // --- THRALLS: 1 at RCL2, sources+1 otherwise ---
+    // Body auto-scales with cap. Capped at 10 CARRY pairs to keep bodies manageable.
+    const pairsPerThrall    = Math.min(Math.floor(cap / 100), 10);
+    const thrallCount       = rcl <= 2 ? 1 : sources.length + 1;
+    const thrallCarryTarget = thrallCount * pairsPerThrall;
 
-    // Hard cap: no more than (sources * 2) thralls worth of CARRY.
-    // Early thralls are tiny — the parts formula wildly overspawns at low RCL.
-    const maxThralls = sources.length * 2;
-    const pairsPerThrall = Math.min(Math.floor(room.energyCapacityAvailable / 100), 10);
-    thrallCarryTarget = Math.min(thrallCarryTarget, maxThralls * pairsPerThrall);
+    // --- CLANRATS: conservative at low RCL, scale up later ---
+    // At RCL2 just need 1 to build the controller container.
+    // At RCL3+ need enough to handle build backlog and upgrade.
+    const setsPerClanrat   = Math.min(Math.floor(cap / 200), 16);
+    const clanratCountCap  = rcl <= 2
+      ? sources.length
+      : rcl <= 4
+        ? sources.length * 2
+        : sources.length * 3;
+    const clanratWorkTarget = Math.min(16, clanratCountCap) * setsPerClanrat;
 
-    // --- CLANRATS: fixed WORK target, conservative baseline ---
-    // Cap clanrats at 3 per source — early bodies are tiny and the parts
-    // target wildly overspawns at low RCL before capacity scales up.
-    const maxClanrats = sources.length * 3;
-    const setsPerClanrat = Math.min(Math.floor(room.energyCapacityAvailable / 200), 16);
-    const clanratWorkTarget = Math.min(16, maxClanrats * setsPerClanrat);
-
-    // --- WARLOCK: fixed, sized for one dedicated upgrader ---
-    // 6 WORK parts = 6 upgrade points/tick, reasonable baseline.
-    // Warlock is only spawned when controller container exists (checked in spawnByDemand).
-    const warlockWorkTarget = 6;
+    // --- WARLOCK: sized for available energy, 1 dedicated upgrader ---
+    const warlockWorkTarget = Math.min(
+      Math.floor((cap - 150) / 100),  // overhead for CARRY+MOVE
+      10
+    );
 
     return {
-      miner:   { parts: minerWorkTarget,   type: WORK },
+      miner:   { parts: minerWorkTarget,   type: WORK  },
       thrall:  { parts: thrallCarryTarget, type: CARRY },
-      clanrat: { parts: clanratWorkTarget, type: WORK },
-      warlock: { parts: warlockWorkTarget, type: WORK }
+      clanrat: { parts: clanratWorkTarget, type: WORK  },
+      warlock: { parts: warlockWorkTarget, type: WORK  }
     };
   },
 
@@ -172,7 +115,7 @@ module.exports = {
   // ---------------------------------------------------------------------------
 
   spawnByDemand(room, spawn, creeps) {
-    const rcl    = room.controller.level;
+    const rcl     = room.controller.level;
     const sources = room.find(FIND_SOURCES);
     const energy  = room.energyAvailable;
 
@@ -185,14 +128,11 @@ module.exports = {
 
     const targets = this.calculatePartsTargets(room);
 
-    // ---- MINERS: preemptive, parts-based, capped at one per source ----
-    // Exclude creeps within PREEMPT_TTL ticks of death so replacement spawns early.
+    // ---- MINERS: preemptive, parts-based, hard capped at one per source ----
     const effectiveMinerWork = this.countLivingParts(
       room.name, 'miner', WORK, PREEMPT_TTL.miner
     );
 
-    // Hard cap: never more miners than sources. A miner beyond source count
-    // has nowhere to sit and just wastes energy and a seat.
     const activeMinerCount = Object.values(Game.creeps).filter(c =>
       c.memory.homeRoom === room.name &&
       c.memory.role === 'miner' &&
@@ -200,7 +140,6 @@ module.exports = {
     ).length;
 
     if (effectiveMinerWork < targets.miner.parts && activeMinerCount < sources.length) {
-      const shortage = targets.miner.parts - effectiveMinerWork;
       const body = Bodies.miner(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
@@ -208,8 +147,7 @@ module.exports = {
           this.spawnRat(spawn, 'miner', body);
           console.log(
             `[spawn:${room.name}] miner — ` +
-            `${effectiveMinerWork}/${targets.miner.parts} WORK ` +
-            `(shortage: ${shortage}) — ${body.length} parts, ${cost}e`
+            `${effectiveMinerWork}/${targets.miner.parts} WORK — ${body.length} parts, ${cost}e`
           );
           return;
         }
@@ -222,7 +160,6 @@ module.exports = {
     );
 
     if (effectiveThrallCarry < targets.thrall.parts) {
-      const shortage = targets.thrall.parts - effectiveThrallCarry;
       const body = Bodies.thrall(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
@@ -230,8 +167,7 @@ module.exports = {
           this.spawnRat(spawn, 'thrall', body);
           console.log(
             `[spawn:${room.name}] thrall — ` +
-            `${effectiveThrallCarry}/${targets.thrall.parts} CARRY ` +
-            `(shortage: ${shortage}) — ${body.length} parts, ${cost}e`
+            `${effectiveThrallCarry}/${targets.thrall.parts} CARRY — ${body.length} parts, ${cost}e`
           );
           return;
         }
@@ -244,12 +180,10 @@ module.exports = {
 
     // ---- CLANRATS: parts-based ----
     const currentClanratWork = this.countLivingParts(room.name, 'clanrat', WORK);
-    // Also count workers (backward-compat promoted slaves)
-    const workerWork = this.countLivingParts(room.name, 'worker', WORK);
-    const totalClanratWork = currentClanratWork + workerWork;
+    const workerWork         = this.countLivingParts(room.name, 'worker',  WORK);
+    const totalClanratWork   = currentClanratWork + workerWork;
 
     if (totalClanratWork < targets.clanrat.parts) {
-      const shortage = targets.clanrat.parts - totalClanratWork;
       const body = Bodies.clanrat(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
@@ -257,15 +191,14 @@ module.exports = {
           this.spawnRat(spawn, 'clanrat', body);
           console.log(
             `[spawn:${room.name}] clanrat — ` +
-            `${totalClanratWork}/${targets.clanrat.parts} WORK ` +
-            `(shortage: ${shortage}) — ${body.length} parts, ${cost}e`
+            `${totalClanratWork}/${targets.clanrat.parts} WORK — ${body.length} parts, ${cost}e`
           );
           return;
         }
       }
     }
 
-    // ---- WARLOCK: parts-based, requires controller container ----
+    // ---- WARLOCK: requires controller container ----
     const controllerContainer = room.find(FIND_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_CONTAINER &&
@@ -276,7 +209,6 @@ module.exports = {
       const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
 
       if (currentWarlockWork < targets.warlock.parts) {
-        const shortage = targets.warlock.parts - currentWarlockWork;
         const body = Bodies.warlock(energy);
         if (body && body.length > 0) {
           const cost = this._bodyCost(body);
@@ -284,26 +216,14 @@ module.exports = {
             this.spawnRat(spawn, 'warlock', body);
             console.log(
               `[spawn:${room.name}] warlock — ` +
-              `${currentWarlockWork}/${targets.warlock.parts} WORK ` +
-              `(shortage: ${shortage}) — ${body.length} parts, ${cost}e`
+              `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
             );
           }
         }
       }
     }
 
-    // ---- GUTTER RUNNER: one scout per room, RCL2+, on demand ----
-    /**
-     * Gutter Runner spawn gate.
-     *
-     * Gate conditions (all must pass):
-     *   1. RCL >= 2  — we have energy to spare; early rooms can't afford a scout
-     *   2. No gutter runner already alive in this homeRoom
-     *   3. At least one adjacent room has missing or stale intelligence
-     *
-     * One scout per room. If it dies, the spawn director queues a replacement
-     * next tick automatically (condition 2 becomes false again).
-     */
+    // ---- GUTTER RUNNER: one scout per room, RCL2+ ----
     if (rcl >= 2) {
       const hasScout = Object.values(Game.creeps).some(c =>
         c.memory.homeRoom === room.name &&
@@ -311,9 +231,9 @@ module.exports = {
       );
 
       if (!hasScout) {
-        const roomExits  = Game.map.describeExits(room.name);
-        const intel      = Memory.intelligence || {};
-        const STALE_AGE  = 5000;
+        const roomExits     = Game.map.describeExits(room.name);
+        const intel         = Memory.intelligence || {};
+        const STALE_AGE     = 5000;
 
         const needsScouting = Object.values(roomExits).some(roomName => {
           const entry = intel[roomName];
@@ -326,74 +246,56 @@ module.exports = {
             const cost = this._bodyCost(body);
             if (energy >= cost) {
               this.spawnRat(spawn, 'gutterrunner', body);
-              console.log(
-                `[spawn:${room.name}] gutterrunner — ` +
-                `${body.length} MOVE parts, ${cost}e — scouting adjacent rooms`
-              );
+              console.log(`[spawn:${room.name}] gutterrunner — ${body.length} MOVE, ${cost}e`);
               return;
             }
           }
         }
       }
     }
-
   },
 
   // ---------------------------------------------------------------------------
-  // Dead weight detection (unchanged from v1)
+  // Dead weight — relaxed thresholds to avoid suiciding during transitions
   // ---------------------------------------------------------------------------
 
-  /**
-   * Suicides creeps too weak to be worth running.
-   *
-   * Compares the creep's active key-part count against the ideal body
-   * we could spawn at current room energy CAPACITY. Only fires if the
-   * ideal body is meaningfully better (ratio check) AND we have enough
-   * energy available to spawn a replacement.
-   *
-   * This prevents early-game small bodies from being wrongly suicided —
-   * if the best possible clanrat at 300 capacity is 1 WORK, a 1 WORK
-   * clanrat passes (1/1 = 100% >= 50%).
-   */
   checkDeadWeight(room, creeps) {
     for (const creep of creeps) {
       const config = DEADWEIGHT[creep.memory.role];
       if (!config) continue;
 
-      // Never suicide the last creep of this role.
-      const sameRoleAlive = creeps.filter(
-        c => c.memory.role === creep.memory.role
-      ).length;
-      if (sameRoleAlive <= 1) continue;
+      // Need at least 3 alive to suicide one (was 2 — "last two kill each other" bug)
+      const sameRoleAlive = creeps.filter(c => c.memory.role === creep.memory.role).length;
+      if (sameRoleAlive <= 2) continue;
 
-      // Skip creeps that have taken combat damage
+      // Never suicide a creep that has taken combat damage
       const hasCombatDamage = creep.body.some(b => b.hits < 100);
       if (hasCombatDamage) continue;
+
+      // Never suicide creeps close to natural death — let them live out their ticks
+      if (creep.ticksToLive !== undefined && creep.ticksToLive < 200) continue;
 
       const bodyFn = Bodies[creep.memory.role];
       if (!bodyFn) continue;
 
-      // Ideal body at full room capacity
       const idealBody = bodyFn(room.energyCapacityAvailable);
-
-      // Only suicide if we can afford to spawn the ideal replacement RIGHT NOW.
       const idealCost = this._bodyCost(idealBody);
+
+      // Only suicide if we can afford the replacement right now
       if (room.energyAvailable < idealCost) continue;
 
       const idealCount = idealBody.filter(p => p === config.part).length;
       if (idealCount === 0) continue;
 
-      // Count active key parts in this creep
       const activeCount = creep.body.filter(
         b => b.type === config.part && b.hits > 0
       ).length;
 
-      // Suicide only if current is below the minimum ratio of ideal
       if (activeCount < idealCount * config.minRatio) {
         console.log(
           `[warren:${room.name}] dead weight: ${creep.name} ` +
           `(${creep.memory.role}, ${activeCount}/${idealCount} ${config.part} ` +
-          `vs ideal — ${Math.round(activeCount / idealCount * 100)}% of capacity) — suiciding`
+          `— ${Math.round(activeCount / idealCount * 100)}% of ideal) — suiciding`
         );
         creep.suicide();
         return creep.name;
@@ -421,10 +323,6 @@ module.exports = {
     });
   },
 
-  /**
-   * Calculate the energy cost of a body array.
-   * Uses lowercase part names to match spawn.bodies.js conventions.
-   */
   _bodyCost(body) {
     const costs = {
       work: 100, carry: 50, move: 50,
