@@ -1,9 +1,9 @@
 const ROOM_STATE = {
   BOOTSTRAP: 0,
-  STABLE: 1,
-  GROW: 2,
-  FORTIFY: 3,
-  WAR: 4
+  STABLE:    1,
+  GROW:      2,
+  FORTIFY:   3,
+  WAR:       4
 };
 
 Room.prototype.initMemory = function () {
@@ -21,15 +21,15 @@ Room.prototype.setState = function (state) {
 Room.prototype._logAttackEvent = function (hostiles) {
   if (!Memory.attackLog) Memory.attackLog = [];
 
+  // Record that an attack happened (used by orient to trigger FORTIFY)
+  this.memory.lastAttackTick = Game.time;
+
   // Deduplicate by attacker username within this wave
   const attackers = {};
   for (const h of hostiles) {
     const name = h.owner ? h.owner.username : 'unknown';
     if (!attackers[name]) {
-      attackers[name] = {
-        bodyParts: {},
-        count: 0
-      };
+      attackers[name] = { bodyParts: {}, count: 0 };
     }
     attackers[name].count++;
     for (const part of h.body) {
@@ -40,13 +40,11 @@ Room.prototype._logAttackEvent = function (hostiles) {
     }
   }
 
-  const existing = Memory.attackLog;
-
-  // Only write a new entry if this is a new wave (not same tick range as last entry)
+  const existing  = Memory.attackLog;
   const lastEntry = existing[existing.length - 1];
   const isNewWave = !lastEntry ||
     lastEntry.room !== this.name ||
-    (Game.time - lastEntry.lastSeen) > 50; // 50 tick gap = new wave
+    (Game.time - lastEntry.lastSeen) > 50;
 
   if (isNewWave) {
     Memory.attackLog.push({
@@ -61,11 +59,9 @@ Room.prototype._logAttackEvent = function (hostiles) {
     });
     console.log(`[warren:${this.name}] ⚔️  ATTACK by: ${Object.keys(attackers).join(', ')}`);
   } else {
-    // Update lastSeen on the current wave
     lastEntry.lastSeen = Game.time;
   }
 
-  // Keep last 20 attack records
   if (Memory.attackLog.length > 20) Memory.attackLog.shift();
 };
 
