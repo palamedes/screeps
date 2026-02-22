@@ -2,13 +2,14 @@
  * warren.decide.js
  *
  * Translates warren state into a concrete plan (this._plan).
- * Produces boolean flags only — no side effects, no Memory writes.
  *
- * Safe mode is now SELECTIVE — only activates for real combat threats,
- * not scouts. This preserves the charge for when it actually matters.
+ * Safe mode activation logic:
+ *   - No tower: activate on ANY combat hostile (existential threat at low RCL)
+ *   - Has tower: only activate if tower is likely outmatched
+ *   - Never waste the charge on scouts/reservers (no attack/ranged/work parts)
  *
- * During active safe mode, build defenses aggressively so you're not
- * naked when it expires.
+ * Safe mode is instant — activateSafeMode() works the same tick it is called.
+ * After safe mode, FORTIFY state keeps defenses building for 3000 more ticks.
  */
 
 const { ROOM_STATE } = require('warren.memory');
@@ -32,10 +33,9 @@ Room.prototype.decide = function () {
     publishDefense:           false
   };
 
-  // --- Safe Mode: only spend the charge on real combat threats ---
-  // Scouts and reservers don't warrant blowing your one save.
-  // Trigger when: has ATTACK/RANGED_ATTACK/WORK (dismantle) parts AND
-  //               the tower likely can't handle it alone.
+  // --- Safe Mode Trigger ---
+  // Safe mode is instant — activates the same tick we call it.
+  // Never waste the charge on non-combat visitors (scouts, reservers).
   if (snap.hostiles.length > 0 &&
       snap.safeMode &&
       !snap.safeMode.active &&
@@ -48,30 +48,34 @@ Room.prototype.decide = function () {
       h.getActiveBodyparts(WORK) > 0
     );
 
-    // Tower can absorb ~150 damage/tick at close range per tower
-    const towerStrength    = snap.towers.length * 150;
-    const hostileHitpoints = combatHostiles.reduce((s, h) => s + h.hits, 0);
+    if (combatHostiles.length > 0) {
+      const hasTower = snap.towers.length > 0;
 
-    // Activate if there are combat creeps AND (no tower OR tower is outmatched)
-    const towerOutmatched  = snap.towers.length === 0 ||
-      hostileHitpoints > towerStrength * 10; // 10 ticks to kill them all
-
-    if (combatHostiles.length > 0 && towerOutmatched) {
-      this._plan.activateSafeMode = true;
+      if (!hasTower) {
+        // No tower — any combat hostile is existential. Fire immediately.
+        this._plan.activateSafeMode = true;
+      } else {
+        // Have a tower — only spend the charge if likely outmatched.
+        // Rough estimate: ~150 damage/tick per tower at close range.
+        const towerStrength    = snap.towers.length * 150;
+        const hostileHitpoints = combatHostiles.reduce((s, h) => s + h.hits, 0);
+        if (hostileHitpoints > towerStrength * 10) {
+          this._plan.activateSafeMode = true;
+        }
+      }
     }
   }
 
   // --- Build defenses while safe mode is active ---
-  // This is the ONLY time you'll get to safely build ramparts/tower.
-  // Don't waste it.
+  // Use the window to get ramparts and tower built before it expires.
   if (snap.safeMode && snap.safeMode.active) {
-    this._plan.buildRamparts = true;
-    this._plan.buildTower    = snap.rcl >= 3;
-    this._plan.publishBuild  = true;
-    this._plan.publishRepair = true;
+    this._plan.buildRamparts  = true;
+    this._plan.buildTower     = snap.rcl >= 3;
+    this._plan.publishBuild   = true;
+    this._plan.publishRepair  = true;
     this._plan.publishHarvest = true;
     this._plan.publishUpgrade = true;
-    // Don't return — fall through so the state machine can add more flags
+    // Don't return — fall through so state machine can add more flags
   }
 
   // --- Economic Recovery Guard ---
@@ -91,6 +95,7 @@ Room.prototype.decide = function () {
   switch (state) {
 
     case ROOM_STATE.BOOTSTRAP:
+      // RCL1: survive, upgrade, get spawn rampart up ASAP.
       this._plan.buildControllerContainer = true;
       this._plan.buildRamparts            = true;
       this._plan.publishHarvest           = true;
@@ -111,8 +116,7 @@ Room.prototype.decide = function () {
       break;
 
     case ROOM_STATE.FORTIFY:
-      // Hold position, build defenses, minimal economy expansion.
-      // Don't lay new extension sites — keep clanrats building ramparts.
+      // Hold position after an attack. Build defenses, no new extensions.
       this._plan.buildRamparts            = true;
       this._plan.buildTower               = snap.rcl >= 3;
       this._plan.buildControllerContainer = true;
@@ -125,9 +129,8 @@ Room.prototype.decide = function () {
 
     case ROOM_STATE.WAR:
       // Under attack. Tower fires independently in act().
-      // Clanrats do NOT build during combat.
-      this._plan.publishDefense = true;
-      this._plan.publishHarvest = true;
+      this._plan.publishDefense           = true;
+      this._plan.publishHarvest           = true;
       break;
 
     case ROOM_STATE.STABLE:
