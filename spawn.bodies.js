@@ -155,13 +155,28 @@ module.exports = {
   },
 
   /**
-   * Stormvermin body — @TODO
+   * Stormvermin body
    * Elite melee shock troops. Heavy ATTACK, TOUGH for survivability, enough MOVE.
    */
-  stormvermin(energy) {
-    // @TODO implement
-    return [ATTACK, MOVE];
-  },
+stormvermin(energy) {
+  // Minimum viable: [ATTACK, MOVE, MOVE] = 180e
+  // Scales up with energy but stays ATTACK-focused
+  // Always 2:1 MOVE:ATTACK ratio for full speed
+  if (energy < 180) return [];
+
+  const sets = Math.min(
+    Math.floor(energy / 180), // each set = ATTACK + MOVE + MOVE = 180e
+    5                          // cap at 5 sets = 900e, 5 ATTACK parts
+  );
+
+  const body = [];
+  // TOUGH first so it absorbs hits before ATTACK parts are damaged
+  for (let i = 0; i < sets; i++) body.push(TOUGH);
+  for (let i = 0; i < sets; i++) body.push(ATTACK);
+  for (let i = 0; i < sets * 2; i++) body.push(MOVE);
+
+  return body;
+},
 
   /**
    * Gutter Runner body

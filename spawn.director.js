@@ -26,6 +26,12 @@ const PREEMPT_TTL = {
   thrall: 150
 };
 
+const NAMES = ['gnaw','skritt','queek','lurk','ruin','blight','fang','scab','gash','rot',
+  'skulk','twitch','snikk','claw','filth','mangle','reek','slit','spite','pox',
+  'rattle','skree','chitter','bleed','warp','snarl','scrape','bite','mire','fester',
+  'hook','tatter','scurry','crack','nibble','scour','screech','itch','grime','rend'
+  ];
+
 const DEADWEIGHT = {
   miner:   { part: 'work',  minRatio: 0.4 },
   thrall:  { part: 'carry', minRatio: 0.4 },
@@ -250,6 +256,44 @@ module.exports = {
     }
   },
 
+  // ---- STORMVERMIN: spawn one when threatened, regardless of energy ----
+  const { ROOM_STATE } = require('warren.memory');
+  const roomState   = room.memory.state;
+  const underThreat = roomState === ROOM_STATE.WAR ||
+                      roomState === ROOM_STATE.FORTIFY;
+  
+  const hasHostiles = room.find(FIND_HOSTILE_CREEPS).filter(h =>
+    h.getActiveBodyparts(WORK)         > 0 ||
+    h.getActiveBodyparts(ATTACK)       > 0 ||
+    h.getActiveBodyparts(RANGED_ATTACK) > 0
+  ).length > 0;
+  
+  const needsStormvermin = underThreat || hasHostiles;
+  
+  if (needsStormvermin) {
+    const svCount = Object.values(Game.creeps).filter(c =>
+      c.memory.homeRoom === room.name &&
+      c.memory.role === 'stormvermin'
+    ).length;
+  
+    // One stormvermin at RCL2-3, two at RCL4+
+    const svTarget = rcl >= 4 ? 2 : 1;
+  
+    if (svCount < svTarget) {
+      const body = Bodies.stormvermin(energy);
+      if (body && body.length > 0) {
+        const cost = this._bodyCost(body);
+        if (energy >= cost) {
+          this.spawnRat(spawn, 'stormvermin', body);
+          console.log(
+            `[spawn:${room.name}] ⚔️  stormvermin — ${body.length} parts, ${cost}e`
+          );
+          return;
+        }
+      }
+    }
+  },
+
   checkDeadWeight(room, creeps) {
     for (const creep of creeps) {
       const config = DEADWEIGHT[creep.memory.role];
@@ -296,7 +340,7 @@ module.exports = {
   },
 
   spawnRat(spawn, role, body) {
-    const name = `${role}_${Game.time}`;
+    const name = `${role}_${NAMES[Game.time % NAMES.length]}${Math.floor(Game.time/10) % 100}`;
     spawn.spawnCreep(body, name, {
       memory: { role, homeRoom: spawn.room.name }
     });
