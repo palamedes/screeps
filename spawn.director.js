@@ -86,7 +86,20 @@ module.exports = {
     // BUT we spawn one at a time so this just means "get one good thrall".
     // At RCL3+: scale to sources+1 thralls worth.
     const pairsPerThrall = Math.min(Math.floor(cap / 100), 10);
-    const thrallCount    = rcl <= 2 ? 1 : sources.length + 1;
+
+    const extensions = room.find(FIND_MY_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_EXTENSION
+    }).length;
+    const hasStorage = room.find(FIND_MY_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_STORAGE
+    }).length > 0;
+    
+    const thrallCount = (extensions === 0 && !hasStorage)
+      ? 1                        // nowhere to put energy except spawn — one thrall is enough
+      : rcl <= 3
+        ? sources.length          // a few extensions exist, modest thrall count
+        : sources.length + 1;     // storage/many extensions, full thrall complement
+
     const thrallCarryTarget = thrallCount * pairsPerThrall;
 
     // CLANRATS: conservative at low RCL
