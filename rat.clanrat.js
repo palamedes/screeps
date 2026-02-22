@@ -130,9 +130,9 @@ Creep.prototype.runClanrat = function () {
   const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
     filter: r => {
       if (r.resourceType !== RESOURCE_ENERGY) return false;
-      if (r.amount < 50) return false;
+      if (r.amount < 30) return false;
       const dist = this.pos.getRangeTo(r);
-      return dist === 0 || (r.amount / dist) >= 2;
+      return dist === 0 || (r.amount / dist) >= 2
     }
   }).sort((a, b) => b.amount - a.amount)[0];
 
