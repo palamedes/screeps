@@ -250,6 +250,44 @@ module.exports = {
     }
   },
 
+// ---- STORMVERMIN: spawn one when threatened, regardless of energy ----
+const { ROOM_STATE } = require('warren.memory');
+const roomState   = room.memory.state;
+const underThreat = roomState === ROOM_STATE.WAR ||
+                    roomState === ROOM_STATE.FORTIFY;
+
+const hasHostiles = room.find(FIND_HOSTILE_CREEPS).filter(h =>
+  h.getActiveBodyparts(WORK)         > 0 ||
+  h.getActiveBodyparts(ATTACK)       > 0 ||
+  h.getActiveBodyparts(RANGED_ATTACK) > 0
+).length > 0;
+
+const needsStormvermin = underThreat || hasHostiles;
+
+if (needsStormvermin) {
+  const svCount = Object.values(Game.creeps).filter(c =>
+    c.memory.homeRoom === room.name &&
+    c.memory.role === 'stormvermin'
+  ).length;
+
+  // One stormvermin at RCL2-3, two at RCL4+
+  const svTarget = rcl >= 4 ? 2 : 1;
+
+  if (svCount < svTarget) {
+    const body = Bodies.stormvermin(energy);
+    if (body && body.length > 0) {
+      const cost = this._bodyCost(body);
+      if (energy >= cost) {
+        this.spawnRat(spawn, 'stormvermin', body);
+        console.log(
+          `[spawn:${room.name}] ⚔️  stormvermin — ${body.length} parts, ${cost}e`
+        );
+        return;
+      }
+    }
+  }
+},
+
   checkDeadWeight(room, creeps) {
     for (const creep of creeps) {
       const config = DEADWEIGHT[creep.memory.role];
