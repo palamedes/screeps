@@ -219,19 +219,23 @@ module.exports = {
         s.pos.inRangeTo(room.controller, 3)
     })[0];
 
-    if (controllerContainer) {
-      const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
-
-      if (currentWarlockWork < targets.warlock.parts) {
-        const body = Bodies.warlock(energy);
-        if (body && body.length > 0) {
-          const cost = this._bodyCost(body);
-          if (energy >= cost) {
-            this.spawnRat(spawn, 'warlock', body);
-            console.log(
-              `[spawn:${room.name}] warlock — ` +
-              `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
-            );
+    if (controllerContainer && rcl >= 3) {
+      const hasBuildBacklog = room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
+    
+      if (!hasBuildBacklog) {
+        const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
+    
+        if (currentWarlockWork < targets.warlock.parts) {
+          const body = Bodies.warlock(energy);
+          if (body && body.length > 0) {
+            const cost = this._bodyCost(body);
+            if (energy >= cost) {
+              this.spawnRat(spawn, 'warlock', body);
+              console.log(
+                `[spawn:${room.name}] warlock — ` +
+                `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
+              );
+            }
           }
         }
       }
