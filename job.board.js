@@ -113,8 +113,8 @@ module.exports = {
 
       case 'clanrat':
         if (job.type === 'BUILD')   return 300;
-        if (job.type === 'REPAIR')  return 200;  // roads between builds
-        if (job.type === 'UPGRADE') return 100;
+        if (job.type === 'UPGRADE') return 250;
+        if (job.type === 'REPAIR')  return 150;
         return -50;
 
       default:
@@ -138,23 +138,38 @@ module.exports = {
       c.memory.homeRoom === room.name &&
       c.memory.role === 'warlock'
     );
-
+  
     const hasBuildSites = room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
-
-    const fullSlots = Math.max(2, room.find(FIND_SOURCES).length * 4);
-
-    const slots = (warlockActive && hasBuildSites)
-      ? 1
-      : fullSlots;
-
+    const fullSlots     = Math.max(2, room.find(FIND_SOURCES).length * 4);
+  
+    const slots = (warlockActive && hasBuildSites) ? 1 : fullSlots;
+  
+    // Dynamic priority:
+    // - Energy at cap (73%+ cap events) → 750 — competes with BUILD
+    // - Extensions missing → 600 — still important, but build extensions first
+    // - Otherwise → 300 — lower than BUILD but not invisible
+    const energyRatio   = room.energyAvailable / room.energyCapacityAvailable;
+    const extensions    = room.find(FIND_MY_STRUCTURES, {
+      filter: s => s.structureType === STRUCTURE_EXTENSION
+    }).length;
+    const extensionSites = room.find(FIND_MY_CONSTRUCTION_SITES, {
+      filter: s => s.structureType === STRUCTURE_EXTENSION
+    }).length;
+  
+    const priority = energyRatio >= 0.95
+      ? 750   // energy capped — upgrade is the best use of clanrat time
+      : (extensions === 0 && extensionSites === 0)
+        ? 600  // no extensions at all — upgrading to next RCL is urgent
+        : 300; // normal — build takes priority but upgrade still happens
+  
     this.publish(room.name, {
       type:     'UPGRADE',
       targetId: room.controller.id,
-      priority: 50,
+      priority,
       slots
     });
-  },
-
+  },  
+  
   publishBuildJobs(room) {
     room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
 
