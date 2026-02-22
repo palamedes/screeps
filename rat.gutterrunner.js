@@ -3,11 +3,28 @@
  *
  * BFS scout. Expands outward from homeRoom up to MAX_SCOUT_DEPTH hops.
  * Three states: idle → traveling → returning.
- * moveTo handles all multi-room pathing — no custom path storage.
+ *
+ * ROOT CAUSE OF OSCILLATION (now fixed):
+ *   The old code wrote intel and switched to 'returning' the moment
+ *   this.room.name === target. That happens at the BORDER TILE (x=0 or x=49),
+ *   the very first step into the room. The creep immediately turned around,
+ *   never actually seeing the room, and the BFS kept finding it as a target
+ *   because any room reached only via that room was still unscouted.
+ *
+ * THE FIX:
+ *   Don't transition to returning until the creep reaches the CENTER (25,25)
+ *   of the target room (within range 5). This guarantees full room visibility
+ *   before intel is written, and means the creep genuinely visited the room.
+ *
+ * SECONDARY FIX — visited guard:
+ *   Track rooms visited this "tour" in memory.grVisited. Even if BFS logic
+ *   has an edge case, we won't re-target a room we've already been to this
+ *   run. Cleared when the creep goes idle with nothing left to scout.
  */
 
 const MAX_SCOUT_DEPTH = 3;
 const INTEL_STALE_AGE = 5000;
+const SCOUT_CENTER_RANGE = 5; // how close to room center before we write intel
 
 Creep.prototype.runGutterRunner = function () {
   if (!this.memory.homeRoom) {
@@ -29,7 +46,14 @@ Creep.prototype._grIdle = function () {
   }
 
   const target = this._grFindTarget();
-  if (!target) return; // everything fresh — sit tight
+
+  if (!target) {
+    // Everything within range is fresh — clear visited list and sit tight
+    this.memory.grVisited = [];
+    return;
+  }
+
+  if (!this.memory.grVisited) this.memory.grVisited = [];
 
   this.memory.grTarget = target;
   this.memory.grState  = 'traveling';
@@ -38,24 +62,29 @@ Creep.prototype._grIdle = function () {
 
 /**
  * BFS outward from homeRoom. Returns first room that is unscouted or stale.
- * No RECENT_GRACE — a scouted room is simply not stale until INTEL_STALE_AGE ticks pass.
+ * Skips rooms already visited this tour (grVisited guard).
  */
 Creep.prototype._grFindTarget = function () {
-  const intel = Memory.intelligence || {};
-  const home  = this.memory.homeRoom;
-  const now   = Game.time;
+  const intel   = Memory.intelligence || {};
+  const home    = this.memory.homeRoom;
+  const now     = Game.time;
+  const visited = new Set(this.memory.grVisited || []);
+  visited.add(home);
 
-  const queue   = [{ roomName: home, depth: 0 }];
-  const visited = new Set([home]);
+  const queue    = [{ roomName: home, depth: 0 }];
+  const enqueued = new Set([home]);
 
   while (queue.length) {
     const { roomName, depth } = queue.shift();
 
     if (depth > 0) {
+      // Skip rooms we already visited this tour
+      if (visited.has(roomName)) continue;
+
       const entry = intel[roomName];
       const needsScouting = !entry || (now - entry.scoutedAt) > INTEL_STALE_AGE;
       if (needsScouting) return roomName;
-      // Already scouted and fresh — fall through to add neighbors
+      // Scouted and fresh — fall through to add neighbors
     }
 
     if (depth >= MAX_SCOUT_DEPTH) continue;
@@ -63,14 +92,14 @@ Creep.prototype._grFindTarget = function () {
     const exits = Game.map.describeExits(roomName);
     for (const dir in exits) {
       const neighbor = exits[dir];
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
+      if (!enqueued.has(neighbor)) {
+        enqueued.add(neighbor);
         queue.push({ roomName: neighbor, depth: depth + 1 });
       }
     }
   }
 
-  return null; // everything within range is fresh
+  return null;
 };
 
 Creep.prototype._grTravel = function () {
@@ -80,17 +109,38 @@ Creep.prototype._grTravel = function () {
     return;
   }
 
-  // Arrived in target room — scan and head home
   if (this.room.name === target) {
-    this._grWriteIntelligence(this.room);
-    this.memory.grState  = 'returning';
-    this.memory.grTarget = null;
-    console.log(`[gr:${this.name}] scanned ${target}, returning home`);
+    // FIX: Don't write intel at the border tile — move to center first.
+    // Only transition to returning once we have real room visibility.
+    const center = new RoomPosition(25, 25, target);
+    const atCenter = this.pos.getRangeTo(center) <= SCOUT_CENTER_RANGE;
+
+    if (atCenter) {
+      this._grWriteIntelligence(this.room);
+
+      // Add to visited list so we don't re-target this room this tour
+      if (!this.memory.grVisited) this.memory.grVisited = [];
+      if (!this.memory.grVisited.includes(target)) {
+        this.memory.grVisited.push(target);
+      }
+
+      this.memory.grState  = 'returning';
+      this.memory.grTarget = null;
+      console.log(`[gr:${this.name}] scanned ${target}, returning home`);
+      return;
+    }
+
+    // In the target room but not at center yet — keep moving inward
+    this.moveTo(center, {
+      reusePath:          20,
+      visualizePathStyle: { stroke: '#aaffaa', opacity: 0.3 }
+    });
     return;
   }
 
+  // Not in target room yet — move toward center of target room
   this.moveTo(new RoomPosition(25, 25, target), {
-    reusePath:          50,
+    reusePath:          20,
     visualizePathStyle: { stroke: '#aaffaa', opacity: 0.3 }
   });
 };
@@ -98,6 +148,8 @@ Creep.prototype._grTravel = function () {
 Creep.prototype._grReturn = function () {
   if (this.room.name === this.memory.homeRoom) {
     this.memory.grState = null;
+    // Don't clear grVisited here — keep it so _grIdle picks the NEXT room,
+    // not one we already scouted this tour. Cleared only when nothing left.
     return;
   }
 
@@ -108,7 +160,7 @@ Creep.prototype._grReturn = function () {
     : new RoomPosition(25, 25, this.memory.homeRoom);
 
   this.moveTo(dest, {
-    reusePath:          50,
+    reusePath:          20,
     visualizePathStyle: { stroke: '#aaaaff', opacity: 0.3 }
   });
 };
