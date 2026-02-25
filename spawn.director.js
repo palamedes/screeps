@@ -117,7 +117,7 @@ module.exports = {
     return {
       miner:   { parts: minerWorkTarget,   type: WORK  },
       thrall:  { parts: thrallCarryTarget, type: CARRY },
-      clanrat: { parts: clanratWorkTarget, type: WORK  },
+      clanrat: { parts: clanratWorkTarget, type: WORK, countCap: clanratCountCap },
       warlock: { parts: warlockWorkTarget, type: WORK  }
     };
   },
@@ -184,61 +184,6 @@ module.exports = {
             `${effectiveThrallCarry}/${targets.thrall.parts} CARRY — ${body.length} parts, ${cost}e`
           );
           return;
-        }
-      }
-    }
-
-    // ---- CLANRATS & WARLOCK: wait for energy threshold ----
-    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
-    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
-
-    // ---- CLANRATS ----
-    const currentClanratWork  = this.countLivingParts(room.name, 'clanrat', WORK);
-    const workerWork          = this.countLivingParts(room.name, 'worker',  WORK);
-    const totalClanratWork    = currentClanratWork + workerWork;
-    const currentClanratCount = Object.values(Game.creeps).filter(c =>
-      c.memory.homeRoom === room.name &&
-      (c.memory.role === 'clanrat' || c.memory.role === 'worker')
-    ).length;
-    
-    if (currentClanratCount >= clanratCountCap) return; 
-    
-    if (totalClanratWork < targets.clanrat.parts) {
-      const body = Bodies.clanrat(energy);
-      if (body && body.length > 0) {
-        const cost = this._bodyCost(body);
-        if (energy >= cost) {
-          this.spawnRat(spawn, 'clanrat', body);
-          console.log(
-            `[spawn:${room.name}] clanrat — ` +
-            `${totalClanratWork}/${targets.clanrat.parts} WORK — ${body.length} parts, ${cost}e`
-          );
-          return;
-        }
-      }
-    }
-
-    // ---- WARLOCK: requires controller container ----
-    const controllerContainer = room.find(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(room.controller, 3)
-    })[0];
-
-    if (controllerContainer) {
-      const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
-  
-      if (currentWarlockWork < targets.warlock.parts) {
-        const body = Bodies.warlock(energy);
-        if (body && body.length > 0) {
-          const cost = this._bodyCost(body);
-          if (energy >= cost) {
-            this.spawnRat(spawn, 'warlock', body);
-            console.log(
-              `[spawn:${room.name}] warlock — ` +
-              `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
-            );
-          }
         }
       }
     }
@@ -310,7 +255,63 @@ module.exports = {
           }
         }
       }
-    }    
+    }
+    
+    // ---- CLANRATS & WARLOCK: wait for energy threshold ----
+    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
+    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
+
+    // ---- WARLOCK: requires controller container ----
+    const controllerContainer = room.find(FIND_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_CONTAINER &&
+        s.pos.inRangeTo(room.controller, 3)
+    })[0];
+
+    if (controllerContainer) {
+      const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
+  
+      if (currentWarlockWork < targets.warlock.parts) {
+        const body = Bodies.warlock(energy);
+        if (body && body.length > 0) {
+          const cost = this._bodyCost(body);
+          if (energy >= cost) {
+            this.spawnRat(spawn, 'warlock', body);
+            console.log(
+              `[spawn:${room.name}] warlock — ` +
+              `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
+            );
+          }
+        }
+      }
+    }
+
+    // ---- CLANRATS ----
+    const currentClanratWork  = this.countLivingParts(room.name, 'clanrat', WORK);
+    const workerWork          = this.countLivingParts(room.name, 'worker',  WORK);
+    const totalClanratWork    = currentClanratWork + workerWork;
+    const currentClanratCount = Object.values(Game.creeps).filter(c =>
+      c.memory.homeRoom === room.name &&
+      (c.memory.role === 'clanrat' || c.memory.role === 'worker')
+    ).length;
+
+    if (currentClanratCount >= targets.clanrat.countCap) return;
+
+    if (totalClanratWork < targets.clanrat.parts) {
+      const body = Bodies.clanrat(energy);
+      if (body && body.length > 0) {
+        const cost = this._bodyCost(body);
+        if (energy >= cost) {
+          this.spawnRat(spawn, 'clanrat', body);
+          console.log(
+            `[spawn:${room.name}] clanrat — ` +
+            `${totalClanratWork}/${targets.clanrat.parts} WORK — ${body.length} parts, ${cost}e`
+          );
+          return;
+        }
+      }
+    }
+    
   },
 
   checkDeadWeight(room, creeps) {
