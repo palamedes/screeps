@@ -75,7 +75,7 @@ Creep.prototype.runThrall = function () {
 
   // --- Delivery Phase ---
   if (this.memory.delivering) {
-
+  
     // Priority 1: Spawn
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
@@ -84,16 +84,29 @@ Creep.prototype.runThrall = function () {
       }
       return;
     }
-
-    // Priority 2: Extensions — fill before towers and controller container.
-    // Use room.find + filter, pick closest by range (no pathfinding needed
-    // for selection — traffic handles the actual path).
+  
+    // Priority 2: Tower emergency — if any tower is below 20%, fill it before extensions
+    const emergencyTowers = this.room.find(FIND_MY_STRUCTURES, {
+      filter: s =>
+        s.structureType === STRUCTURE_TOWER &&
+        s.store[RESOURCE_ENERGY] / s.store.getCapacity(RESOURCE_ENERGY) < 0.2
+    });
+  
+    if (emergencyTowers.length > 0) {
+      const tower = this.pos.findClosestByRange(emergencyTowers);
+      if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, tower);
+      }
+      return;
+    }
+  
+    // Priority 3: Extensions
     const extensions = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_EXTENSION &&
         s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
     });
-
+  
     if (extensions.length > 0) {
       const extension = this.pos.findClosestByRange(extensions);
       if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -101,16 +114,14 @@ Creep.prototype.runThrall = function () {
       }
       return;
     }
-
-    // Priority 3: Towers (MOVED UP from priority 4)
-    // An empty tower is a 5000-energy paperweight. Defense and repair
-    // infrastructure must stay powered. The warlock can wait.
+  
+    // Priority 4: Towers (normal top-up, already above 20%)
     const towers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
         s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
     });
-
+  
     if (towers.length > 0) {
       const tower = this.pos.findClosestByRange(towers);
       if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -118,17 +129,6 @@ Creep.prototype.runThrall = function () {
       }
       return;
     }
-
-    // Priority 4: Controller container (MOVED DOWN from priority 3)
-    // Only fill when below 50% AND warlock isn't actively draining it.
-    // This prevents the infinite sink problem where thralls endlessly
-    // feed the container while the warlock drains it continuously.
-    // Use room.find — do NOT use findClosestByPath (fails silently on congested paths).
-    const controllerContainer = this.room.find(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
-    })[0];
 
     if (controllerContainer) {
       const energyPct = controllerContainer.store[RESOURCE_ENERGY] /
