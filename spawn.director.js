@@ -193,10 +193,16 @@ module.exports = {
     if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
     // ---- CLANRATS ----
-    const currentClanratWork = this.countLivingParts(room.name, 'clanrat', WORK);
-    const workerWork         = this.countLivingParts(room.name, 'worker',  WORK);
-    const totalClanratWork   = currentClanratWork + workerWork;
-
+    const currentClanratWork  = this.countLivingParts(room.name, 'clanrat', WORK);
+    const workerWork          = this.countLivingParts(room.name, 'worker',  WORK);
+    const totalClanratWork    = currentClanratWork + workerWork;
+    const currentClanratCount = Object.values(Game.creeps).filter(c =>
+      c.memory.homeRoom === room.name &&
+      (c.memory.role === 'clanrat' || c.memory.role === 'worker')
+    ).length;
+    
+    if (currentClanratCount >= clanratCountCap) return; 
+    
     if (totalClanratWork < targets.clanrat.parts) {
       const body = Bodies.clanrat(energy);
       if (body && body.length > 0) {
