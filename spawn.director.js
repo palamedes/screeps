@@ -117,7 +117,7 @@ module.exports = {
     return {
       miner:   { parts: minerWorkTarget,   type: WORK  },
       thrall:  { parts: thrallCarryTarget, type: CARRY },
-      clanrat: { parts: clanratWorkTarget, type: WORK  },
+      clanrat: { parts: clanratWorkTarget, type: WORK, countCap: clanratCountCap },
       warlock: { parts: warlockWorkTarget, type: WORK  }
     };
   },
@@ -200,9 +200,9 @@ module.exports = {
       c.memory.homeRoom === room.name &&
       (c.memory.role === 'clanrat' || c.memory.role === 'worker')
     ).length;
-    
-    if (currentClanratCount >= clanratCountCap) return; 
-    
+
+    if (currentClanratCount >= targets.clanrat.countCap) return;
+
     if (totalClanratWork < targets.clanrat.parts) {
       const body = Bodies.clanrat(energy);
       if (body && body.length > 0) {
