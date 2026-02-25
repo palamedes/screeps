@@ -44,6 +44,12 @@ const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
 
 Creep.prototype.runThrall = function () {
 
+  const controllerContainer = this.room.find(FIND_STRUCTURES, {
+    filter: s =>
+      s.structureType === STRUCTURE_CONTAINER &&
+      s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
+    })[0];
+
   // --- State Toggle ---
   // Only switch to delivering mode if we're currently gathering AND now full.
   // Don't override a "nothing to deliver to" decision from last tick.
