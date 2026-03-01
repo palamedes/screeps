@@ -7,6 +7,11 @@
  * Tower logic runs independently of plan flags — it fires whenever towers
  * and hostiles are present, regardless of room state.
  *
+ * TOWER REPAIR GUARD: Tower only runs discretionary repairs when above 50% energy.
+ * A tower burning its last 29% on ramparts is a tower that can't defend when
+ * something actually attacks. Attack always fires regardless of energy level.
+ * Repair is discretionary and gates on energy > 50%.
+ *
  * Called by: warren.js (OODA step 5 of 5)
  * Reads:     this._plan, this._snapshot
  * Delegates: SpawnDirector, JobBoard, planners
@@ -20,6 +25,11 @@ require('plan.container.source');
 require('plan.roads');
 require('plan.ramparts');
 require('plan.tower');
+
+// Tower must be above this energy fraction before spending on discretionary repair.
+// Matches the thrall emergency threshold in rat.thrall.js — they cooperate to
+// keep towers topped up before either side spends energy.
+const TOWER_REPAIR_ENERGY_THRESHOLD = 0.5;
 
 Room.prototype.act = function () {
 
@@ -38,56 +48,62 @@ Room.prototype.act = function () {
   // Runs independently of plan flags — towers act every tick they have targets.
   if (snap.towers.length > 0) {
     if (snap.hostiles.length > 0) {
-      // Attack: focus fire on the lowest-HP hostile (kill one fast > chip many)
+      // Attack ALWAYS fires regardless of tower energy — defense is sacred.
+      // Focus fire on the lowest-HP hostile (kill one fast > chip many).
       const target = snap.hostiles.reduce((a, b) => a.hits < b.hits ? a : b);
       for (const tower of snap.towers) {
         tower.attack(target);
       }
     } else {
-      // Idle repair: bring all ramparts up through tiered HP floors, then fix other structures.
-      //
-      // Floors: 20k → 75k → 250k. The tower won't advance to the next floor until
-      // every rampart clears the current one — preventing one rampart from reaching
-      // 250k while others sit at 1 HP.
-      // Within each floor: lowest HP first (triage the most exposed).
-      // Other structures repaired below 50% hits once all ramparts clear 250k.
-      const RAMPART_FLOORS = [20000, 75000, 250000];
-      const allRamparts = this.find(FIND_MY_STRUCTURES, {
-        filter: s => s.structureType === STRUCTURE_RAMPART
-      });
+      // Idle repair: only run when tower has enough energy to be useful.
+      // A tower at 30% spending on ramparts leaves nothing for a surprise attack
+      // and will drain to zero faster than thralls can refill it.
+      // Let thralls top the tower up first (they now have a 50% emergency threshold),
+      // then repair once the tower is healthy.
+      const towerEnergyOk = snap.towers.some(t =>
+        t.store[RESOURCE_ENERGY] / t.store.getCapacity(RESOURCE_ENERGY) >= TOWER_REPAIR_ENERGY_THRESHOLD
+      );
 
-      let rampartTarget = null;
-      for (const floor of RAMPART_FLOORS) {
-        const below = allRamparts
-          .filter(s => s.hits < floor)
-          .sort((a, b) => a.hits - b.hits);
-        if (below.length > 0) {
-          rampartTarget = below[0];
-          break;
+      if (towerEnergyOk) {
+        // Tiered rampart repair: 20k → 75k → 250k floors.
+        // Tower won't advance to next floor until every rampart clears the current one.
+        // Within each floor: lowest HP first (triage the most exposed).
+        const RAMPART_FLOORS = [20000, 75000, 250000];
+        const allRamparts = this.find(FIND_MY_STRUCTURES, {
+          filter: s => s.structureType === STRUCTURE_RAMPART
+        });
+
+        let rampartTarget = null;
+        for (const floor of RAMPART_FLOORS) {
+          const below = allRamparts
+            .filter(s => s.hits < floor)
+            .sort((a, b) => a.hits - b.hits);
+          if (below.length > 0) {
+            rampartTarget = below[0];
+            break;
+          }
         }
-      }
 
-      const repairTarget =
-        rampartTarget
-        ||
-        this.find(FIND_MY_STRUCTURES, {
-          filter: s =>
-            s.hits < s.hitsMax * 0.5 &&
-            s.structureType !== STRUCTURE_WALL &&
-            s.structureType !== STRUCTURE_RAMPART
-        }).sort((a, b) => a.hits - b.hits)[0];
+        const repairTarget =
+          rampartTarget
+          ||
+          this.find(FIND_MY_STRUCTURES, {
+            filter: s =>
+              s.hits < s.hitsMax * 0.5 &&
+              s.structureType !== STRUCTURE_WALL &&
+              s.structureType !== STRUCTURE_RAMPART
+          }).sort((a, b) => a.hits - b.hits)[0];
 
-      if (repairTarget) {
-        for (const tower of snap.towers) {
-          tower.repair(repairTarget);
+        if (repairTarget) {
+          for (const tower of snap.towers) {
+            tower.repair(repairTarget);
+          }
         }
       }
     }
   }
 
   // --- Planners ---
-  // Planners are called in priority order. Each one places at most one site
-  // and self-guards against concurrent sites of the same type.
   if (plan.buildExtensions) {
     this.planExtensions();
   }
