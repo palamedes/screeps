@@ -3,33 +3,40 @@
  *
  * HARDENED against runaway spawning of any role.
  *
- * TWO-PASS CULLING SYSTEM:
+ * THREE-CONSTRAINT SYSTEM PER ROLE:
+ *
+ *   minCount[rcl] — floor. Neither culling pass will reduce a role below
+ *                   this count. Prevents the death spiral where deadweight
+ *                   culling kills a useful thrall because 3/10 CARRY < 40%,
+ *                   then the room starves waiting for a replacement.
+ *
+ *   maxCount[rcl] — ceiling. Excess culling kills the weakest creep over
+ *                   this limit every tick until the count is back in range.
+ *
+ *   minParts      — spawn quality floor. The spawn gate won't fire if the
+ *                   best affordable body has fewer key parts than this.
+ *                   Waits for energy to accumulate rather than producing
+ *                   an undersized body that clogs traffic and wastes a slot.
+ *
+ * TWO-PASS CULLING (runs before spawn decisions every tick):
  *
  *   Pass 1 — checkExcessCreeps()
- *     For every role: if liveCount > maxCount[rcl], suicide the weakest
- *     (fewest key parts). Fires every tick before any spawn decision.
- *     This is the primary guard against swarms. It doesn't care why the
- *     room is over-count — it just corrects it.
+ *     Kills weakest creep of any role that exceeds maxCount[rcl].
+ *     Respects minCount — never culls below the floor.
+ *     One kill per tick for safe convergence.
  *
  *   Pass 2 — checkDeadWeight()
- *     For roles where count is within limits but individual creeps are
- *     too degraded to be useful. Checks part-ratio against ideal body.
- *     Deadweight threshold: active key parts < 40% of ideal body's key parts.
- *     Uses minViableCost (not idealCost) so it fires during energy drought.
+ *     Kills a creep whose active key parts < 40% of the ideal body.
+ *     Respects minCount — never culls below the floor.
+ *     Only fires if we can afford a minimum viable replacement.
  *
- * TWO-CONSTRAINT SPAWN GATE (_checkRoleLimit):
- *   maxCount[rcl] — hard ceiling on live count. No spawn if at or above.
- *   minParts      — minimum key-part count in the proposed body. No spawn
- *                   if the body is too small. Waits for energy to accumulate.
- *
- * WARLOCK LOGIC FIXED:
- *   Previously targeted warlockWorkTarget = 10 WORK across however many
- *   warlocks it took to accumulate that. 3 x 1-WORK warlocks = 3 < 10 →
- *   spawn another. Now treated like gutterrunner: count-based, exactly 1,
- *   preemptive replacement when TTL < PREEMPT_TTL.warlock.
+ * WARLOCK LOGIC:
+ *   Count-based (exactly 1). Was previously part-accumulation across N
+ *   warlocks which caused runaway spawning. Now: spawn if activeWarlocks < 1,
+ *   stop otherwise. minCount = maxCount = 1 means the band is zero-width.
  *
  * ROLE_LIMITS is the single source of truth for all spawn constraints.
- * Every role that can be spawned must have an entry here.
+ * Every spawnable role must have an entry. Missing entry = console warning.
  */
 
 const Bodies = require('spawn.bodies');
@@ -51,8 +58,8 @@ const NAMES = [
 
 /**
  * The key body part for each role.
- * Used for minParts enforcement and dead-weight / excess culling.
- * "Weakest" = fewest of this part type.
+ * Used for minParts enforcement, excess culling (weakest = fewest of this),
+ * and deadweight checks.
  */
 const ROLE_KEY_PART = {
   miner:        'work',
@@ -65,52 +72,59 @@ const ROLE_KEY_PART = {
 };
 
 /**
- * Two-constraint spawn limits.
+ * Three-constraint spawn limits indexed by RCL [0..8].
  *
- * minParts  — minimum count of the role's key part in the spawned body.
- *             Spawn waits for energy to accumulate rather than producing
- *             an undersized body that wastes a spawn slot and clogs traffic.
+ * minCount — floor for culling. Neither culling pass reduces a role below
+ *            this. Set equal to maxCount for roles that must be exact (warlock).
  *
- * maxCount  — maximum live creep count indexed by RCL [0..8].
- *             Hard ceiling. Excess culling removes the weakest over this limit.
+ * maxCount — ceiling for culling. Excess culling fires when count > maxCount.
+ *            Set to 0 at RCLs where the role shouldn't exist at all.
  *
- * Every spawnable role must have an entry. Missing entry = warning in console.
+ * minParts — minimum key-part count the spawned body must contain.
+ *            Spawn waits for energy rather than producing an undersized body.
  */
 const ROLE_LIMITS = {
   //              RCL: [0, 1,  2,  3,  4,  5,  6,  7,  8]
   slave: {
-    minParts: 1,
+    minParts:  1,
+    minCount: [0, 1,  0,  0,  0,  0,  0,  0,  0],
     maxCount: [0, 4,  0,  0,  0,  0,  0,  0,  0]
   },
   miner: {
-    minParts: 1,
+    minParts:  1,
+    minCount: [0, 1,  2,  2,  2,  2,  2,  2,  2],
     maxCount: [0, 1,  2,  2,  2,  2,  2,  2,  2]
   },
   thrall: {
-    minParts: 3,  // 3 CARRY pairs = 300e minimum. Below this, wait.
+    minParts:  3,  // 3 CARRY pairs = 300e minimum body. Below this, wait.
+    minCount: [0, 0,  1,  2,  2,  3,  3,  4,  5],  // never cull below this
     maxCount: [0, 0,  2,  3,  4,  5,  6,  7,  8]
   },
   clanrat: {
-    minParts: 1,
+    minParts:  1,
+    minCount: [0, 0,  1,  1,  2,  2,  3,  3,  3],
     maxCount: [0, 0,  2,  4,  4,  6,  8,  8,  8]
   },
   warlock: {
-    minParts: 1,
-    maxCount: [0, 0,  1,  1,  1,  1,  1,  1,  1]  // exactly 1, always
+    minParts:  1,
+    minCount: [0, 0,  1,  1,  1,  1,  1,  1,  1],  // exactly 1 — band is zero-width
+    maxCount: [0, 0,  1,  1,  1,  1,  1,  1,  1]
   },
   gutterrunner: {
-    minParts: 2,
+    minParts:  2,
+    minCount: [0, 0,  0,  0,  0,  0,  0,  0,  0],
     maxCount: [0, 0,  1,  1,  1,  1,  1,  1,  1]
   },
   stormvermin: {
-    minParts: 1,
+    minParts:  1,
+    minCount: [0, 0,  0,  0,  0,  0,  0,  0,  0],
     maxCount: [0, 0,  1,  1,  2,  2,  3,  3,  3]
   }
 };
 
 /**
- * Roles subject to dead-weight culling.
- * part     — key part to check.
+ * Roles subject to dead-weight culling (part-ratio check).
+ * part     — key part to check against ideal body.
  * minRatio — cull if active parts < (ideal parts * minRatio).
  */
 const DEADWEIGHT = {
@@ -138,13 +152,13 @@ module.exports = {
 
     // --- CULLING PASSES (before any spawn decision) ---
 
-    // Pass 1: excess count — kill weakest over maxCount[rcl]
+    // Pass 1: excess count — kill weakest over maxCount[rcl], respect minCount
     const excessKill = this.checkExcessCreeps(room, creeps);
     if (excessKill) {
       creeps = creeps.filter(c => c.name !== excessKill);
     }
 
-    // Pass 2: dead weight — kill degraded survivors
+    // Pass 2: dead weight — kill degraded survivors, respect minCount
     const deadKill = this.checkDeadWeight(room, creeps);
     if (deadKill) {
       creeps = creeps.filter(c => c.name !== deadKill);
@@ -153,15 +167,42 @@ module.exports = {
     this.spawnByDemand(room, spawn, creeps);
   },
 
-  // ─────────────────────────────────────────── Culling: excess count ──
+  // ───────────────────────────────────────── Helpers: limit lookup ──
 
   /**
-   * For every role: if liveCount > maxCount[rcl], suicide the weakest one
-   * (fewest key parts, then shortest TTL as tiebreaker).
+   * Get the minCount for a role at the current RCL.
+   * Falls back to the last defined value if RCL exceeds the array.
+   */
+  _getMinCount(role, rcl) {
+    const limits = ROLE_LIMITS[role];
+    if (!limits) return 0;
+    return limits.minCount[rcl] !== undefined
+      ? limits.minCount[rcl]
+      : limits.minCount[limits.minCount.length - 1];
+  },
+
+  /**
+   * Get the maxCount for a role at the current RCL.
+   */
+  _getMaxCount(role, rcl) {
+    const limits = ROLE_LIMITS[role];
+    if (!limits) return 99;
+    return limits.maxCount[rcl] !== undefined
+      ? limits.maxCount[rcl]
+      : limits.maxCount[limits.maxCount.length - 1];
+  },
+
+  // ─────────────────────────────────── Culling pass 1: excess count ──
+
+  /**
+   * If any role exceeds maxCount[rcl], kill the weakest one (fewest key
+   * parts, then shortest TTL as tiebreaker).
    *
-   * Only one kill per tick — converges quickly without destabilising the room.
-   * Respects a minimum floor of 1 so a room is never left with zero of a role
-   * due to a misconfigured limit.
+   * Respects minCount — never reduces a role below its floor even if
+   * maxCount would allow it. This protects the room from losing critical
+   * workers during the cull of a swarm.
+   *
+   * One kill per tick for safe convergence.
    *
    * @return {string|null}  name of suicided creep, or null
    */
@@ -169,18 +210,18 @@ module.exports = {
     const rcl = room.controller ? room.controller.level : 0;
 
     for (const role in ROLE_LIMITS) {
-      const limits   = ROLE_LIMITS[role];
-      const maxCount = limits.maxCount[rcl] !== undefined
-        ? limits.maxCount[rcl]
-        : limits.maxCount[limits.maxCount.length - 1];
+      const maxCount = this._getMaxCount(role, rcl);
+      const minCount = this._getMinCount(role, rcl);
 
       const roleCreeps = creeps.filter(c => c.memory.role === role);
       if (roleCreeps.length <= maxCount) continue;
-      if (roleCreeps.length <= 1) continue; // never cull the last one
+
+      // Never cull below the floor
+      if (roleCreeps.length <= minCount) continue;
 
       const keyPart = ROLE_KEY_PART[role];
 
-      // Weakest first: fewest key parts, then shortest TTL
+      // Sort: weakest first (fewest key parts), then shortest TTL
       roleCreeps.sort((a, b) => {
         const aParts = keyPart
           ? a.body.filter(p => p.type === keyPart && p.hits > 0).length
@@ -207,26 +248,38 @@ module.exports = {
     return null;
   },
 
-  // ────────────────────────────────────────── Culling: dead weight ──
+  // ─────────────────────────────────── Culling pass 2: dead weight ──
 
   /**
-   * Kill a creep whose key parts have decayed below 40% of the ideal body.
-   * Only fires if we can afford a minimum viable replacement.
-   * Skips if role count is at the floor (≤ 2).
+   * Kill a creep whose active key parts have decayed below 40% of the
+   * ideal body for this role.
+   *
+   * Guards:
+   *   - sameRoleAlive must be above minCount[rcl] — never cull below floor
+   *   - creep must not have combat damage (hits < 100 on any part)
+   *   - creep must have TTL >= 200 (don't cull a creep about to die naturally)
+   *   - room must be able to afford a minimum viable replacement body
+   *
+   * One kill per tick.
    *
    * @return {string|null}
    */
   checkDeadWeight(room, creeps) {
+    const rcl = room.controller ? room.controller.level : 0;
+
     for (const creep of creeps) {
       const config = DEADWEIGHT[creep.memory.role];
       if (!config) continue;
 
+      // Never cull below the minCount floor for this role
+      const minCount      = this._getMinCount(creep.memory.role, rcl);
       const sameRoleAlive = creeps.filter(c => c.memory.role === creep.memory.role).length;
-      if (sameRoleAlive <= 2) continue;
+      if (sameRoleAlive <= minCount) continue;
 
-      const hasCombatDamage = creep.body.some(b => b.hits < 100);
-      if (hasCombatDamage) continue;
+      // Don't cull damaged creeps — they may be defending
+      if (creep.body.some(b => b.hits < 100)) continue;
 
+      // Don't cull creeps close to natural death
       if (creep.ticksToLive !== undefined && creep.ticksToLive < 200) continue;
 
       const bodyFn = Bodies[creep.memory.role];
@@ -242,7 +295,7 @@ module.exports = {
 
       if (activeCount >= idealCount * config.minRatio) continue;
 
-      // Must be able to afford a minimum viable replacement before culling
+      // Only cull if we can afford a minimum viable replacement
       const minViableCost = this._minViableCost(room, creep.memory.role, bodyFn);
       if (room.energyAvailable < minViableCost) continue;
 
@@ -257,14 +310,14 @@ module.exports = {
     return null;
   },
 
-  // ───────────────────────────────────────────────── Spawn gate ──
+  // ─────────────────────────────────────────────────── Spawn gate ──
 
   /**
-   * Two-constraint gate. Blocks spawn if:
+   * Two-constraint spawn gate. Blocks if:
    *   a) live count >= maxCount[rcl]
    *   b) body has fewer key parts than minParts
    *
-   * @return {boolean}
+   * @return {boolean}  true = allow spawn
    */
   _checkRoleLimit(room, role, body) {
     const limits = ROLE_LIMITS[role];
@@ -274,16 +327,14 @@ module.exports = {
     }
 
     const rcl      = room.controller ? room.controller.level : 0;
-    const maxCount = limits.maxCount[rcl] !== undefined
-      ? limits.maxCount[rcl]
-      : limits.maxCount[limits.maxCount.length - 1];
+    const maxCount = this._getMaxCount(role, rcl);
+    const current  = this.getRoleCount(room.name, role);
 
-    const currentCount = this.getRoleCount(room.name, role);
-    if (currentCount >= maxCount) {
+    if (current >= maxCount) {
       if (Game.time % 20 === 0) {
         console.log(
           `[spawn:${room.name}] ${role} at maxCount ` +
-          `(${currentCount}/${maxCount} @ RCL${rcl}) — waiting`
+          `(${current}/${maxCount} @ RCL${rcl}) — waiting`
         );
       }
       return false;
@@ -345,7 +396,7 @@ module.exports = {
     };
   },
 
-  // ──────────────────────────────────────────────── Spawn decisions ──
+  // ──────────────────────────────────────────── Spawn decisions ──
 
   spawnByDemand(room, spawn, creeps) {
     const rcl     = room.controller.level;
@@ -384,7 +435,7 @@ module.exports = {
           return;
         }
       }
-      return; // wait — don't fall through while miners are needed
+      return; // wait — don't fall through while miners needed
     }
 
     // ── THRALLS ───────────────────────────────────────────────────────────────
@@ -409,12 +460,12 @@ module.exports = {
 
     // ── GUTTER RUNNER ─────────────────────────────────────────────────────────
     if (rcl >= 2) {
-      const hasScout    = Object.values(Game.creeps).some(c =>
+      const hasScout   = Object.values(Game.creeps).some(c =>
         c.memory.homeRoom === room.name && c.memory.role === 'gutterrunner'
       );
-      const intel       = Memory.intelligence || {};
-      const STALE_AGE   = 5000;
-      const needsScout  = !hasScout && Object.values(Game.map.describeExits(room.name)).some(rName => {
+      const intel      = Memory.intelligence || {};
+      const STALE_AGE  = 5000;
+      const needsScout = !hasScout && Object.values(Game.map.describeExits(room.name)).some(rName => {
         const entry = intel[rName];
         return !entry || (Game.time - entry.scoutedAt) > STALE_AGE;
       });
@@ -458,10 +509,7 @@ module.exports = {
       }
     }
 
-    // ── WARLOCK: count-based (exactly 1) ─────────────────────────────────────
-    // Fixed: was part-accumulation across N warlocks (broken).
-    // Now: spawn if zero active warlocks with TTL >= PREEMPT_TTL.
-    // maxCount[rcl]=1 + excess culling enforces the ceiling.
+    // ── WARLOCK: count-based, exactly 1 ──────────────────────────────────────
     if (room.controller) {
       const controllerContainer = room.find(FIND_STRUCTURES, {
         filter: s =>
@@ -490,7 +538,7 @@ module.exports = {
       }
     }
 
-    // ── CLANRATS (need energy threshold) ─────────────────────────────────────
+    // ── CLANRATS (energy threshold required) ──────────────────────────────────
     const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
     if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
@@ -520,7 +568,7 @@ module.exports = {
     }
   },
 
-  // ──────────────────────────────────────────────── Helpers ──
+  // ──────────────────────────────────────────────────── Helpers ──
 
   countLivingParts(roomName, role, partType, minTTL) {
     return Object.values(Game.creeps)
@@ -544,9 +592,9 @@ module.exports = {
   },
 
   /**
-   * Find the minimum energy needed to produce a body with at least
-   * minParts of the role's key part. Used by checkDeadWeight so it
-   * only culls when it can afford a viable replacement.
+   * Find the minimum energy cost to produce a body with at least minParts
+   * of the role's key part. Used by checkDeadWeight to ensure we can afford
+   * a viable replacement before culling a degraded creep.
    */
   _minViableCost(room, role, bodyFn) {
     const limits  = ROLE_LIMITS[role];
