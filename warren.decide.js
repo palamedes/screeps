@@ -108,6 +108,7 @@ Room.prototype.decide = function () {
       this._plan.buildTower               = snap.rcl >= 3;
       this._plan.buildControllerContainer = true;
       this._plan.buildSourceContainers    = true;
+      this._plan.buildRoads               = true;
       this._plan.publishHarvest           = true;
       this._plan.publishBuild             = true;
       this._plan.publishRepair            = true;
@@ -127,6 +128,7 @@ Room.prototype.decide = function () {
       this._plan.buildRoads               = true;
       this._plan.buildRamparts            = true;
       this._plan.buildTower               = snap.rcl >= 3;
+      this._plan.publishBuild             = true;
       this._plan.publishUpgrade           = true;
       this._plan.publishRepair            = true;
       break;
