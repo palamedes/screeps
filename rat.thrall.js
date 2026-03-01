@@ -6,7 +6,17 @@
  * They have no WORK parts. They only move energy around.
  *
  * Pickup priority:   tombstones → ruins → dropped pile (largest first) → source containers
- * Delivery priority: spawn → emergency tower (<50%) → extensions → towers → controller container
+ *
+ * Delivery priority:
+ *   1. Spawn
+ *   2. Controller container EMPTY — warlock is idle without this. Beats tower top-up.
+ *      An empty container means zero upgrade progress every tick until filled.
+ *      Towers can sustain from existing charge. A stalled warlock cannot.
+ *   3. Tower emergency (<50%) — fill before extensions.
+ *      A half-empty tower can't sustain repair or survive a fight.
+ *   4. Extensions — determines spawn body quality
+ *   5. Towers (normal top-up, already above 50%)
+ *   6. Controller container (normal top-up — keep warlock fed once not empty)
  *
  * TOWER EMERGENCY THRESHOLD: 50% (raised from 20%).
  * A tower at 29% might look "okay" but loses repair/attack capacity for hundreds
@@ -64,7 +74,9 @@ Creep.prototype.runThrall = function () {
     const needsEnergy =
       (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) ||
       this.room.find(FIND_MY_STRUCTURES, {
-        filter: s => (s.structureType === STRUCTURE_EXTENSION || s.structureType === STRUCTURE_TOWER) &&
+        filter: s =>
+          (s.structureType === STRUCTURE_EXTENSION ||
+            s.structureType === STRUCTURE_TOWER) &&
           s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
       }).length > 0;
 
@@ -85,7 +97,20 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 2: Tower emergency — if any tower is below 50%, fill it before extensions.
+    // Priority 2: Controller container EMPTY
+    // A warlock staring at an empty container contributes zero upgrade progress
+    // every tick it sits idle. Towers can sustain from existing charge for many
+    // ticks. Get the warlock fed first.
+    if (controllerContainer &&
+      controllerContainer.store[RESOURCE_ENERGY] === 0 &&
+      controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, controllerContainer);
+      }
+      return;
+    }
+
+    // Priority 3: Tower emergency — if any tower is below 50%, fill it before extensions.
     // A half-empty tower can't sustain repair or survive a fight.
     // Extensions are important but they can wait one thrall cycle.
     const emergencyTowers = this.room.find(FIND_MY_STRUCTURES, {
@@ -102,7 +127,7 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 3: Extensions
+    // Priority 4: Extensions
     const extensions = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_EXTENSION &&
@@ -117,7 +142,7 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 4: Towers (normal top-up, already above 50%)
+    // Priority 5: Towers (normal top-up, already above 50%)
     const towers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -132,7 +157,10 @@ Creep.prototype.runThrall = function () {
       return;
     }
 
-    // Priority 5: Controller container
+    // Priority 6: Controller container (normal top-up)
+    // Keeps the warlock fed between delivery cycles once the container
+    // is no longer empty. Fills when below 50%, or below 80% with
+    // no warlock actively draining it.
     if (controllerContainer) {
       const energyPct = controllerContainer.store[RESOURCE_ENERGY] /
         controllerContainer.store.getCapacity(RESOURCE_ENERGY);
