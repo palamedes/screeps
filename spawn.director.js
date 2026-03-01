@@ -15,6 +15,14 @@
  *
  * 3. DEAD WEIGHT minimum raised to 3 alive (was 2).
  *    Extra guard: never suicide if TTL < 200.
+ *
+ * 4. WARLOCK moved before energy threshold.
+ *    The warlock is as critical as a miner — a room without one runs at ~4%
+ *    controller throughput. The 90% guard was protecting against repeated
+ *    expensive spawns; warlock only spawns once per lifecycle (~1500 ticks).
+ *    Remove the threshold entirely for warlock. Also added preemptive
+ *    replacement at TTL < 200 so there is always overlap during the walk
+ *    to the container seat.
  */
 
 const Bodies = require('spawn.bodies');
@@ -23,14 +31,15 @@ const SPAWN_ENERGY_THRESHOLD = 0.9;
 
 const PREEMPT_TTL = {
   miner:  80,
-  thrall: 150
+  thrall: 150,
+  warlock: 200   // warlock walks to seat after spawn — needs generous overlap
 };
 
 const NAMES = ['gnaw','skritt','queek','lurk','ruin','blight','fang','scab','gash','rot',
   'skulk','twitch','snikk','claw','filth','mangle','reek','slit','spite','pox',
   'rattle','skree','chitter','bleed','warp','snarl','scrape','bite','mire','fester',
   'hook','tatter','scurry','crack','nibble','scour','screech','itch','grime','rend'
-  ];
+];
 
 const DEADWEIGHT = {
   miner:   { part: 'work',  minRatio: 0.4 },
@@ -82,9 +91,6 @@ module.exports = {
     const minerWorkTarget = sources.length * 5;
 
     // THRALLS: target = CARRY parts in one ideal thrall body at current cap.
-    // At RCL2 (300 cap): 1 thrall with 3 CARRY = 3 target.
-    // BUT we spawn one at a time so this just means "get one good thrall".
-    // At RCL3+: scale to sources+1 thralls worth.
     const pairsPerThrall = Math.min(Math.floor(cap / 100), 10);
 
     const extensions = room.find(FIND_MY_STRUCTURES, {
@@ -93,12 +99,12 @@ module.exports = {
     const hasStorage = room.find(FIND_MY_STRUCTURES, {
       filter: s => s.structureType === STRUCTURE_STORAGE
     }).length > 0;
-    
+
     const thrallCount = (extensions === 0 && !hasStorage)
-      ? 1                        // nowhere to put energy except spawn — one thrall is enough
+      ? 1
       : rcl <= 3
-        ? sources.length          // a few extensions exist, modest thrall count
-        : sources.length + 1;     // storage/many extensions, full thrall complement
+        ? sources.length
+        : sources.length + 1;
 
     const thrallCarryTarget = thrallCount * pairsPerThrall;
 
@@ -137,7 +143,6 @@ module.exports = {
     const targets = this.calculatePartsTargets(room);
 
     // ---- MINERS: absolute first priority ----
-    // If any source is uncovered, nothing else spawns until it's fixed.
     const effectiveMinerWork = this.countLivingParts(
       room.name, 'miner', WORK, PREEMPT_TTL.miner
     );
@@ -163,8 +168,6 @@ module.exports = {
           return;
         }
       }
-      // FIX: if we need a miner but can't afford one yet, WAIT.
-      // Don't fall through to spawn thralls with energy we need for the miner.
       return;
     }
 
@@ -219,29 +222,28 @@ module.exports = {
       }
     }
 
-    // ---- STORMVERMIN: spawn one when threatened, regardless of energy ----
+    // ---- STORMVERMIN: spawn when threatened ----
     const { ROOM_STATE } = require('warren.memory');
     const roomState   = room.memory.state;
     const underThreat = roomState === ROOM_STATE.WAR ||
-                        roomState === ROOM_STATE.FORTIFY;
-    
+      roomState === ROOM_STATE.FORTIFY;
+
     const hasHostiles = room.find(FIND_HOSTILE_CREEPS).filter(h =>
       h.getActiveBodyparts(WORK)         > 0 ||
       h.getActiveBodyparts(ATTACK)       > 0 ||
       h.getActiveBodyparts(RANGED_ATTACK) > 0
     ).length > 0;
-    
+
     const needsStormvermin = underThreat || hasHostiles;
-    
+
     if (needsStormvermin) {
       const svCount = Object.values(Game.creeps).filter(c =>
         c.memory.homeRoom === room.name &&
         c.memory.role === 'stormvermin'
       ).length;
-    
-      // One stormvermin at RCL2-3, two at RCL4+
+
       const svTarget = rcl >= 4 ? 2 : 1;
-    
+
       if (svCount < svTarget) {
         const body = Bodies.stormvermin(energy);
         if (body && body.length > 0) {
@@ -256,35 +258,45 @@ module.exports = {
         }
       }
     }
-    
-    // ---- CLANRATS & WARLOCK: wait for energy threshold ----
-    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
-    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
-    // ---- WARLOCK: requires controller container ----
-    const controllerContainer = room.find(FIND_STRUCTURES, {
-      filter: s =>
-        s.structureType === STRUCTURE_CONTAINER &&
-        s.pos.inRangeTo(room.controller, 3)
-    })[0];
+    // ---- WARLOCK: no energy threshold — as critical as a miner ----
+    // The warlock is the entire controller upgrade engine. Without one the room
+    // runs at ~4% of its upgrade potential. It spawns once per ~1500 ticks so
+    // the 90% threshold guard was causing it to never queue during drought periods.
+    // Preemptive replacement fires at TTL < 200 so the new warlock can walk to
+    // its seat before the old one dies — no upgrade gap.
+    if (room.controller) {
+      const controllerContainer = room.find(FIND_STRUCTURES, {
+        filter: s =>
+          s.structureType === STRUCTURE_CONTAINER &&
+          s.pos.inRangeTo(room.controller, 3)
+      })[0];
 
-    if (controllerContainer) {
-      const currentWarlockWork = this.countLivingParts(room.name, 'warlock', WORK);
-  
-      if (currentWarlockWork < targets.warlock.parts) {
-        const body = Bodies.warlock(energy);
-        if (body && body.length > 0) {
-          const cost = this._bodyCost(body);
-          if (energy >= cost) {
-            this.spawnRat(spawn, 'warlock', body);
-            console.log(
-              `[spawn:${room.name}] warlock — ` +
-              `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
-            );
+      if (controllerContainer) {
+        const currentWarlockWork = this.countLivingParts(
+          room.name, 'warlock', WORK, PREEMPT_TTL.warlock
+        );
+
+        if (currentWarlockWork < targets.warlock.parts) {
+          const body = Bodies.warlock(energy);
+          if (body && body.length > 0) {
+            const cost = this._bodyCost(body);
+            if (energy >= cost) {
+              this.spawnRat(spawn, 'warlock', body);
+              console.log(
+                `[spawn:${room.name}] warlock — ` +
+                `${currentWarlockWork}/${targets.warlock.parts} WORK — ${body.length} parts, ${cost}e`
+              );
+              return;
+            }
           }
         }
       }
     }
+
+    // ---- CLANRATS & remaining: wait for energy threshold ----
+    const energyRatio = room.energyAvailable / room.energyCapacityAvailable;
+    if (energyRatio < SPAWN_ENERGY_THRESHOLD) return;
 
     // ---- CLANRATS ----
     const currentClanratWork  = this.countLivingParts(room.name, 'clanrat', WORK);
@@ -311,7 +323,7 @@ module.exports = {
         }
       }
     }
-    
+
   },
 
   checkDeadWeight(room, creeps) {
