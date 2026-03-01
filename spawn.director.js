@@ -154,6 +154,10 @@ module.exports = {
       const idealCount  = idealBody.filter(p => p === config.part).length;
       if (idealCount === 0) continue;
 
+      const activeCount = creep.body.filter(
+        b => b.type === config.part && b.hits > 0
+      ).length;
+
       // Never cull a creep that meets minParts — it's the minimum viable body,
       // not dead weight. Dead weight = a creep that WAS good and has since decayed.
       const limits   = ROLE_LIMITS[creep.memory.role];
