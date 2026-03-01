@@ -2,6 +2,23 @@
  * Runtime job coordination system.
  * Stores per-tick jobs and assigns them to creeps.
  * No Memory writes — fully ephemeral.
+ *
+ * REPAIR CHANGES in this version:
+ *
+ * 1. PROACTIVE CONTAINER REPAIR: containers now trigger repair at 90% hits
+ *    (down from "any damage"). Source containers at 34% hits means a miner's
+ *    harvest starts spilling as drops the moment it dies. Don't wait that long.
+ *
+ * 2. ROAD MAINTENANCE TIER: roads now have three bands:
+ *    - Healthy (>=75%): skip
+ *    - Maintenance (<75%): priority 400 — fix before they deteriorate further
+ *    - Damaged (<50%): priority 500
+ *    - Critical (<25%): priority 750
+ *    This catches roads early instead of scrambling when 8 go critical at once.
+ *
+ * 3. TOP 5 REPAIR JOBS (was 3): at RCL5 with 5 clanrats and multiple damaged
+ *    structures, only 3 slots meant some critical repairs waited several ticks
+ *    for a slot to open. 5 slots allows parallel repair on the worst offenders.
  */
 module.exports = {
 
@@ -68,8 +85,6 @@ module.exports = {
     switch (job.type) {
 
       case 'HARVEST':
-        // Clanrats have their own gathering phase — harvesting from source
-        // would break the miner → thrall → clanrat energy chain.
         return creep.memory.role !== 'clanrat' &&
           creep.getActiveBodyparts(WORK) > 0;
 
@@ -138,16 +153,12 @@ module.exports = {
       c.memory.homeRoom === room.name &&
       c.memory.role === 'warlock'
     );
-  
+
     const hasBuildSites = room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
     const fullSlots     = Math.max(2, room.find(FIND_SOURCES).length * 4);
-  
+
     const slots = (warlockActive && hasBuildSites) ? 1 : fullSlots;
-  
-    // Dynamic priority:
-    // - Energy at cap (73%+ cap events) → 750 — competes with BUILD
-    // - Extensions missing → 600 — still important, but build extensions first
-    // - Otherwise → 300 — lower than BUILD but not invisible
+
     const energyRatio   = room.energyAvailable / room.energyCapacityAvailable;
     const extensions    = room.find(FIND_MY_STRUCTURES, {
       filter: s => s.structureType === STRUCTURE_EXTENSION
@@ -155,29 +166,24 @@ module.exports = {
     const extensionSites = room.find(FIND_MY_CONSTRUCTION_SITES, {
       filter: s => s.structureType === STRUCTURE_EXTENSION
     }).length;
-  
+
     const priority = energyRatio >= 0.95
-      ? 750   // energy capped — upgrade is the best use of clanrat time
+      ? 750
       : (extensions === 0 && extensionSites === 0)
-        ? 600  // no extensions at all — upgrading to next RCL is urgent
-        : 300; // normal — build takes priority but upgrade still happens
-  
+        ? 600
+        : 300;
+
     this.publish(room.name, {
       type:     'UPGRADE',
       targetId: room.controller.id,
       priority,
       slots
     });
-  },  
-  
+  },
+
   publishBuildJobs(room) {
     room.find(FIND_MY_CONSTRUCTION_SITES).forEach(site => {
 
-      // Priority ladder — higher number = clanrats work this first:
-      //   900: controller container (unlocks warlock continuous upgrade)
-      //   875: tower              (defense infrastructure)
-      //   850: rampart            (immediate structural protection)
-      //   800: everything else   (extensions, roads, etc.)
       const isControllerContainer =
         site.structureType === STRUCTURE_CONTAINER &&
         room.controller &&
@@ -202,74 +208,87 @@ module.exports = {
   /**
    * Publish repair jobs for damaged structures.
    *
-   * CRITICAL STRUCTURES (containers, ramparts, towers, spawn):
-   * - Controller container: priority 975 (warlock anchor point)
-   * - Source containers: priority 950 (miner harvest points)
-   * - Other containers: priority 900
-   * - Critical ramparts (<1000 hits): priority 950
-   * - Normal ramparts: priority 900
-   * - Towers: priority 900
+   * CONTAINERS (proactive — repair at 90% hits):
+   * - Controller container: priority 975
+   * - Source containers:    priority 950
+   * - Other containers:     priority 900
+   * Containers are cheap to repair but expensive to lose. A dead source container
+   * means dropped energy and a degraded miner. Don't wait for 50% hits.
    *
-   * ROADS:
-   * - Critical (<25% hits): priority 750
-   * - Damaged (<50% hits): priority 500
+   * RAMPARTS:
+   * - Critical (<1000 hits): priority 950
+   * - Normal:                priority 900
    *
-   * Publish up to 3 worst damaged structures so multiple clanrats can repair in parallel.
+   * TOWERS:
+   * - Any damage: priority 900
+   *
+   * ROADS (three tiers):
+   * - Maintenance (<75% hits): priority 400 — catch early before they snowball
+   * - Damaged     (<50% hits): priority 500
+   * - Critical    (<25% hits): priority 750
+   *
+   * Publishes top 5 repair jobs so multiple clanrats can work in parallel.
    */
   publishRepairJobs(room) {
     const sources = room.find(FIND_SOURCES);
 
-    // Find all damaged structures
     const damagedStructures = room.find(FIND_MY_STRUCTURES, {
-      filter: s =>
-        s.hits < s.hitsMax &&
-        s.structureType !== STRUCTURE_RAMPART &&
-        s.structureType !== STRUCTURE_WALL
+      filter: s => s.hits < s.hitsMax
     });
 
-    // Prioritize and sort
     const prioritized = damagedStructures.map(structure => {
-      let priority = 500; // default
+      let priority = null; // null = skip this structure
 
       if (structure.structureType === STRUCTURE_CONTAINER) {
-        // Check if controller container
+        const hitsPct = structure.hits / structure.hitsMax;
+
+        // Proactive: repair containers when they drop below 90% hits.
+        // At 100% a container has 250k hits. At 34% (like source containers now)
+        // one bad tick can drop it below 1k and kill the miner's harvest point.
+        if (hitsPct >= 0.9) return null; // still healthy, skip
+
         const isControllerContainer = room.controller &&
           structure.pos.inRangeTo(room.controller, 3);
-
-        // Check if source container
         const isSourceContainer = sources.some(src =>
           structure.pos.inRangeTo(src, 2)
         );
 
-        if (isControllerContainer) {
-          priority = 975;
-        } else if (isSourceContainer) {
-          priority = 950;
-        } else {
-          priority = 900;
-        }
+        if (isControllerContainer)  priority = 975;
+        else if (isSourceContainer) priority = 950;
+        else                        priority = 900;
+
       } else if (structure.structureType === STRUCTURE_RAMPART) {
-        // Critical ramparts get emergency priority
-        if (structure.hits < 1000) {
-          priority = 950;
-        } else {
-          priority = 900;
-        }
+        priority = structure.hits < 1000 ? 950 : 900;
+
       } else if (structure.structureType === STRUCTURE_TOWER) {
         priority = 900;
+
       } else if (structure.structureType === STRUCTURE_ROAD) {
-        // Only repair roads below 50% hits
-        if (structure.hits >= structure.hitsMax * 0.5) {
-          return null; // Skip healthy roads
-        }
-        const isCritical = structure.hits < structure.hitsMax * 0.25;
-        priority = isCritical ? 750 : 500;
+        const hitsPct = structure.hits / structure.hitsMax;
+
+        if (hitsPct >= 0.75)      return null; // healthy road, skip
+        else if (hitsPct < 0.25)  priority = 750; // critical
+        else if (hitsPct < 0.50)  priority = 500; // damaged
+        else                      priority = 400; // maintenance (<75%)
+
+      } else if (
+        structure.structureType === STRUCTURE_WALL ||
+        structure.structureType === STRUCTURE_RAMPART
+      ) {
+        // Walls handled by tower; skip for clanrat repair jobs
+        return null;
+
+      } else {
+        // Other structures (spawn, storage, extensions, etc.) — repair if damaged
+        priority = 500;
       }
 
+      if (priority === null) return null;
       return { structure, priority };
+
     }).filter(item => item !== null);
 
-    // Sort by priority (highest first), then by hits (lowest first)
+    // Sort by priority (highest first), then by hits (lowest first within same priority)
     prioritized.sort((a, b) => {
       if (b.priority !== a.priority) {
         return b.priority - a.priority;
@@ -277,8 +296,8 @@ module.exports = {
       return a.structure.hits - b.structure.hits;
     });
 
-    // Publish top 3 repair jobs
-    for (const item of prioritized.slice(0, 3)) {
+    // Publish top 5 — enough for parallel repair at RCL5 with 5 clanrats
+    for (const item of prioritized.slice(0, 5)) {
       this.publish(room.name, {
         type:     'REPAIR',
         targetId: item.structure.id,
