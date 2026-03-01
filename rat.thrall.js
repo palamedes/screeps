@@ -18,14 +18,19 @@
  *   5. Towers (normal top-up, already above 50%)
  *   6. Controller container (normal top-up — keep warlock fed once not empty)
  *
+ * COMMITTED DELIVERY (fix for mid-trip abandonment):
+ *   Once a thrall selects a delivery target it stores the target ID in
+ *   memory.deliveryTarget and commits to completing that delivery.
+ *   Priority selection only runs when there is no committed target, or when
+ *   the committed target is no longer valid (gone, or already full).
+ *   This prevents the thrash where two thralls race to the same target,
+ *   the first fills it, and the second abandons mid-trip and wastes the journey.
+ *
  * TOWER EMERGENCY THRESHOLD: 50% (raised from 20%).
  * A tower at 29% might look "okay" but loses repair/attack capacity for hundreds
  * of ticks during spawn cycles. At 50% threshold, the tower always has enough
  * energy to handle a fight or keep up with rampart repair, even if a large spawn
  * fires immediately after. Extensions can wait one thrall cycle.
- *
- * Extensions are still prioritized above normal tower top-up because they
- * directly determine spawn body quality. Empty extensions = undersized replacements.
  *
  * Source containers are the LAST resort in gathering — they're the steady-state
  * buffer that never decays. Tombstones and dropped piles are lossy and must be
@@ -39,6 +44,10 @@
  *   false = gathering (until store is full)
  *   true  = delivering (until store is completely empty)
  *
+ * memory.deliveryTarget:
+ *   ID of the structure this thrall is committed to delivering to.
+ *   Cleared when: store empties, target disappears, or target becomes full.
+ *
  * All movement routed through Traffic.requestMove — no direct moveTo calls.
  */
 
@@ -47,8 +56,6 @@ const Traffic = require('traffic');
 const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
 
 // Tower must stay above this fraction or it jumps the extension queue.
-// 50% ensures the tower can handle a full attack wave or keep up with rampart
-// repair even if a 1400e clanrat spawn fires at the worst possible moment.
 const TOWER_EMERGENCY_THRESHOLD = 0.5;
 
 Creep.prototype.runThrall = function () {
@@ -65,7 +72,8 @@ Creep.prototype.runThrall = function () {
   }
 
   if (this.store[RESOURCE_ENERGY] === 0) {
-    this.memory.delivering = false;
+    this.memory.delivering     = false;
+    this.memory.deliveryTarget = null; // always clear commitment on empty
   }
 
   // --- Full But Waiting Check ---
@@ -88,9 +96,30 @@ Creep.prototype.runThrall = function () {
   // --- Delivery Phase ---
   if (this.memory.delivering) {
 
+    // --- Committed target: honor an in-progress delivery ---
+    // If we already picked a target, drive to completion before re-evaluating.
+    // Only abandon if the target no longer exists or is already full.
+    if (this.memory.deliveryTarget) {
+      const committed = Game.getObjectById(this.memory.deliveryTarget);
+
+      if (committed && committed.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+        // Still valid — complete the delivery
+        if (this.transfer(committed, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+          Traffic.requestMove(this, committed);
+        }
+        return;
+      }
+
+      // Target gone or full — clear and fall through to priority selection
+      this.memory.deliveryTarget = null;
+    }
+
+    // --- Priority selection (only runs without a committed target) ---
+
     // Priority 1: Spawn
     const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      this.memory.deliveryTarget = spawn.id;
       if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, spawn);
       }
@@ -104,15 +133,15 @@ Creep.prototype.runThrall = function () {
     if (controllerContainer &&
       controllerContainer.store[RESOURCE_ENERGY] === 0 &&
       controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      this.memory.deliveryTarget = controllerContainer.id;
       if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, controllerContainer);
       }
       return;
     }
 
-    // Priority 3: Tower emergency — if any tower is below 50%, fill it before extensions.
+    // Priority 3: Tower emergency (<50%)
     // A half-empty tower can't sustain repair or survive a fight.
-    // Extensions are important but they can wait one thrall cycle.
     const emergencyTowers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -121,6 +150,7 @@ Creep.prototype.runThrall = function () {
 
     if (emergencyTowers.length > 0) {
       const tower = this.pos.findClosestByRange(emergencyTowers);
+      this.memory.deliveryTarget = tower.id;
       if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, tower);
       }
@@ -136,6 +166,7 @@ Creep.prototype.runThrall = function () {
 
     if (extensions.length > 0) {
       const extension = this.pos.findClosestByRange(extensions);
+      this.memory.deliveryTarget = extension.id;
       if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, extension);
       }
@@ -151,6 +182,7 @@ Creep.prototype.runThrall = function () {
 
     if (towers.length > 0) {
       const tower = this.pos.findClosestByRange(towers);
+      this.memory.deliveryTarget = tower.id;
       if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
         Traffic.requestMove(this, tower);
       }
@@ -176,6 +208,7 @@ Creep.prototype.runThrall = function () {
       const shouldFill = energyPct < 0.5 || (energyPct < 0.8 && !warlockActive);
 
       if (shouldFill && controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+        this.memory.deliveryTarget = controllerContainer.id;
         if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           Traffic.requestMove(this, controllerContainer);
         }
@@ -184,7 +217,8 @@ Creep.prototype.runThrall = function () {
     }
 
     // Everything full — return to gathering
-    this.memory.delivering = false;
+    this.memory.delivering     = false;
+    this.memory.deliveryTarget = null;
     return;
   }
 
