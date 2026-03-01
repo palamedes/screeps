@@ -9,7 +9,7 @@
  *
  * 2. THRALL TARGET SIMPLIFIED.
  *    At RCL2 with 300 cap: old formula gave target=3 CARRY (3 tiny thralls).
- *    New formula: target = pairs in ONE ideal thrall body.
+ *    New formula: target = pairs in ONE ideal thrall body at current cap.
  *    We want 1 well-sized thrall, not 3 tiny ones clogging traffic.
  *    At RCL3+ scales to sources+1 thralls worth of CARRY.
  *
@@ -23,6 +23,24 @@
  *    Remove the threshold entirely for warlock. Also added preemptive
  *    replacement at TTL < 200 so there is always overlap during the walk
  *    to the container seat.
+ *
+ * 5. TWO-CONSTRAINT SPAWN LIMITS (new).
+ *    Each role now has two guards per RCL level:
+ *
+ *    minParts — minimum number of the role's key body part required before
+ *    a spawn is allowed. Prevents the death spiral where 25 x [CARRY,MOVE]
+ *    thralls are spawned because each costs only 100e. The spawn waits until
+ *    enough energy has accumulated to produce a body that actually moves
+ *    meaningful cargo. "Wait for a good spawn" beats "spawn immediately
+ *    and clog the room with useless bodies."
+ *
+ *    maxCount — hard ceiling on live creep count for this role at this RCL.
+ *    A safety net that caps runaway spawning even if the part-target logic
+ *    misbehaves. Indexed by RCL (0–8). Values are conservative: a room
+ *    should never need more than these creeps at a given controller level.
+ *
+ *    Together: the system won't spawn undersized bodies, and can't accumulate
+ *    a swarm of them even if something else goes wrong.
  */
 
 const Bodies = require('spawn.bodies');
@@ -45,6 +63,67 @@ const DEADWEIGHT = {
   miner:   { part: 'work',  minRatio: 0.4 },
   thrall:  { part: 'carry', minRatio: 0.4 },
   clanrat: { part: 'work',  minRatio: 0.4 }
+};
+
+/**
+ * Two-constraint spawn limits per role.
+ *
+ * minParts — minimum count of the role's key part the body must contain.
+ *   The spawn director will NOT fire if the best affordable body falls below
+ *   this count. It waits for energy to accumulate instead.
+ *   This prevents the "25 tiny thralls" death spiral.
+ *
+ * maxCount — maximum live creep count indexed by RCL [0..8].
+ *   Hard ceiling regardless of part-count targets.
+ *   Use null at an index to mean "no cap at this RCL" (rare — prefer a number).
+ *
+ * Key part by role (used for minParts check):
+ *   miner       → work
+ *   thrall      → carry
+ *   clanrat     → work
+ *   warlock     → work
+ *   gutterrunner→ move
+ *   stormvermin → attack
+ */
+const ROLE_LIMITS = {
+  //          RCL: [0, 1, 2, 3, 4,  5,  6,  7,  8]
+  miner: {
+    minParts: 1,  // even 1 WORK is useful — miner gets replaced by deadweight check
+    maxCount: [0, 1, 2, 2, 2,  2,  2,  2,  2]
+  },
+  thrall: {
+    minParts: 3,  // minimum 3 CARRY pairs = 300e body. Below this, wait.
+    maxCount: [0, 0, 2, 3, 4,  5,  6,  7,  8]
+  },
+  clanrat: {
+    minParts: 1,  // 1 WORK clanrat is still useful
+    maxCount: [0, 0, 2, 4, 4,  6,  8,  8,  8]
+  },
+  warlock: {
+    minParts: 1,  // 1 WORK warlock is better than none
+    maxCount: [0, 0, 1, 1, 1,  1,  1,  1,  1]
+  },
+  gutterrunner: {
+    minParts: 2,  // 2 MOVE minimum — single MOVE scout is pointless
+    maxCount: [0, 0, 1, 1, 1,  1,  1,  1,  1]
+  },
+  stormvermin: {
+    minParts: 1,
+    maxCount: [0, 0, 1, 1, 2,  2,  3,  3,  3]
+  }
+};
+
+/**
+ * The key body part for each role, used for minParts enforcement.
+ * Values match Screeps part-type strings (WORK === 'work', etc.).
+ */
+const ROLE_KEY_PART = {
+  miner:        'work',
+  thrall:       'carry',
+  clanrat:      'work',
+  warlock:      'work',
+  gutterrunner: 'move',
+  stormvermin:  'attack'
 };
 
 module.exports = {
@@ -80,6 +159,74 @@ module.exports = {
         const count = creep.body.filter(p => p.type === partType && p.hits > 0).length;
         return sum + count;
       }, 0);
+  },
+
+  /**
+   * Count live creeps of a given role assigned to this room.
+   */
+  getRoleCount(roomName, role) {
+    return Object.values(Game.creeps).filter(c =>
+      c.memory.homeRoom === roomName &&
+      c.memory.role === role
+    ).length;
+  },
+
+  /**
+   * Two-constraint spawn gate.
+   *
+   * Returns false (block the spawn) if either:
+   *   a) live count for this role is already at or above maxCount for current RCL
+   *   b) the proposed body has fewer key parts than minParts
+   *
+   * Returns true (allow the spawn) if both constraints pass.
+   *
+   * Logs the reason when blocking so it's visible in the console.
+   *
+   * @param  {Room}   room
+   * @param  {string} role
+   * @param  {Array}  body  — the body array that would be spawned
+   * @return {boolean}
+   */
+  _checkRoleLimit(room, role, body) {
+    const limits = ROLE_LIMITS[role];
+    if (!limits) return true; // no limits defined for this role — allow
+
+    const rcl = room.controller ? room.controller.level : 0;
+
+    // --- maxCount check ---
+    const maxCount = limits.maxCount[rcl] !== undefined
+      ? limits.maxCount[rcl]
+      : limits.maxCount[limits.maxCount.length - 1]; // clamp to last defined value
+
+    const currentCount = this.getRoleCount(room.name, role);
+
+    if (currentCount >= maxCount) {
+      // Only log occasionally to avoid console spam
+      if (Game.time % 20 === 0) {
+        console.log(
+          `[spawn:${room.name}] ${role} at maxCount (${currentCount}/${maxCount} @ RCL${rcl}) — waiting`
+        );
+      }
+      return false;
+    }
+
+    // --- minParts check ---
+    const keyPart = ROLE_KEY_PART[role];
+    if (keyPart && limits.minParts > 0) {
+      const partCount = body.filter(p => p === keyPart).length;
+      if (partCount < limits.minParts) {
+        // Only log occasionally to avoid console spam
+        if (Game.time % 20 === 0) {
+          console.log(
+            `[spawn:${room.name}] ${role} body too weak ` +
+            `(${partCount}/${limits.minParts} ${keyPart} @ RCL${rcl}) — waiting for energy`
+          );
+        }
+        return false;
+      }
+    }
+
+    return true;
   },
 
   calculatePartsTargets(room) {
@@ -159,7 +306,7 @@ module.exports = {
       const body = Bodies.miner(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
-        if (energy >= cost) {
+        if (energy >= cost && this._checkRoleLimit(room, 'miner', body)) {
           this.spawnRat(spawn, 'miner', body);
           console.log(
             `[spawn:${room.name}] miner — ` +
@@ -180,7 +327,7 @@ module.exports = {
       const body = Bodies.thrall(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
-        if (energy >= cost) {
+        if (energy >= cost && this._checkRoleLimit(room, 'thrall', body)) {
           this.spawnRat(spawn, 'thrall', body);
           console.log(
             `[spawn:${room.name}] thrall — ` +
@@ -212,7 +359,7 @@ module.exports = {
           const body = Bodies.gutterrunner(energy);
           if (body && body.length > 0) {
             const cost = this._bodyCost(body);
-            if (energy >= cost) {
+            if (energy >= cost && this._checkRoleLimit(room, 'gutterrunner', body)) {
               this.spawnRat(spawn, 'gutterrunner', body);
               console.log(`[spawn:${room.name}] gutterrunner — ${body.length} MOVE, ${cost}e`);
               return;
@@ -237,18 +384,14 @@ module.exports = {
     const needsStormvermin = underThreat || hasHostiles;
 
     if (needsStormvermin) {
-      const svCount = Object.values(Game.creeps).filter(c =>
-        c.memory.homeRoom === room.name &&
-        c.memory.role === 'stormvermin'
-      ).length;
-
+      const svCount = this.getRoleCount(room.name, 'stormvermin');
       const svTarget = rcl >= 4 ? 2 : 1;
 
       if (svCount < svTarget) {
         const body = Bodies.stormvermin(energy);
         if (body && body.length > 0) {
           const cost = this._bodyCost(body);
-          if (energy >= cost) {
+          if (energy >= cost && this._checkRoleLimit(room, 'stormvermin', body)) {
             this.spawnRat(spawn, 'stormvermin', body);
             console.log(
               `[spawn:${room.name}] ⚔️  stormvermin — ${body.length} parts, ${cost}e`
@@ -281,7 +424,7 @@ module.exports = {
           const body = Bodies.warlock(energy);
           if (body && body.length > 0) {
             const cost = this._bodyCost(body);
-            if (energy >= cost) {
+            if (energy >= cost && this._checkRoleLimit(room, 'warlock', body)) {
               this.spawnRat(spawn, 'warlock', body);
               console.log(
                 `[spawn:${room.name}] warlock — ` +
@@ -313,7 +456,7 @@ module.exports = {
       const body = Bodies.clanrat(energy);
       if (body && body.length > 0) {
         const cost = this._bodyCost(body);
-        if (energy >= cost) {
+        if (energy >= cost && this._checkRoleLimit(room, 'clanrat', body)) {
           this.spawnRat(spawn, 'clanrat', body);
           console.log(
             `[spawn:${room.name}] clanrat — ` +
@@ -344,7 +487,39 @@ module.exports = {
 
       const idealBody = bodyFn(room.energyCapacityAvailable);
       const idealCost = this._bodyCost(idealBody);
-      if (room.energyAvailable < idealCost) continue;
+
+      // FIX: Use minParts-based minimum viable cost rather than ideal cost.
+      // The old check (energy >= idealCost) meant deadweight thralls were
+      // immune during drought — ideal 1000e thrall never cleared the bar.
+      // Now we check against the cost of the minimum viable body instead,
+      // so undersized creeps can be culled even when energy is low.
+      const limits  = ROLE_LIMITS[creep.memory.role];
+      const keyPart = ROLE_KEY_PART[creep.memory.role];
+      let minViableCost = idealCost; // default: same as before
+
+      if (limits && keyPart) {
+        // Build the body we'd get at the minimum viable part count.
+        // We approximate by scaling energy until the body meets minParts.
+        // Simple approach: find cost of body that produces exactly minParts.
+        // For thrall: minParts=3 pairs = 3*100 = 300e minimum body.
+        const partCosts = { work: 100, carry: 50, move: 50, attack: 80,
+          ranged_attack: 150, tough: 10, heal: 250, claim: 600 };
+        // Calculate cost of a body that just meets minParts for the key part.
+        // Thrall: 3 CARRY + 3 MOVE = 300e. Miner: 1 WORK + 1 CARRY + 1 MOVE = 200e.
+        // We iterate energy upward until Bodies[role](e) produces minParts key parts.
+        let testEnergy = 100;
+        while (testEnergy <= room.energyCapacityAvailable) {
+          const testBody = bodyFn(testEnergy);
+          const partCount = testBody.filter(p => p === keyPart).length;
+          if (partCount >= limits.minParts) {
+            minViableCost = this._bodyCost(testBody);
+            break;
+          }
+          testEnergy += 50;
+        }
+      }
+
+      if (room.energyAvailable < minViableCost) continue;
 
       const idealCount = idealBody.filter(p => p === config.part).length;
       if (idealCount === 0) continue;
