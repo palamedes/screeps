@@ -10,43 +10,25 @@
  * Delivery priority:
  *   1. Spawn
  *   2. Controller container EMPTY — warlock is idle without this. Beats tower top-up.
- *      An empty container means zero upgrade progress every tick until filled.
- *      Towers can sustain from existing charge. A stalled warlock cannot.
- *   3. Tower emergency (<50%) — fill before extensions.
- *      A half-empty tower can't sustain repair or survive a fight.
- *   4. Extensions — determines spawn body quality
- *   5. Towers (normal top-up, already above 50%)
- *   6. Controller container (normal top-up — keep warlock fed once not empty)
+ *   3. Tower emergency (<50%)
+ *   4. Extensions
+ *   5. Towers (normal top-up)
+ *   6. Controller container (normal top-up)
  *
- * COMMITTED DELIVERY (fix for mid-trip abandonment):
- *   Once a thrall selects a delivery target it stores the target ID in
- *   memory.deliveryTarget and commits to completing that delivery.
- *   Priority selection only runs when there is no committed target, or when
- *   the committed target is no longer valid (gone, or already full).
- *   This prevents the thrash where two thralls race to the same target,
- *   the first fills it, and the second abandons mid-trip and wastes the journey.
+ * COMMITTED DELIVERY + GATHER:
+ *   Once a thrall selects a target (delivery or gather) it commits to it via
+ *   memory.deliveryTarget / memory.gatherTarget. Priority selection only runs
+ *   when there is no committed target, or when the committed target is invalid.
  *
- * TOWER EMERGENCY THRESHOLD: 50% (raised from 20%).
- * A tower at 29% might look "okay" but loses repair/attack capacity for hundreds
- * of ticks during spawn cycles. At 50% threshold, the tower always has enough
- * energy to handle a fight or keep up with rampart repair, even if a large spawn
- * fires immediately after. Extensions can wait one thrall cycle.
+ *   Committed targets store their priority level (memory.deliveryPriority).
+ *   A lower-priority commitment CAN be overridden if spawn (P1) suddenly needs
+ *   energy — spawn is the only override allowed mid-trip. Everything else
+ *   completes before re-evaluating. This prevents the thrash where a thrall
+ *   heading to the controller container (P6) ignores a hungry spawn, but also
+ *   prevents the controller container from being skipped forever because it
+ *   always has free capacity.
  *
- * Source containers are the LAST resort in gathering — they're the steady-state
- * buffer that never decays. Tombstones and dropped piles are lossy and must be
- * collected first to avoid waste.
- *
- * KEY FIX: All consumer lookups use room.find instead of findClosestByPath.
- * findClosestByPath returns null silently when the room is congested.
- * room.find always returns the object if it exists. Traffic handles pathing.
- *
- * State toggle (memory.delivering):
- *   false = gathering (until store is full)
- *   true  = delivering (until store is completely empty)
- *
- * memory.deliveryTarget:
- *   ID of the structure this thrall is committed to delivering to.
- *   Cleared when: store empties, target disappears, or target becomes full.
+ * TOWER EMERGENCY THRESHOLD: 50%.
  *
  * All movement routed through Traffic.requestMove — no direct moveTo calls.
  */
@@ -54,11 +36,11 @@
 const Traffic = require('traffic');
 
 const CONTROLLER_CONTAINER_RANGE = 3; // must match plan.container.controller.js
-
-// Tower must stay above this fraction or it jumps the extension queue.
-const TOWER_EMERGENCY_THRESHOLD = 0.5;
+const TOWER_EMERGENCY_THRESHOLD  = 0.5;
 
 Creep.prototype.runThrall = function () {
+
+  const spawn = this.room.find(FIND_MY_SPAWNS)[0];
 
   const controllerContainer = this.room.find(FIND_STRUCTURES, {
     filter: s =>
@@ -66,19 +48,21 @@ Creep.prototype.runThrall = function () {
       s.pos.inRangeTo(this.room.controller, CONTROLLER_CONTAINER_RANGE)
   })[0];
 
-  // --- State Toggle ---
+  // ─────────────────────────────────────────────── State Toggle ──
+
   if (!this.memory.delivering && this.store.getFreeCapacity() === 0) {
-    this.memory.delivering = true;
+    this.memory.delivering   = true;
+    this.memory.gatherTarget = null; // clear gather commitment on full
   }
 
   if (this.store[RESOURCE_ENERGY] === 0) {
     this.memory.delivering     = false;
-    this.memory.deliveryTarget = null; // always clear commitment on empty
+    this.memory.deliveryTarget   = null; // clear delivery commitment on empty
+    this.memory.deliveryPriority = null;
   }
 
-  // --- Full But Waiting Check ---
+  // Full but not yet delivering — check if anything actually needs energy
   if (!this.memory.delivering && this.store.getFreeCapacity() === 0) {
-    const spawn = this.room.find(FIND_MY_SPAWNS)[0];
     const needsEnergy =
       (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) ||
       this.room.find(FIND_MY_STRUCTURES, {
@@ -93,55 +77,63 @@ Creep.prototype.runThrall = function () {
     }
   }
 
-  // --- Delivery Phase ---
+  // ─────────────────────────────────────────────── Delivery Phase ──
+
   if (this.memory.delivering) {
 
-    // --- Committed target: honor an in-progress delivery ---
-    // If we already picked a target, drive to completion before re-evaluating.
-    // Only abandon if the target no longer exists or is already full.
+    // Committed target — honor an in-progress delivery.
+    // Exception: if spawn (P1) needs energy and we're committed to something
+    // lower priority, override immediately. Spawn is the warren's heartbeat —
+    // nothing else matters if the spawn can't fire.
     if (this.memory.deliveryTarget) {
-      const committed = Game.getObjectById(this.memory.deliveryTarget);
+      const committed         = Game.getObjectById(this.memory.deliveryTarget);
+      const committedPriority = this.memory.deliveryPriority || 99;
 
-      if (committed && committed.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      // Spawn override: if committed to P2+ and spawn needs energy, pivot now
+      const spawnHungry = spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+      if (committedPriority > 1 && spawnHungry) {
+        this.memory.deliveryTarget   = null;
+        this.memory.deliveryPriority = null;
+        // fall through to priority selection
+      } else if (committed && committed.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
         // Still valid — complete the delivery
         if (this.transfer(committed, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           Traffic.requestMove(this, committed);
         }
         return;
+      } else {
+        // Gone or full — clear and re-evaluate
+        this.memory.deliveryTarget   = null;
+        this.memory.deliveryPriority = null;
       }
-
-      // Target gone or full — clear and fall through to priority selection
-      this.memory.deliveryTarget = null;
     }
 
-    // --- Priority selection (only runs without a committed target) ---
+    // ── Priority selection (only runs without a committed target) ──
 
-    // Priority 1: Spawn
-    const spawn = this.room.find(FIND_MY_SPAWNS)[0];
-    if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-      this.memory.deliveryTarget = spawn.id;
-      if (this.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, spawn);
+    const _commit = (target, priority) => {
+      this.memory.deliveryTarget   = target.id;
+      this.memory.deliveryPriority = priority;
+      if (this.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, target);
       }
+    };
+
+    // P1: Spawn
+    if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      _commit(spawn, 1);
       return;
     }
 
-    // Priority 2: Controller container EMPTY
-    // A warlock staring at an empty container contributes zero upgrade progress
-    // every tick it sits idle. Towers can sustain from existing charge for many
-    // ticks. Get the warlock fed first.
+    // P2: Controller container EMPTY
+    // Warlock is idle every tick this is empty — higher ROI than tower top-up.
     if (controllerContainer &&
       controllerContainer.store[RESOURCE_ENERGY] === 0 &&
       controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-      this.memory.deliveryTarget = controllerContainer.id;
-      if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, controllerContainer);
-      }
+      _commit(controllerContainer, 2);
       return;
     }
 
-    // Priority 3: Tower emergency (<50%)
-    // A half-empty tower can't sustain repair or survive a fight.
+    // P3: Tower emergency (<50%)
     const emergencyTowers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -149,15 +141,11 @@ Creep.prototype.runThrall = function () {
     });
 
     if (emergencyTowers.length > 0) {
-      const tower = this.pos.findClosestByRange(emergencyTowers);
-      this.memory.deliveryTarget = tower.id;
-      if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, tower);
-      }
+      _commit(this.pos.findClosestByRange(emergencyTowers), 3);
       return;
     }
 
-    // Priority 4: Extensions
+    // P4: Extensions
     const extensions = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_EXTENSION &&
@@ -165,15 +153,11 @@ Creep.prototype.runThrall = function () {
     });
 
     if (extensions.length > 0) {
-      const extension = this.pos.findClosestByRange(extensions);
-      this.memory.deliveryTarget = extension.id;
-      if (this.transfer(extension, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, extension);
-      }
+      _commit(this.pos.findClosestByRange(extensions), 4);
       return;
     }
 
-    // Priority 5: Towers (normal top-up, already above 50%)
+    // P5: Towers (normal top-up)
     const towers = this.room.find(FIND_MY_STRUCTURES, {
       filter: s =>
         s.structureType === STRUCTURE_TOWER &&
@@ -181,18 +165,16 @@ Creep.prototype.runThrall = function () {
     });
 
     if (towers.length > 0) {
-      const tower = this.pos.findClosestByRange(towers);
-      this.memory.deliveryTarget = tower.id;
-      if (this.transfer(tower, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-        Traffic.requestMove(this, tower);
-      }
+      _commit(this.pos.findClosestByRange(towers), 5);
       return;
     }
 
-    // Priority 6: Controller container (normal top-up)
-    // Keeps the warlock fed between delivery cycles once the container
-    // is no longer empty. Fills when below 50%, or below 80% with
-    // no warlock actively draining it.
+    // P6: Controller container (normal top-up)
+    // Fills when below 50%, or below 80% with no warlock actively draining it.
+    // Note: we do NOT commit this to memory — it re-evaluates every cycle so
+    // higher priorities can reclaim thralls as needs change. The container is
+    // large and always has free capacity, so a committed target would stick
+    // forever and block spawn/extensions from getting served next cycle.
     if (controllerContainer) {
       const energyPct = controllerContainer.store[RESOURCE_ENERGY] /
         controllerContainer.store.getCapacity(RESOURCE_ENERGY);
@@ -208,7 +190,7 @@ Creep.prototype.runThrall = function () {
       const shouldFill = energyPct < 0.5 || (energyPct < 0.8 && !warlockActive);
 
       if (shouldFill && controllerContainer.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-        this.memory.deliveryTarget = controllerContainer.id;
+        // No memory commit — re-evaluate next cycle
         if (this.transfer(controllerContainer, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           Traffic.requestMove(this, controllerContainer);
         }
@@ -216,13 +198,46 @@ Creep.prototype.runThrall = function () {
       }
     }
 
-    // Everything full — return to gathering
+    // Everything satisfied — return to gathering
     this.memory.delivering     = false;
-    this.memory.deliveryTarget = null;
+    this.memory.deliveryTarget   = null;
+    this.memory.deliveryPriority = null;
     return;
   }
 
-  // --- Gathering Phase ---
+  // ─────────────────────────────────────────────── Gathering Phase ──
+
+  // Committed gather target — keep pulling from the same source until
+  // it's empty or we're full. Prevents oscillation between two containers
+  // that are close in fill level.
+  if (this.memory.gatherTarget) {
+    const committed = Game.getObjectById(this.memory.gatherTarget);
+
+    const hasEnergy = committed && (
+      committed.store  ? committed.store[RESOURCE_ENERGY] > 0  :  // containers, tombstones, ruins
+        committed.amount ? committed.amount > 0 : false               // dropped resources
+    );
+
+    if (hasEnergy) {
+      const result = committed.store
+        ? this.withdraw(committed, RESOURCE_ENERGY)
+        : this.pickup(committed);
+
+      if (result === ERR_NOT_IN_RANGE) {
+        Traffic.requestMove(this, committed);
+      }
+      return;
+    }
+
+    // Gone or empty — clear and fall through to selection
+    this.memory.gatherTarget = null;
+  }
+
+  // ── Gather source selection (only runs without a committed target) ──
+
+  const _commitGather = (target) => {
+    this.memory.gatherTarget = target.id;
+  };
 
   // Tombstones first — free energy, recover losses
   const tombstone = this.room.find(FIND_TOMBSTONES, {
@@ -230,6 +245,7 @@ Creep.prototype.runThrall = function () {
   })[0];
 
   if (tombstone) {
+    _commitGather(tombstone);
     if (this.withdraw(tombstone, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, tombstone);
     }
@@ -242,6 +258,7 @@ Creep.prototype.runThrall = function () {
   })[0];
 
   if (ruin) {
+    _commitGather(ruin);
     if (this.withdraw(ruin, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, ruin);
     }
@@ -259,6 +276,7 @@ Creep.prototype.runThrall = function () {
   }).sort((a, b) => b.amount - a.amount)[0];
 
   if (dropped) {
+    _commitGather(dropped);
     if (this.pickup(dropped) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, dropped);
     }
@@ -275,18 +293,16 @@ Creep.prototype.runThrall = function () {
   });
 
   if (sourceContainers.length > 0) {
+    // Pick once and commit — don't re-sort every tick
     sourceContainers.sort((a, b) => {
       const aFill = a.store[RESOURCE_ENERGY] / a.store.getCapacity(RESOURCE_ENERGY);
       const bFill = b.store[RESOURCE_ENERGY] / b.store.getCapacity(RESOURCE_ENERGY);
-
-      if (Math.abs(aFill - bFill) > 0.2) {
-        return bFill - aFill;
-      }
-
+      if (Math.abs(aFill - bFill) > 0.2) return bFill - aFill;
       return this.pos.getRangeTo(a) - this.pos.getRangeTo(b);
     });
 
     const container = sourceContainers[0];
+    _commitGather(container);
     if (this.withdraw(container, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
       Traffic.requestMove(this, container);
     }
@@ -295,7 +311,6 @@ Creep.prototype.runThrall = function () {
 
   // Nothing to pick up — wait near closest source
   if (sources.length) {
-    const target = this.pos.findClosestByRange(sources);
-    Traffic.requestMove(this, target, { range: 2 });
+    Traffic.requestMove(this, this.pos.findClosestByRange(sources), { range: 2 });
   }
 };
